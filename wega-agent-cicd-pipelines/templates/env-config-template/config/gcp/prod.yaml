@@ -1,0 +1,19 @@
+# config/gcp/prod.yaml
+# GCP Cloud Run - Production
+# ⚠️  CAUTION: Changes affect PRODUCTION!
+
+env:
+  ENVIRONMENT: prod
+  LOG_LEVEL: WARN
+  FEATURE_DEBUG_MODE: "false"
+  FEATURE_VERBOSE_ERRORS: "false"
+  
+  API_BASE_URL: https://api.wega.example.com
+  
+  DB_HOST: prod-postgres.wega.internal
+  DB_PORT: "5432"
+  DB_NAME: wega_prod
+  
+  MAX_WORKERS: "8"
+  MAX_RETRIES: "5"
+  FEATURE_RATE_LIMITING: "true"

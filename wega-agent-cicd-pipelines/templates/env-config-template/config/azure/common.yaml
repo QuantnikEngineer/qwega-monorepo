@@ -1,0 +1,8 @@
+# config/azure/common.yaml
+# Azure Container Apps - ALL environments
+
+env:
+  CLOUD_PROVIDER: azure
+  AZURE_REGION: eastus
+  APPLICATIONINSIGHTS_ENABLED: "true"
+  HEALTH_CHECK_PATH: /health

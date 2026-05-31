@@ -1,0 +1,76 @@
+<mxfile host="app.diagrams.net" modified="2026-03-09T10:20:00.000Z" agent="Copilot" version="24.7.17" type="device">
+  <diagram id="scaledNoArgo" name="Page-1">
+    <mxGraphModel dx="1680" dy="980" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="trigger" value="Pipeline Trigger\nselectedRepo / all\nexecutionMode\nimageTag" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="70" width="240" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="catalog" value="Repo Catalog (single source)\nonboardingrepos.yaml / matrix list\nrepoName, docker paths,\nimage names, k8s deployment names" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="360" y="60" width="320" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="orchestrator" value="Harness Orchestrator Pipeline\nLoads catalog\nCreates matrix fan-out" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="70" width="290" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="buildTemplate" value="Reusable Build Template\n1 template used N times\nGitClone + BuildAndPushECR\n(backend + frontend)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="40" width="300" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="deployTemplate" value="Reusable Deploy Template\n1 template used N times\nRun kubectl set image + rollout status" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="220" width="300" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ecr" value="Amazon ECR\nimages per repo\nrepo-backend:imageTag\nrepo-frontend:imageTag" style="shape=database;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1480" y="55" width="250" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="eks" value="Amazon EKS (buildai)\ndeployments updated\nby kubectl set image" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1480" y="235" width="250" height="105" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="gate" value="Gate: executionMode\nbuild_only = stop after ECR\nbuild_and_deploy = continue" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="900" y="220" width="180" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge1" style="endArrow=block;endFill=1;" edge="1" parent="1" source="trigger" target="orchestrator">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge2" style="endArrow=block;endFill=1;" edge="1" parent="1" source="catalog" target="orchestrator">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge3" value="matrix fan-out (N repos)" style="endArrow=block;endFill=1;" edge="1" parent="1" source="orchestrator" target="buildTemplate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge4" style="endArrow=block;endFill=1;" edge="1" parent="1" source="buildTemplate" target="ecr">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge5" style="endArrow=block;endFill=1;" edge="1" parent="1" source="orchestrator" target="gate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge6" value="if build_and_deploy" style="endArrow=block;endFill=1;" edge="1" parent="1" source="gate" target="deployTemplate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge7" value="uses imageTag" style="endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="ecr" target="deployTemplate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge8" style="endArrow=block;endFill=1;" edge="1" parent="1" source="deployTemplate" target="eks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
+

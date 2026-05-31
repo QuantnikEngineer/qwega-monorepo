@@ -1,0 +1,16 @@
+# config/gcp/staging.yaml
+# GCP Cloud Run - Staging
+
+env:
+  ENVIRONMENT: staging
+  LOG_LEVEL: INFO
+  FEATURE_DEBUG_MODE: "false"
+  FEATURE_VERBOSE_ERRORS: "false"
+  
+  API_BASE_URL: https://staging-api.wega.example.com
+  
+  DB_HOST: staging-postgres.wega.internal
+  DB_PORT: "5432"
+  DB_NAME: wega_staging
+  
+  MAX_WORKERS: "4"

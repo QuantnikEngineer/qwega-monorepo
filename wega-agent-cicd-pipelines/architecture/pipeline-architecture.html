@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEGA CI/CD Pipeline Architecture - Serverless</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .architecture-section {
+            margin-bottom: 40px;
+        }
+        .section-title {
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 4px solid #00d4ff;
+        }
+        .flow-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .orchestrator-box {
+            background: linear-gradient(135deg, #2d3436 0%, #000000 100%);
+            border: 2px solid #6c5ce7;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+        }
+        .orchestrator-box h3 {
+            color: #6c5ce7;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+        .orchestrator-box p {
+            color: #b2bec3;
+            font-size: 0.9em;
+        }
+        .arrow-down {
+            text-align: center;
+            font-size: 2em;
+            color: #00d4ff;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .cloud-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .cloud-card {
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .cloud-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+        .gcp-card {
+            background: linear-gradient(135deg, #1a3a1a 0%, #0d1f0d 100%);
+            border: 1px solid #34a853;
+        }
+        .gcp-card::before { background: linear-gradient(90deg, #4285f4, #34a853, #fbbc04, #ea4335); }
+        .azure-card {
+            background: linear-gradient(135deg, #1a2a3a 0%, #0d1520 100%);
+            border: 1px solid #0078d4;
+        }
+        .azure-card::before { background: linear-gradient(90deg, #0078d4, #00bcf2); }
+        .aws-card {
+            background: linear-gradient(135deg, #3a2a1a 0%, #1f150d 100%);
+            border: 1px solid #ff9900;
+        }
+        .aws-card::before { background: linear-gradient(90deg, #ff9900, #232f3e); }
+        .cloud-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .cloud-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+        .gcp-logo { background: #34a853; }
+        .azure-logo { background: #0078d4; }
+        .aws-logo { background: #ff9900; color: #232f3e; }
+        .cloud-title {
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        .pipeline-name {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            color: #00d4ff;
+        }
+        .serverless-badge {
+            display: inline-block;
+            background: linear-gradient(90deg, #00cec9, #0984e3);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            margin-left: 10px;
+            font-weight: 600;
+        }
+        .service-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .service-box h4 {
+            color: #dfe6e9;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .service-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+        .registry-icon { background: #e17055; }
+        .compute-icon { background: #00cec9; }
+        .env-flow {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .env-badge {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        .env-dev { background: #00b894; }
+        .env-qa { background: #0984e3; }
+        .env-stage { background: #fdcb6e; color: #2d3436; }
+        .env-prod { background: #d63031; }
+        .env-arrow {
+            color: #636e72;
+            display: flex;
+            align-items: center;
+        }
+        .stages-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+        .stages-list li {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 5px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stage-num {
+            background: #6c5ce7;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+        .legend {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .legend h3 {
+            margin-bottom: 15px;
+            color: #dfe6e9;
+        }
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        .repos-section {
+            margin-top: 30px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            padding: 25px;
+        }
+        .repos-section h3 {
+            margin-bottom: 15px;
+            color: #dfe6e9;
+        }
+        .repos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        .repo-item {
+            background: rgba(108, 92, 231, 0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            border-left: 3px solid #6c5ce7;
+        }
+        .deployment-report {
+            margin-top: 30px;
+            background: linear-gradient(135deg, #2d3436 0%, #000000 100%);
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            padding: 25px;
+        }
+        .deployment-report h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+        .report-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .report-feature {
+            background: rgba(0, 212, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .report-feature-icon {
+            font-size: 1.5em;
+            margin-bottom: 8px;
+        }
+        .flow-diagram {
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+        .flow-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .flow-box {
+            background: rgba(108, 92, 231, 0.3);
+            border: 1px solid #6c5ce7;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 140px;
+        }
+        .flow-box.source {
+            background: rgba(0, 184, 148, 0.3);
+            border-color: #00b894;
+        }
+        .flow-box.registry {
+            background: rgba(225, 112, 85, 0.3);
+            border-color: #e17055;
+        }
+        .flow-box.compute {
+            background: rgba(0, 206, 201, 0.3);
+            border-color: #00cec9;
+        }
+        .flow-box.sast {
+            background: rgba(155, 89, 182, 0.3);
+            border-color: #9b59b6;
+        }
+        .flow-box.testing {
+            background: rgba(46, 204, 113, 0.3);
+            border-color: #2ecc71;
+        }
+        .flow-arrow {
+            color: #00d4ff;
+            font-size: 1.5em;
+        }
+        .service-naming {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+            font-size: 0.85em;
+        }
+        .service-naming code {
+            background: rgba(108, 92, 231, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        @media (max-width: 900px) {
+            .cloud-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WEGA CI/CD Pipeline Architecture</h1>
+        <p class="subtitle">Serverless Container Deployment - GCP Cloud Run | Azure Container Apps | AWS Fargate</p>
+
+        <!-- High-Level Flow Diagram -->
+        <div class="flow-diagram">
+            <h3 style="text-align: center; margin-bottom: 25px; color: #dfe6e9;">Pipeline Flow Overview</h3>
+            <div class="flow-row">
+                <div class="flow-box source">
+                    <div style="font-size: 1.2em;">Git Repo</div>
+                    <div style="font-size: 0.8em; color: #b2bec3;">Harness Git</div>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box sast">
+                    <div style="font-size: 1.2em;">SAST</div>
+                    <div style="font-size: 0.75em; color: #b2bec3;">Sonar | Harness | Semgrep</div>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box">
+                    <div style="font-size: 1.2em;">Build</div>
+                    <div style="font-size: 0.8em; color: #b2bec3;">Docker Image</div>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box">
+                    <div style="font-size: 1.2em;">Trivy Scan</div>
+                    <div style="font-size: 0.8em; color: #b2bec3;">Container Security</div>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box registry">
+                    <div style="font-size: 1.2em;">Registry</div>
+                    <div style="font-size: 0.8em; color: #b2bec3;">GAR/ACR/ECR</div>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box compute">
+                    <div style="font-size: 1.2em;">Deploy</div>
+                    <div style="font-size: 0.8em; color: #b2bec3;">Serverless</div>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box testing">
+                    <div style="font-size: 1.2em;">Functional Tests</div>
+                    <div style="font-size: 0.8em; color: #b2bec3;">API | E2E | Smoke</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orchestrator Section -->
+        <div class="architecture-section">
+            <h2 class="section-title">Orchestrator Layer</h2>
+            <div class="flow-container">
+                <div class="orchestrator-box">
+                    <h3>WEGA-SDLC-Orchestrator</h3>
+                    <p>Central orchestrator that routes builds to target serverless platforms</p>
+                    <p style="margin-top: 10px; color: #6c5ce7;">
+                        Targets: <span class="serverless-badge">Cloud Run</span> <span class="serverless-badge">Container Apps</span> <span class="serverless-badge">Fargate</span>
+                    </p>
+                    <div class="env-flow" style="justify-content: center; margin-top: 15px;">
+                        <span class="env-badge env-dev">DEV</span>
+                        <span class="env-arrow">→</span>
+                        <span class="env-badge env-qa">QA</span>
+                        <span class="env-arrow">→</span>
+                        <span class="env-badge env-stage">STAGE</span>
+                        <span class="env-arrow">→</span>
+                        <span class="env-badge env-prod">PROD</span>
+                    </div>
+                </div>
+                <div class="arrow-down">▼</div>
+            </div>
+        </div>
+
+        <!-- Cloud Platforms Section -->
+        <div class="architecture-section">
+            <h2 class="section-title">Serverless Container Platforms</h2>
+            <div class="cloud-grid">
+                <!-- GCP Cloud Run Card -->
+                <div class="cloud-card gcp-card">
+                    <div class="cloud-header">
+                        <div class="cloud-logo gcp-logo">GCP</div>
+                        <span class="cloud-title">Google Cloud Platform</span>
+                    </div>
+                    <div class="pipeline-name">RepoWorkerBuildDeployCloudRun</div>
+                    
+                    <div class="service-box">
+                        <h4><span class="service-icon registry-icon">GAR</span> Google Artifact Registry</h4>
+                        <p style="color: #636e72; font-size: 0.8em;">{region}-docker.pkg.dev/{project}/{image}</p>
+                    </div>
+                    
+                    <div class="service-box" style="border: 1px solid #00cec9;">
+                        <h4><span class="service-icon compute-icon">CR</span> Cloud Run <span class="serverless-badge">Serverless</span></h4>
+                        <p style="color: #b2bec3; font-size: 0.85em;">Fully managed serverless containers</p>
+                        <p style="color: #636e72; font-size: 0.8em; margin-top: 5px;">Auto-scaling, pay-per-request</p>
+                    </div>
+
+                    <div class="service-naming">
+                        <strong>Service Naming:</strong><br>
+                        <code>{env}-{service}</code><br>
+                        <span style="color: #636e72;">e.g., dev-wega-brd, qa-wega-sdlc</span>
+                    </div>
+                    
+                    <ul class="stages-list">
+                        <li><span class="stage-num">1</span> Clone Repository</li>
+                        <li><span class="stage-num">2</span> Build Docker Image</li>
+                        <li><span class="stage-num">3</span> Trivy Security Scan</li>
+                        <li><span class="stage-num">4</span> Push to GAR</li>
+                        <li><span class="stage-num">5</span> gcloud run deploy</li>
+                        <li><span class="stage-num">6</span> Approval Gates</li>
+                    </ul>
+                </div>
+
+                <!-- Azure Container Apps Card -->
+                <div class="cloud-card azure-card">
+                    <div class="cloud-header">
+                        <div class="cloud-logo azure-logo">AZ</div>
+                        <span class="cloud-title">Microsoft Azure</span>
+                    </div>
+                    <div class="pipeline-name">RepoWorkerBuildDeployACA</div>
+                    
+                    <div class="service-box">
+                        <h4><span class="service-icon registry-icon">ACR</span> Azure Container Registry</h4>
+                        <p style="color: #636e72; font-size: 0.8em;">{registry}.azurecr.io/{image}</p>
+                    </div>
+                    
+                    <div class="service-box" style="border: 1px solid #00cec9;">
+                        <h4><span class="service-icon compute-icon">ACA</span> Container Apps <span class="serverless-badge">Serverless</span></h4>
+                        <p style="color: #b2bec3; font-size: 0.85em;">Serverless microservices platform</p>
+                        <p style="color: #636e72; font-size: 0.8em; margin-top: 5px;">Built on Kubernetes, Dapr support</p>
+                    </div>
+
+                    <div class="service-naming">
+                        <strong>Service Naming:</strong><br>
+                        <code>{env}-{service}</code><br>
+                        <span style="color: #636e72;">e.g., dev-wega-brd, qa-wega-sdlc</span>
+                    </div>
+                    
+                    <ul class="stages-list">
+                        <li><span class="stage-num">1</span> Clone Repository</li>
+                        <li><span class="stage-num">2</span> Build Docker Image</li>
+                        <li><span class="stage-num">3</span> Trivy Security Scan</li>
+                        <li><span class="stage-num">4</span> Push to ACR</li>
+                        <li><span class="stage-num">5</span> az containerapp update</li>
+                        <li><span class="stage-num">6</span> Approval Gates</li>
+                    </ul>
+                </div>
+
+                <!-- AWS Fargate Card -->
+                <div class="cloud-card aws-card">
+                    <div class="cloud-header">
+                        <div class="cloud-logo aws-logo">AWS</div>
+                        <span class="cloud-title">Amazon Web Services</span>
+                    </div>
+                    <div class="pipeline-name">RepoWorkerBuildDeployFargate</div>
+                    
+                    <div class="service-box">
+                        <h4><span class="service-icon registry-icon">ECR</span> Elastic Container Registry</h4>
+                        <p style="color: #636e72; font-size: 0.8em;">{account}.dkr.ecr.{region}.amazonaws.com</p>
+                    </div>
+                    
+                    <div class="service-box" style="border: 1px solid #00cec9;">
+                        <h4><span class="service-icon compute-icon">FG</span> AWS Fargate <span class="serverless-badge">Serverless</span></h4>
+                        <p style="color: #b2bec3; font-size: 0.85em;">Serverless compute for ECS</p>
+                        <p style="color: #636e72; font-size: 0.8em; margin-top: 5px;">No cluster management, auto-scaling</p>
+                    </div>
+
+                    <div class="service-naming">
+                        <strong>Service Naming:</strong><br>
+                        <code>{env}-{service}</code><br>
+                        <span style="color: #636e72;">e.g., dev-wega-brd, qa-wega-sdlc</span>
+                    </div>
+                    
+                    <ul class="stages-list">
+                        <li><span class="stage-num">1</span> Clone Repository</li>
+                        <li><span class="stage-num">2</span> Build Docker Image</li>
+                        <li><span class="stage-num">3</span> Trivy Security Scan</li>
+                        <li><span class="stage-num">4</span> Push to ECR</li>
+                        <li><span class="stage-num">5</span> ECS Fargate Deploy</li>
+                        <li><span class="stage-num">6</span> Approval Gates</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deployment Report Section -->
+        <div class="deployment-report">
+            <h3>Deployment Report Pipeline</h3>
+            <p style="color: #b2bec3; margin-bottom: 15px;">Generates deployment status reports across all serverless platforms</p>
+            <div class="report-features">
+                <div class="report-feature">
+                    <div class="report-feature-icon">☁️</div>
+                    <div>Query Cloud Run</div>
+                    <div style="font-size: 0.8em; color: #636e72;">gcloud run services</div>
+                </div>
+                <div class="report-feature">
+                    <div class="report-feature-icon">📦</div>
+                    <div>Query Container Apps</div>
+                    <div style="font-size: 0.8em; color: #636e72;">az containerapp list</div>
+                </div>
+                <div class="report-feature">
+                    <div class="report-feature-icon">📝</div>
+                    <div>Confluence Reports</div>
+                    <div style="font-size: 0.8em; color: #636e72;">Per-environment pages</div>
+                </div>
+                <div class="report-feature">
+                    <div class="report-feature-icon">💬</div>
+                    <div>Teams Alerts</div>
+                    <div style="font-size: 0.8em; color: #636e72;">Webhook notifications</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WEGA SDLC Repos Section -->
+        <div class="repos-section">
+            <h3>WEGA SDLC Services (13 Repos)</h3>
+            <div class="repos-grid">
+                <div class="repo-item">wega-brd</div>
+                <div class="repo-item">wega-sdlc</div>
+                <div class="repo-item">wega-userstory-validator</div>
+                <div class="repo-item">wega-userstory-to-testcases-agent</div>
+                <div class="repo-item">wega-brd-summary-agent</div>
+                <div class="repo-item">wega-testcases-to-script-agent</div>
+                <div class="repo-item">wega-sdlc-orchestrator</div>
+                <div class="repo-item">wega-planning-orchestrator</div>
+                <div class="repo-item">wega-test-orchestrator</div>
+                <div class="repo-item">wega-code-assistant-agent</div>
+                <div class="repo-item">wega-userstory</div>
+                <div class="repo-item">wega-testcases-to-testdata-agent</div>
+                <div class="repo-item">wega-common-integration-service</div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <h3>Pipeline Execution Modes</h3>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #6c5ce7;"></div>
+                    <span><strong>build_and_deploy</strong> - Full CI/CD</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #00cec9;"></div>
+                    <span><strong>build_only</strong> - Build & Push Image</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #fdcb6e;"></div>
+                    <span><strong>deploy_only</strong> - Deploy Existing Image</span>
+                </div>
+            </div>
+            <h3 style="margin-top: 20px;">Environment Promotion Flow</h3>
+            <div class="env-flow" style="margin-top: 10px;">
+                <span class="env-badge env-dev">DEV (Auto Deploy)</span>
+                <span class="env-arrow">→</span>
+                <span class="env-badge env-qa">QA (Manual Approval)</span>
+                <span class="env-arrow">→</span>
+                <span class="env-badge env-stage">STAGE (Manual Approval)</span>
+                <span class="env-arrow">→</span>
+                <span class="env-badge env-prod">PROD (Manual Approval)</span>
+            </div>
+            <h3 style="margin-top: 20px;">Serverless Benefits</h3>
+            <div class="legend-grid" style="margin-top: 10px;">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #00b894;"></div>
+                    <span>Auto-scaling to zero</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #0984e3;"></div>
+                    <span>Pay-per-request pricing</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #e17055;"></div>
+                    <span>No infrastructure management</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #a29bfe;"></div>
+                    <span>Built-in load balancing</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 30px; color: #636e72; font-size: 0.9em;">
+            <p>WEGA CI/CD Pipeline Architecture | Harness Platform</p>
+            <p style="margin-top: 5px;">Project: WEGA_Build_AI | Org: default</p>
+            <p style="margin-top: 5px; color: #00d4ff;">Serverless Containers: Cloud Run | Container Apps | Fargate</p>
+        </div>
+    </div>
+</body>
+</html>

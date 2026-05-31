@@ -1,0 +1,16 @@
+# config/aws/qa.yaml
+# AWS ECS - QA
+
+env:
+  ENVIRONMENT: qa
+  LOG_LEVEL: INFO
+  FEATURE_DEBUG_MODE: "false"
+  FEATURE_VERBOSE_ERRORS: "true"
+  
+  API_BASE_URL: https://qa-api.wega.aws.example.com
+  
+  DB_HOST: qa-wega-db.xxxxx.us-east-1.rds.amazonaws.com
+  DB_PORT: "5432"
+  DB_NAME: wega_qa
+  
+  MAX_WORKERS: "4"

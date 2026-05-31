@@ -1,0 +1,9 @@
+# config/aws/common.yaml
+# AWS ECS - ALL environments
+
+env:
+  CLOUD_PROVIDER: aws
+  AWS_REGION: us-east-1
+  CLOUDWATCH_LOGGING: "true"
+  AWS_XRAY_ENABLED: "true"
+  HEALTH_CHECK_PATH: /health
