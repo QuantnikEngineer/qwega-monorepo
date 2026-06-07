@@ -1,0 +1,320 @@
+{% if azure_container_apps and azure_container_apps.enabled %}
+trigger:
+  branches:
+    include:
+{% for branch in azure_container_apps.trigger_branches %}
+      - {{ branch }}
+{% endfor %}
+
+pr:
+  branches:
+    include:
+{% for branch in azure_container_apps.pr_branches %}
+      - {{ branch }}
+{% endfor %}
+
+variables:
+  # Azure Container Registry
+  acrServiceConnection: '{{ azure_container_apps.service_connection }}'
+  acrName: '{{ azure_container_apps.acr_name }}'
+  acrLoginServer: '{{ azure_container_apps.acr_login_server }}'
+  imageRepository: '{{ azure_container_apps.image_repository }}'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  tag: '$(Build.BuildId)'
+  
+  # Azure Container Apps
+  azureServiceConnection: '{{ azure_container_apps.service_connection }}'
+  resourceGroup: '{{ azure_container_apps.resource_group }}'
+  containerAppName: '{{ azure_container_apps.container_app_name }}'
+  containerAppEnvironmentPrefix: '{{ azure_container_apps.container_app_env_prefix }}'
+  location: '{{ azure_container_apps.location }}'
+
+stages:
+  - stage: Build
+    displayName: 'Build and Push'
+    jobs:
+      - job: BuildAndPush
+        displayName: 'Build and Push to ACR'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+{% if python_build %}
+
+          - task: UsePythonVersion@0
+            displayName: 'Use Python {{ python_build.version }}'
+            inputs:
+              versionSpec: '{{ python_build.version }}'
+              addToPath: true
+{% endif %}
+{% if build.language == 'dotnet' %}
+
+          - task: UseDotNet@2
+            displayName: 'Use .NET SDK'
+            inputs:
+              packageType: 'sdk'
+              version: '8.x'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore Dependencies'
+            inputs:
+              command: 'restore'
+              projects: '**/*.csproj'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Build Application'
+            inputs:
+              command: 'build'
+              projects: '**/*.csproj'
+              arguments: '--configuration Release --no-restore'
+{% endif %}
+{% for stage in stages %}
+{% if stage.id not in ['checkout', 'docker-build', 'publish-artifacts'] %}
+
+          - script: |
+{% for command in stage.commands %}
+              {{ command }}
+{% endfor %}
+            displayName: '{{ stage.name }}'
+{% endif %}
+{% endfor %}
+
+          - task: AzureCLI@2
+            displayName: 'Build and Push to ACR'
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Building and pushing image to ACR..."
+                az acr build \
+                  --registry $(acrName) \
+                  --image $(imageRepository):$(tag) \
+                  --image $(imageRepository):latest \
+                  --file $(dockerfilePath) \
+                  .
+{% for env in azure_container_apps.deployment_environments %}
+
+  - stage: Deploy{{ env | capitalize }}
+    displayName: 'Deploy to {{ env | capitalize }}'
+{% if loop.first %}
+    dependsOn: Build
+{% else %}
+    dependsOn: Deploy{{ azure_container_apps.deployment_environments[loop.index0 - 1] | capitalize }}
+{% endif %}
+    condition: succeeded()
+    jobs:
+      - job: DeployToContainerApps
+        displayName: 'Deploy to Azure Container Apps - {{ env | upper }}'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Deploy to Container Apps - {{ env | upper }}'
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Deploying to Azure Container Apps - {{ env | upper }}"
+                
+                ENV_NAME="{{ env }}"
+                RESOURCE_GROUP="$(resourceGroup)"
+                REGION="$(location)"
+                ACR_SERVER="$(acrLoginServer)"
+                IMAGE_TAG="$(tag)"
+                ACA_ENV="$(containerAppEnvironmentPrefix)-${ENV_NAME}"
+                SERVICE_NAME="${ENV_NAME}-$(containerAppName)"
+                IMAGE="${ACR_SERVER}/$(imageRepository):${IMAGE_TAG}"
+                LOG_ANALYTICS_WORKSPACE="wega-log-analytics-${ENV_NAME}"
+                
+                echo "ACR: $ACR_SERVER"
+                echo "Image: $IMAGE"
+                echo "Container App: $SERVICE_NAME"
+                echo "Environment: $ACA_ENV"
+                
+                # Get Log Analytics workspace if exists
+                LOG_ANALYTICS_ID=$(az monitor log-analytics workspace show \
+                  --resource-group "$RESOURCE_GROUP" \
+                  --workspace-name "$LOG_ANALYTICS_WORKSPACE" \
+                  --query customerId -o tsv 2>/dev/null || echo "")
+                LOG_ANALYTICS_KEY=$(az monitor log-analytics workspace get-shared-keys \
+                  --resource-group "$RESOURCE_GROUP" \
+                  --workspace-name "$LOG_ANALYTICS_WORKSPACE" \
+                  --query primarySharedKey -o tsv 2>/dev/null || echo "")
+                
+                # Check if Container Apps environment exists
+                ENV_EXISTS=$(az containerapp env show \
+                  --name "$ACA_ENV" \
+                  --resource-group "$RESOURCE_GROUP" \
+                  --query "name" -o tsv 2>/dev/null || echo "")
+                
+                if [ -z "$ENV_EXISTS" ]; then
+                  echo "Creating environment $ACA_ENV..."
+                  if [ -n "$LOG_ANALYTICS_ID" ] && [ -n "$LOG_ANALYTICS_KEY" ]; then
+                    az containerapp env create \
+                      --name "$ACA_ENV" \
+                      --resource-group "$RESOURCE_GROUP" \
+                      --location "$REGION" \
+                      --logs-workspace-id "$LOG_ANALYTICS_ID" \
+                      --logs-workspace-key "$LOG_ANALYTICS_KEY" || true
+                  else
+                    az containerapp env create \
+                      --name "$ACA_ENV" \
+                      --resource-group "$RESOURCE_GROUP" \
+                      --location "$REGION" \
+                      --logs-destination none || true
+                  fi
+                fi
+                
+                # Wait for environment to be ready
+                echo "Waiting for environment to be ready..."
+                for i in 1 2 3 4 5 6 7 8 9 10; do
+                  ENV_STATUS=$(az containerapp env show \
+                    --name "$ACA_ENV" \
+                    --resource-group "$RESOURCE_GROUP" \
+                    --query "properties.provisioningState" -o tsv 2>/dev/null || echo "NotFound")
+                  echo "Environment status: $ENV_STATUS (attempt $i/10)"
+                  if [ "$ENV_STATUS" = "Succeeded" ]; then
+                    echo "Environment is ready!"
+                    break
+                  elif [ "$ENV_STATUS" = "Failed" ]; then
+                    echo "Environment provisioning failed!"
+                    exit 1
+                  fi
+                  sleep 30
+                done
+                
+                # Deploy Container App
+                APP_EXISTS=$(az containerapp show \
+                  --name "$SERVICE_NAME" \
+                  --resource-group "$RESOURCE_GROUP" \
+                  --query "name" -o tsv 2>/dev/null || echo "")
+                
+                if [ -z "$APP_EXISTS" ]; then
+                  echo "Creating new Container App: $SERVICE_NAME"
+                  az containerapp create \
+                    --name "$SERVICE_NAME" \
+                    --resource-group "$RESOURCE_GROUP" \
+                    --environment "$ACA_ENV" \
+                    --image "$IMAGE" \
+                    --target-port 8080 \
+                    --ingress external \
+                    --registry-server "$ACR_SERVER" \
+                    --cpu 0.5 \
+                    --memory 1.0Gi \
+                    --min-replicas 1 \
+                    --max-replicas 3
+                else
+                  echo "Updating existing Container App: $SERVICE_NAME"
+                  az containerapp update \
+                    --name "$SERVICE_NAME" \
+                    --resource-group "$RESOURCE_GROUP" \
+                    --image "$IMAGE"
+                fi
+                
+                # Get the FQDN
+                FQDN=$(az containerapp show \
+                  --name "$SERVICE_NAME" \
+                  --resource-group "$RESOURCE_GROUP" \
+                  --query "properties.configuration.ingress.fqdn" -o tsv)
+                
+                echo "{{ env | upper }} deployment completed"
+                echo "Application deployed to: https://$FQDN"
+{% endfor %}
+{% else %}
+trigger:
+{% if triggers.push %}
+  - {{ branch }}
+{% else %}
+  - none
+{% endif %}
+
+pr:
+{% if triggers.pull_request %}
+  - {{ branch }}
+{% else %}
+  - none
+{% endif %}
+
+name: {{ pipeline_name }}
+{% if image.enabled or rollout.enabled %}
+
+variables:
+{% if image.enabled %}
+  imageRepository: {{ image.repository }}
+  primaryImageTag: {{ image.primary_tag }}
+  imageTags: "{{ image.tags | join(',') }}"
+{% endif %}
+{% if rollout.enabled %}
+  deploymentTarget: {{ rollout.deployment_target }}
+  deploymentEnvironment: {{ rollout.environment }}
+{% endif %}
+{% endif %}
+
+stages:
+{% for stage in stages %}
+- stage: {{ stage.id }}
+  displayName: {{ stage.name }}
+{% if not loop.first %}
+  dependsOn: {{ stages[loop.index0 - 1].id }}
+{% endif %}
+  jobs:
+    - job: {{ stage.id | replace('-', '_') }}
+      pool:
+        vmImage: ubuntu-latest
+      steps:
+        - checkout: self
+{% if python_build %}
+        - task: UsePythonVersion@0
+          inputs:
+            versionSpec: '{{ python_build.version }}'
+            addToPath: true
+          displayName: Use Python {{ python_build.version }}
+{% endif %}
+        - script: |
+{% for command in stage.commands %}
+            {{ command }}
+{% endfor %}
+          displayName: {{ stage.name }}
+{% endfor %}
+{% if rollout.enabled and approvals.enabled %}
+- stage: approval_gate
+  displayName: Approval Gate
+  dependsOn: {{ stages[-1].id }}
+  jobs:
+    - job: wait_for_approval
+      displayName: Await release approval
+      pool: server
+      timeoutInMinutes: {{ approvals.timeout_minutes }}
+      steps:
+        - task: ManualValidation@0
+          timeoutInMinutes: {{ approvals.timeout_minutes }}
+          inputs:
+            notifyUsers: |
+{% for approver in approvals.approvers %}
+              {{ approver }}
+{% endfor %}
+            instructions: 'Approve rollout to {{ rollout.environment }} for {{ rollout.deployment_target }}.'
+            onTimeout: reject
+{% endif %}
+{% if rollout.enabled %}
+{% for region in rollout.regions %}
+- stage: rollout_{{ region.identifier }}
+  displayName: Rollout {{ region.name }}
+  dependsOn: {{ 'approval_gate' if approvals.enabled else stages[-1].id }}
+  jobs:
+    - deployment: deploy_{{ region.identifier }}
+      displayName: Deploy {{ region.name }}
+      environment: {{ region.environment_name }}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - checkout: self
+              - script: |
+                  {{ region.command }}
+                displayName: Deploy {{ region.name }}
+{% endfor %}
+{% endif %}
+{% endif %}

@@ -1,0 +1,5 @@
+.claude-user/*
+!.claude-user/skills/
+!.claude-user/plugins/
+.claude-user/plugins/marketplaces/
+.DS_Store

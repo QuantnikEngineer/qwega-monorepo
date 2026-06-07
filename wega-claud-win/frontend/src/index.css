@@ -1,0 +1,337 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* WEGA — cyber-terminal theme tokens
+   Phosphor-green/cyan on near-black. All-mono. Dark default; .light flips. */
+
+:root {
+  color-scheme: dark;
+
+  /* Phosphor */
+  --w-phosphor: #00ff9c;
+  --w-phosphor-dim: #00c47a;
+  --w-phosphor-glow: rgba(0, 255, 156, 0.18);
+  --w-phosphor-veil: rgba(0, 255, 156, 0.06);
+
+  /* Secondary signals */
+  --w-cyan: #00e5ff;
+  --w-cyan-dim: #00a8b9;
+  --w-magenta: #ff2e88;
+  --w-amber: #ffb000;
+  --w-red: #ff4757;
+  --w-violet: #b388ff;
+
+  /* Surfaces — dark */
+  --w-bg-0: #04070a;
+  --w-bg-1: #080c10;
+  --w-bg-2: #0d1318;
+  --w-bg-3: #131a20;
+  --w-bg-4: #1a242c;
+  --w-line: rgba(140, 200, 180, 0.10);
+  --w-line-strong: rgba(0, 255, 156, 0.22);
+  --w-line-hot: rgba(0, 255, 156, 0.45);
+
+  /* Type */
+  --w-text-0: #e6fff4;
+  --w-text-1: #9bbfb1;
+  --w-text-2: #5d7a70;
+  --w-text-3: #3a4e47;
+
+  /* Syntax */
+  --w-syn-key: var(--w-magenta);
+  --w-syn-str: var(--w-phosphor);
+  --w-syn-num: var(--w-amber);
+  --w-syn-com: var(--w-text-3);
+  --w-syn-fn:  var(--w-cyan);
+  --w-syn-var: #ffe8a8;
+
+  /* Misc */
+  --w-radius: 4px;
+  --w-radius-lg: 8px;
+  --w-mono: "JetBrains Mono", "Fira Code", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --w-display: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* ===== THEME: cyber-light ===== */
+.theme-cyber-light, .light.theme-cyber-light {
+  color-scheme: light;
+  --w-phosphor: #00875a;
+  --w-phosphor-dim: #00a86b;
+  --w-phosphor-glow: rgba(0, 168, 107, 0.15);
+  --w-phosphor-veil: rgba(0, 168, 107, 0.05);
+
+  --w-cyan: #007a9c;
+  --w-cyan-dim: #00bcd4;
+  --w-magenta: #c8005c;
+  --w-amber: #b87100;
+  --w-red: #d32f2f;
+  --w-violet: #6a3dc5;
+
+  --w-bg-0: #eef2ec;
+  --w-bg-1: #f6f8f4;
+  --w-bg-2: #ffffff;
+  --w-bg-3: #f0f4ee;
+  --w-bg-4: #e6ede4;
+  --w-line: rgba(0, 60, 40, 0.10);
+  --w-line-strong: rgba(0, 135, 90, 0.30);
+  --w-line-hot: rgba(0, 135, 90, 0.55);
+
+  --w-text-0: #051210;
+  --w-text-1: #44574f;
+  --w-text-2: #708278;
+  --w-text-3: #9aaca3;
+
+  --w-syn-key: #b00060;
+  --w-syn-str: #007a3a;
+  --w-syn-num: #b87100;
+  --w-syn-com: #889589;
+  --w-syn-fn:  #006788;
+  --w-syn-var: #6a4700;
+}
+
+/* ===== THEME: sunset-dark (plum + coral) ===== */
+.theme-sunset-dark {
+  color-scheme: dark;
+  /* Remap accent to coral */
+  --w-phosphor: #ff6a3d;
+  --w-phosphor-dim: #d94e2e;
+  --w-phosphor-glow: rgba(255, 106, 61, 0.35);
+  --w-phosphor-veil: rgba(255, 106, 61, 0.10);
+
+  --w-cyan: #5ec8ff;
+  --w-cyan-dim: #3aa8ef;
+  --w-magenta: #ff5ec4;
+  --w-amber: #ffb800;
+  --w-red: #ff5474;
+  --w-violet: #b388ff;
+
+  /* Deep plum surfaces */
+  --w-bg-0: #110620;
+  --w-bg-1: #1a0c2a;
+  --w-bg-2: #231337;
+  --w-bg-3: #2d1b44;
+  --w-bg-4: #3a2454;
+
+  --w-line: rgba(255, 200, 220, 0.08);
+  --w-line-strong: rgba(255, 106, 61, 0.30);
+  --w-line-hot: rgba(255, 106, 61, 0.55);
+
+  --w-text-0: #fff2e8;
+  --w-text-1: #cdb3c8;
+  --w-text-2: #8a7790;
+  --w-text-3: #574862;
+
+  --w-syn-key: #ff5ec4;
+  --w-syn-str: #3dd49a;
+  --w-syn-num: #ffb800;
+  --w-syn-com: #574862;
+  --w-syn-fn:  #5ec8ff;
+  --w-syn-var: #ffd4a0;
+
+  --w-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+}
+
+/* ===== THEME: sunset-light (cream + coral) ===== */
+.theme-sunset-light {
+  color-scheme: light;
+  --w-phosphor: #d94e2e;
+  --w-phosphor-dim: #b03d22;
+  --w-phosphor-glow: rgba(217, 78, 46, 0.25);
+  --w-phosphor-veil: rgba(217, 78, 46, 0.08);
+
+  --w-cyan: #0078a8;
+  --w-cyan-dim: #00a8c4;
+  --w-magenta: #c8005c;
+  --w-amber: #b87100;
+  --w-red: #d32f2f;
+  --w-violet: #6a3dc5;
+
+  --w-bg-0: #fbf6ee;
+  --w-bg-1: #ffffff;
+  --w-bg-2: #fdf9f1;
+  --w-bg-3: #f6efe3;
+  --w-bg-4: #ede5d6;
+
+  --w-line: rgba(80, 40, 60, 0.10);
+  --w-line-strong: rgba(217, 78, 46, 0.35);
+  --w-line-hot: rgba(217, 78, 46, 0.55);
+
+  --w-text-0: #1a0e22;
+  --w-text-1: #4a3a48;
+  --w-text-2: #786272;
+  --w-text-3: #a6929b;
+
+  --w-syn-key: #c8005c;
+  --w-syn-str: #007a4d;
+  --w-syn-num: #b87100;
+  --w-syn-com: #9c8a98;
+  --w-syn-fn:  #0078a8;
+  --w-syn-var: #6a4700;
+
+  --w-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+}
+
+/* ===== Aurora glow for Sunset themes ===== */
+body.theme-sunset-dark::before, body.theme-sunset-light::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+  background:
+    radial-gradient(60% 60% at 12% 8%,  rgba(255, 106, 61, 0.45) 0%, transparent 60%),
+    radial-gradient(60% 60% at 90% 92%, rgba(179, 136, 255, 0.35) 0%, transparent 60%);
+  filter: blur(40px);
+}
+body.theme-sunset-light::before {
+  background:
+    radial-gradient(60% 60% at 12% 8%,  rgba(217, 78, 46, 0.22) 0%, transparent 60%),
+    radial-gradient(60% 60% at 90% 92%, rgba(106, 61, 197, 0.16) 0%, transparent 60%);
+}
+
+body.theme-sunset-dark .app-root, body.theme-sunset-light .app-root {
+  position: relative;
+  z-index: 1;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+  background: var(--w-bg-0);
+  color: var(--w-text-0);
+  font-family: var(--w-mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+button, input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button { cursor: pointer; }
+
+/* Wipro logo (white-on-transparent) — invert in light theme */
+.light .w-wipro-mark { filter: invert(1); }
+
+/* Scanline overlay */
+.w-scan { position: relative; }
+.w-scan::before {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 255, 156, 0.025) 2px,
+    rgba(0, 255, 156, 0.025) 3px
+  );
+  mix-blend-mode: screen;
+  z-index: 50;
+}
+.light .w-scan::before { display: none; }
+
+/* CRT vignette */
+.w-vignette { position: relative; }
+.w-vignette::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.45) 100%);
+  z-index: 49;
+}
+.light .w-vignette::after { background: radial-gradient(ellipse at center, transparent 70%, rgba(0,30,20,0.06) 100%); }
+
+/* Caret blink */
+@keyframes w-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+.w-caret {
+  display: inline-block;
+  width: 0.55ch;
+  height: 1em;
+  background: var(--w-phosphor);
+  vertical-align: text-bottom;
+  margin-left: 2px;
+  animation: w-blink 1.05s steps(1) infinite;
+  box-shadow: 0 0 8px var(--w-phosphor-glow);
+}
+
+.w-glow { text-shadow: 0 0 8px var(--w-phosphor-glow), 0 0 1px var(--w-phosphor-glow); }
+
+.w-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+@keyframes w-spin { to { transform: rotate(360deg); } }
+.w-spin { display: inline-block; animation: w-spin 1.4s linear infinite; transform-origin: center; }
+
+@keyframes w-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.w-pulse { animation: w-pulse 1.4s ease-in-out infinite; }
+
+/* Animated glow + breathing background for the orchestrator's currently-
+   running phase row. More visible than a static veil — readers' eyes land
+   on it immediately. */
+@keyframes w-row-glow {
+  0%, 100% { background: color-mix(in srgb, var(--w-phosphor) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--w-phosphor) 25%, transparent); }
+  50%      { background: color-mix(in srgb, var(--w-phosphor) 22%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--w-phosphor) 60%, transparent), 0 0 12px color-mix(in srgb, var(--w-phosphor) 35%, transparent); }
+}
+.w-row-glow { animation: w-row-glow 1.6s ease-in-out infinite; }
+
+@keyframes w-marquee { 0% { background-position: 0 0; } 100% { background-position: 24px 0; } }
+.w-marquee {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--w-phosphor) 0 4px,
+    transparent 4px 12px
+  );
+  animation: w-marquee 1.2s linear infinite;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--w-line); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--w-line-strong); }
+
+/* Dialog */
+dialog {
+  background: var(--w-bg-2);
+  color: var(--w-text-0);
+  border: 1px solid var(--w-line-strong);
+  border-radius: var(--w-radius);
+  padding: 20px;
+  min-width: 360px;
+  font-family: var(--w-mono);
+}
+dialog::backdrop { background: rgba(0,0,0,0.6); }
+
+/* Form controls inside dialogs and panels — minimal terminal style */
+input[type="text"], input[type="number"], input[type="email"], textarea, select {
+  background: var(--w-bg-2);
+  border: 1px solid var(--w-line);
+  color: var(--w-text-0);
+  padding: 6px 10px;
+  border-radius: var(--w-radius);
+  outline: none;
+}
+input[type="text"]:focus, input[type="number"]:focus, textarea:focus, select:focus {
+  border-color: var(--w-phosphor);
+  box-shadow: 0 0 0 1px var(--w-phosphor-glow);
+}
+
+textarea { font-family: var(--w-mono); resize: vertical; }
+
+/* App root layout */
+.app-root {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: var(--w-bg-0);
+  color: var(--w-text-0);
+  overflow: hidden;
+}

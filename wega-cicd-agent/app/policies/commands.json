@@ -1,0 +1,83 @@
+{
+  "languageCommands": {
+    "node": {
+      "npm": {
+        "restore": ["npm ci"],
+        "build": ["npm run build"],
+        "unit-test": ["npm test -- --ci"],
+        "lint": ["npm run lint"]
+      },
+      "yarn": {
+        "restore": ["yarn install --immutable"],
+        "build": ["yarn build"],
+        "unit-test": ["yarn test --ci"],
+        "lint": ["yarn lint"]
+      },
+      "pnpm": {
+        "restore": ["pnpm install --frozen-lockfile"],
+        "build": ["pnpm build"],
+        "unit-test": ["pnpm test -- --ci"],
+        "lint": ["pnpm lint"]
+      }
+    },
+    "python": {
+      "poetry": {
+        "restore": ["poetry install --no-interaction"],
+        "build": ["poetry build"],
+        "unit-test": ["poetry run pytest"],
+        "lint": ["poetry run ruff check ."]
+      },
+      "pipenv": {
+        "restore": ["pipenv install --dev"],
+        "build": ["python -m compileall ."],
+        "unit-test": ["pipenv run pytest"],
+        "lint": ["pipenv run ruff check ."]
+      },
+      "pip": {
+        "restore": ["python -m pip install -r requirements.txt"],
+        "build": ["python -m compileall ."],
+        "unit-test": ["pytest"],
+        "lint": ["ruff check ."]
+      }
+    },
+    "java": {
+      "gradle": {
+        "restore": ["./gradlew dependencies"],
+        "build": ["./gradlew build -x test"],
+        "unit-test": ["./gradlew test"],
+        "lint": ["./gradlew check"]
+      },
+      "maven": {
+        "restore": ["mvn -B -ntp dependency:go-offline"],
+        "build": ["mvn -B -ntp clean package -DskipTests"],
+        "unit-test": ["mvn -B test"],
+        "lint": ["mvn -B checkstyle:check"]
+      }
+    },
+    "dotnet": {
+      "dotnet": {
+        "restore": ["dotnet restore"],
+        "build": ["dotnet build --configuration Release --no-restore"],
+        "unit-test": ["dotnet test --configuration Release --no-build"],
+        "lint": ["dotnet format --verify-no-changes"]
+      }
+    },
+    "go": {
+      "go": {
+        "restore": ["go mod download"],
+        "build": ["go build ./..."],
+        "unit-test": ["go test ./..."],
+        "lint": ["golangci-lint run"]
+      }
+    }
+  },
+  "toolCommands": {
+    "sonarqube": ["sonar-scanner"],
+    "semgrep": ["semgrep ci"],
+    "gitleaks": ["gitleaks detect --redact"],
+    "snyk": ["snyk test --severity-threshold=high"],
+    "terraform": ["terraform fmt -check", "terraform validate"],
+    "helm": ["helm lint charts/app"],
+    "notifications": ["echo \"Notify owning team with pipeline results\""]
+  }
+}

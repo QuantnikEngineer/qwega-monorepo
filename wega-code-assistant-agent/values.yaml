@@ -1,0 +1,15 @@
+
+# values.yaml
+appName: <+pipeline.variables.repoName>
+image: <+artifacts.primary.image>
+replicas: 1
+containerPort: 80
+nodeEnv: production
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+serviceType: LoadBalancer

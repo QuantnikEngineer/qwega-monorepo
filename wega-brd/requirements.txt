@@ -1,0 +1,17 @@
+google-adk
+fastapi
+python-docx
+uvicorn
+uvicorn[standard]
+python-dotenv
+pydantic
+pdfplumber
+python-multipart
+requests
+mcp-atlassian
+pytest
+pytest-asyncio
+httpx
+pywin32; sys_platform == "win32"
+olefile
+# npm install docx

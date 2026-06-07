@@ -1,0 +1,1 @@
+export { RolesCapabilitiesMatrix } from './RolesCapabilitiesMatrix';

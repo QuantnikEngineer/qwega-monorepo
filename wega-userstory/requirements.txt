@@ -1,0 +1,9 @@
+google-adk==1.31.1
+fastapi
+uvicorn
+python-multipart      
+python-docx           
+pypdf                 
+pydantic
+python-dotenv
+requests

@@ -1,0 +1,69 @@
+workflow:
+  rules:
+{% if triggers.push %}
+    - if: '$CI_COMMIT_BRANCH == "{{ branch }}"'
+{% endif %}
+{% if triggers.pull_request %}
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+{% endif %}
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - when: never
+
+{% if image.enabled or rollout.enabled %}
+variables:
+{% if image.enabled %}
+  IMAGE_REPOSITORY: "{{ image.repository }}"
+  PRIMARY_IMAGE_TAG: "{{ image.primary_tag }}"
+  IMAGE_TAGS: "{{ image.tags | join(',') }}"
+{% endif %}
+{% if rollout.enabled %}
+  DEPLOYMENT_TARGET: "{{ rollout.deployment_target }}"
+  DEPLOYMENT_ENVIRONMENT: "{{ rollout.environment }}"
+{% endif %}
+
+{% endif %}
+stages:
+{% for stage in stages %}
+  - {{ stage.id }}
+{% endfor %}
+{% if rollout.enabled and approvals.enabled %}
+  - approval-gate
+{% endif %}
+{% if rollout.enabled %}
+  - rollout
+{% endif %}
+
+{% for stage in stages %}
+{{ stage.id }}:
+  stage: {{ stage.id }}
+  script:
+{% for command in stage.commands %}
+    - {{ command }}
+{% endfor %}
+
+{% endfor %}
+{% if rollout.enabled and approvals.enabled %}
+approval_gate:
+  stage: approval-gate
+  when: manual
+  allow_failure: false
+  environment:
+    name: {{ rollout.environment }}
+  script:
+    - echo "Approve rollout to {{ rollout.environment }} for {{ rollout.deployment_target }}"
+    - echo "Required approvers or groups: {{ approvals.approvers | join(', ') }}"
+
+{% endif %}
+{% if rollout.enabled %}
+{% for region in rollout.regions %}
+rollout_{{ region.identifier }}:
+  stage: rollout
+  needs:
+    - {{ 'approval_gate' if approvals.enabled else stages[-1].id }}
+  environment:
+    name: {{ region.environment_name }}
+  script:
+    - {{ region.command }}
+
+{% endfor %}
+{% endif %}

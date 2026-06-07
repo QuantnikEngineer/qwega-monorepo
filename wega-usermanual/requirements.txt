@@ -1,0 +1,15 @@
+google-adk==1.31.1
+python-docx
+markdown
+requests
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+reportlab
+pdfplumber
+pandas
+openpyxl
+msal
+Pillow
+python-pptx

@@ -1,0 +1,224 @@
+rules:
+  - name: identity_access
+    phase: security
+    weight: 2.0
+    patterns:
+      - authentication
+      - authorization
+      - oauth
+      - openid
+      - sso
+      - single sign-on
+      - jwt
+      - mfa
+      - 2fa
+      - rbac
+      - abac
+      - access control
+      - least privilege
+      - session management
+
+  - name: secrets_encryption
+    phase: security
+    weight: 2.0
+    patterns:
+      - credential
+      - api key
+      - client secret
+      - token
+      - secret rotation
+      - kms
+      - hsm
+      - encryption
+      - encryption at rest
+      - encryption in transit
+      - tls
+      - ssl
+      - certificate
+      - key management
+
+  - name: threat_risk
+    phase: security
+    weight: 2.0
+    patterns:
+      - vulnerability
+      - cve
+      - owasp
+      - penetration test
+      - threat model
+      - attack surface
+      - security review
+      - risk assessment
+      - security control
+      - firewall
+      - zero trust
+      - data breach
+
+  - name: privacy_regulatory
+    phase: security
+    weight: 2.0
+    patterns:
+      - gdpr
+      - hipaa
+      - pci dss
+      - sox
+      - iso 27001
+      - compliance
+      - audit
+      - regulatory
+      - pii
+      - phi
+      - personal data
+      - data privacy
+      - data protection
+      - data retention
+      - data residency
+      - right to erasure
+      - consent management
+      - data classification
+
+  - name: business_requirements
+    phase: requirements
+    weight: 1.8
+    patterns:
+      - business requirement
+      - functional requirement
+      - product requirement
+      - system requirement
+      - user story
+      - use case
+      - acceptance criteria
+      - business rule
+      - workflow
+      - stakeholder
+      - scope
+      - out of scope
+      - constraint
+      - assumption
+      - brd
+      - frd
+
+  - name: non_functional_requirements
+    phase: requirements
+    weight: 1.8
+    patterns:
+      - non-functional
+      - nfr
+      - availability
+      - latency
+      - throughput
+      - scalability
+      - capacity
+      - sla
+      - slo
+      - error budget
+      - rto
+      - rpo
+      - performance benchmark
+      - resilience
+      - reliability
+
+  - name: architecture_interfaces
+    phase: design
+    weight: 1.7
+    patterns:
+      - architecture
+      - system design
+      - high level design
+      - low level design
+      - hld
+      - lld
+      - component diagram
+      - sequence diagram
+      - interface design
+      - api contract
+      - api specification
+      - openapi
+      - integration contract
+      - event schema
+
+  - name: data_design
+    phase: design
+    weight: 1.7
+    patterns:
+      - data model
+      - schema
+      - erd
+      - database design
+      - class diagram
+      - data flow
+      - mapping
+      - lineage
+      - entity relationship
+      - canonical model
+
+  - name: business_logic_spec
+    phase: development
+    weight: 1.7
+    patterns:
+      - domain logic
+      - business logic
+      - validation rule
+      - decision table
+      - calculation rule
+      - eligibility rule
+      - pricing rule
+      - workflow rule
+      - state transition
+      - service contract
+      - function spec
+      - technical specification
+
+  - name: testing_release_gate
+    phase: testing
+    weight: 1.5
+    patterns:
+      - test strategy
+      - test plan
+      - test case
+      - unit test
+      - integration test
+      - regression
+      - uat
+      - acceptance test
+      - coverage
+      - traceability
+      - release criteria
+      - qa signoff
+
+  - name: deployment_infrastructure
+    phase: deployment
+    weight: 1.5
+    patterns:
+      - ci/cd
+      - pipeline
+      - deployment
+      - release plan
+      - rollback
+      - kubernetes
+      - terraform
+      - infrastructure as code
+      - iac
+      - helm
+      - config map
+      - environment variable
+      - secret management
+      - production
+      - staging
+
+  - name: operations_resilience
+    phase: deployment
+    weight: 1.5
+    patterns:
+      - runbook
+      - playbook
+      - incident response
+      - disaster recovery
+      - backup
+      - restore
+      - failover
+      - monitoring
+      - observability
+      - alerting
+      - postmortem
+      - operational readiness

@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agent-documentation-ingress
+  namespace: wega-wipro-buildai
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - app.wega.wipro.com
+      secretName: wega-platform-dev-ap-south-1-build-ai-v2
+  rules:
+    - host: app.wega.wipro.com
+      http:
+        paths:
+          - path: /documentation(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: agent-documentation-service
+                port:
+                  number: 80

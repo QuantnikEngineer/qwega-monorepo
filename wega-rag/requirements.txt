@@ -1,0 +1,58 @@
+# NOTE: pyproject.toml is the source of truth for dependencies.
+# This file exists only for environments that cannot use uv/pip with pyproject.toml.
+# Run: pip install -r requirements.txt
+#
+# To regenerate from pyproject.toml:  uv pip compile pyproject.toml -o requirements.txt
+
+# API
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+pydantic-settings
+
+# Database
+sqlalchemy[asyncio]
+asyncpg
+psycopg[binary]
+
+# Document parsing
+pymupdf
+python-docx
+openpyxl
+pandas
+
+# Vertex AI
+vertexai
+
+# Chunking
+langchain
+langchain-text-splitters
+
+# Vector DB
+qdrant-client
+
+# Reranking
+sentence-transformers
+
+# Web scraping
+beautifulsoup4
+lxml
+
+# Observability
+structlog
+
+# Utils
+python-dotenv
+aiofiles
+httpx
+pyyaml
+
+# Guardrails / PII
+guardrails-ai
+presidio-analyzer
+presidio-anonymizer
+spacy
+better-profanity
+scikit-learn
+

@@ -1,0 +1,123 @@
+{% set pipeline_identifier = pipeline_name | replace('-', '_') | replace(' ', '_') | replace('.', '_') %}
+{% set runtime_mode = (harness.runtime if harness is defined else 'cloud') %}
+{% set connector_ref = (harness.connector_ref if harness is defined else 'account.harnessImage') %}
+{% set code_connector_ref = (harness.code_connector_ref if harness is defined else connector_ref) %}
+{% set harness_namespace = (harness.namespace if harness is defined else 'harness-build') %}
+{% set org_identifier = (harness.org_identifier if harness is defined else 'default') %}
+{% set project_identifier = (harness.project_identifier if harness is defined else 'default') %}
+{% set repo_name = (harness.repo_name if harness is defined else (repository_url or pipeline_name)) %}
+pipeline:
+  name: {{ pipeline_name }}
+  identifier: {{ pipeline_identifier }}
+  projectIdentifier: {{ project_identifier }}
+  orgIdentifier: {{ org_identifier }}
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: {{ code_connector_ref }}
+        repoName: {{ repo_name }}
+        build: <+input>
+  stages:
+{% for stage in stages %}
+{% set stage_identifier = stage.id | replace('-', '_') | replace(' ', '_') | replace('.', '_') %}
+    - stage:
+        name: {{ stage.name }}
+        identifier: {{ stage_identifier }}
+        type: CI
+        spec:
+          cloneCodebase: true
+{% if runtime_mode == 'kubernetes-direct' %}
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: {{ connector_ref }}
+              namespace: {{ harness_namespace }}
+              automountServiceAccountToken: true
+              os: Linux
+{% else %}
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+{% endif %}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: {{ stage.name }}
+                  identifier: {{ stage_identifier }}_step
+                  spec:
+                    shell: Sh
+                    command: |
+{% for command in stage.commands %}
+                      {{ command }}
+{% endfor %}
+{% endfor %}
+{% if rollout.enabled and approvals.enabled %}
+    - stage:
+        name: Approval Gate
+        identifier: approval_gate
+        description: Await manual approval before regional rollout.
+        type: Approval
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Approval
+                  identifier: approval
+                  type: HarnessApproval
+                  timeout: {{ approvals.timeout_minutes }}m
+                  spec:
+                    approvalMessage: |
+                      Approve rollout to {{ rollout.environment }} for {{ rollout.deployment_target }}.
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      minimumCount: 1
+                      disallowPipelineExecutor: false
+                      userGroups:
+{% for approver in approvals.approvers %}
+                        - {{ approver }}
+{% endfor %}
+                    approverInputs: []
+        failureStrategies: []
+{% endif %}
+{% if rollout.enabled %}
+{% for region in rollout.regions %}
+{% set region_identifier = region.identifier | replace('-', '_') %}
+    - stage:
+        name: Rollout {{ region.name }}
+        identifier: rollout_{{ region_identifier }}
+        type: CI
+        spec:
+          cloneCodebase: false
+{% if runtime_mode == 'kubernetes-direct' %}
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: {{ connector_ref }}
+              namespace: {{ harness_namespace }}
+              automountServiceAccountToken: true
+              os: Linux
+{% else %}
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+{% endif %}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Deploy {{ region.name }}
+                  identifier: rollout_{{ region_identifier }}_step
+                  spec:
+                    shell: Sh
+                    command: |
+                      {{ region.command }}
+{% endfor %}
+{% endif %}

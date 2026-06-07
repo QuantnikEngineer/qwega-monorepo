@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "jira": {
+      "type": "stdio",
+      "command": "/usr/local/bin/mcp-atlassian",
+      "args": [],
+      "env": {
+        "JIRA_URL": "${JIRA_URL}",
+        "JIRA_USERNAME": "${JIRA_EMAIL}",
+        "JIRA_API_TOKEN": "${JIRA_API_TOKEN}",
+        "CONFLUENCE_URL": "${JIRA_URL}/wiki",
+        "CONFLUENCE_USERNAME": "${JIRA_EMAIL}",
+        "CONFLUENCE_API_TOKEN": "${JIRA_API_TOKEN}"
+      },
+      "disabled": false
+    },
+    "ado": {
+      "type": "stdio",
+      "command": "/usr/local/bin/npx",
+      "args": ["-y", "@azure-devops/mcp", "${ADO_ORG}"],
+      "env": {
+        "ADO_ORGANIZATION_URL": "${ADO_ORGANIZATION_URL}",
+        "AZURE_DEVOPS_EXT_PAT": "${ADO_PAT}"
+      },
+      "disabled": false
+    }
+  }
+}

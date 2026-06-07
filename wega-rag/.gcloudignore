@@ -1,0 +1,17 @@
+# Override .gitignore for Cloud Build — we need .env in the image
+.git
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.so
+*.dll
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+.venv/
+venv/
+qdrant_storage/
+uploads/

@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-documentation-deployment
+  namespace: wega-wipro-buildai
+  labels:
+    app: agent-documentation-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agent-documentation-app
+  template:
+    metadata:
+      labels:
+        app: agent-documentation-app
+    spec:
+      serviceAccountName: secrets-access-sa
+      nodeSelector:
+        node-role: app
+      tolerations:
+        - key: "app"
+          value: "build-ai"
+          effect: "NoSchedule"
+      containers:
+      # Frontend Container
+      - name: frontend
+        image: 145748108830.dkr.ecr.ap-south-1.amazonaws.com/requirement-agent-frontend:v4
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: BUILD_AI_FRONTEND_URL
+          value: "https://app.wega.wipro.com"
+        - name: CLOUD_PROVIDER
+          value: "aws"
+        # Comma-separated list of project IDs that have full access to all repositories
+        - name: REACT_APP_FULL_ACCESS_PROJECTS
+          value: "allprojects,demo,odido-main,odido-dev"
+        # Items per page for pagination in Confluence/SharePoint file listings
+        - name: REACT_APP_ITEMS_PER_PAGE
+          value: "5"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+            
+      # Backend Container - Binarized
+      - name: backend
+        image: 145748108830.dkr.ecr.ap-south-1.amazonaws.com/requirement-agent-backend:v4
+        ports:
+        - containerPort: 8002
+          name: api
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: BUILDAI_BACKEND_API_URL
+          value: "https://app.wega.wipro.com"
+        - name: CLOUD_PROVIDER
+          value: "aws"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: CODE_CONTEXT_URL
+          value: "https://odidobuildai-agents.ai.wipro-intelligence.com/rag"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-documentation-service
+  namespace: wega-wipro-buildai
+  labels:
+    app: agent-documentation-app
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: frontend
+  - port: 8002
+    targetPort: 8002
+    protocol: TCP
+    name: backend
+  selector:
+    app: agent-documentation-app

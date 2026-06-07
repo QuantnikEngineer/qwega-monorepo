@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pytest_cache/
+
+# Virtual envs
+venv/
+
+# Secrets – never bake into image
+
+
+# uv lockfile must be present for reproducible builds
+!uv.lock
+
+# Build / dist / cache
+build/
+dist/
+*.egg-info/
+.cache/
+.env
+
+# Editor/OS
+.vscode/
+.idea/
+.DS_Store
+
+# Outputs (if you generate locally)
+outputs/

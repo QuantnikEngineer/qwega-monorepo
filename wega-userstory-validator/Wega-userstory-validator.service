@@ -1,0 +1,18 @@
+[Unit]
+Description=Wega Userstory Validator GCP Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/Wega-userstory-validator
+Environment="PATH=/opt/Wega-userstory-validator/venv/bin"
+EnvironmentFile=/opt/Wega-userstory-validator/.env
+ExecStart=/opt/Wega-userstory-validator/venv/bin/python /opt/Wega-userstory-validator/server.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

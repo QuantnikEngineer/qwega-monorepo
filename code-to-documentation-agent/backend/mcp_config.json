@@ -1,0 +1,8 @@
+{
+    "functional-testing-mcp": {
+            "transport": "streamable_http",
+            "url": "http://127.0.0.1:8007/mcp",
+            "enabled": true,
+            "description": "Functional Testing Agent MCP server for test automation and validation"
+        }
+}

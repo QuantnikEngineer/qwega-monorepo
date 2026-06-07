@@ -1,0 +1,41 @@
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+# Runtime dependencies used by droid CLI and git-backed repo operations
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl ca-certificates git bash \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install app dependencies first for better layer caching
+COPY package*.json ./
+RUN npm ci
+
+# Copy application source
+COPY . .
+
+RUN apt update
+
+RUN apt install -y nodejs npm 
+
+RUN apt update
+
+RUN apt install -y python3
+
+RUN apt install -y python3-pip
+
+# Install Factory Droid CLI used by server-side chat execution
+RUN curl -fsSL https://app.factory.ai/cli | sh
+ENV PATH="/root/.local/bin:${PATH}"
+COPY mcp.json /root/.factory/mcp.json
+
+# Ensure default repo discovery has at least one folder under ./repos
+RUN mkdir -p /app/repos && ln -sfn /app /app/repos/code-assist
+
+ENV NODE_ENV=production \
+    HOST=0.0.0.0 \
+    PORT=4300
+
+EXPOSE 4300
+
+CMD ["npm", "run", "serve"]

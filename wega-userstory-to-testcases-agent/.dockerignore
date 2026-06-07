@@ -1,0 +1,56 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.venv
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation (not needed in container)
+*.md
+README.md
+
+# Environment - never bake secrets into the image; injected at runtime by CI
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+tests/
+test.py
+*.test.py
+
+# Temporary files
+*.tmp
+tmp/
+temp/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/

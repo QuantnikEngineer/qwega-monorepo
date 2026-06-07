@@ -1,0 +1,244 @@
+[
+  {
+    "story_id": "HIST-001",
+    "epic_title": "Jira Hygiene",
+    "title": "Rename export column label",
+    "description": "Update the CSV export so the sprint column uses the approved label in downstream PMO reports.",
+    "acceptance_criteria": [
+      {"criterion": "CSV header shows Sprint Name instead of Sprint"},
+      {"criterion": "Existing export order remains unchanged"}
+    ],
+    "story_points": 1,
+    "labels": ["reporting"],
+    "components": ["export-service"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-01-08T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-002",
+    "epic_title": "Jira Hygiene",
+    "title": "Add helper text to estimate form",
+    "description": "Show a short helper line under the estimate input to remind users about Fibonacci sizing.",
+    "acceptance_criteria": [
+      {"criterion": "Helper text appears below the estimate field"},
+      {"criterion": "No server-side changes are required"}
+    ],
+    "story_points": 1,
+    "labels": ["ui"],
+    "components": ["planning-ui"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-01-12T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-003",
+    "epic_title": "Planning Controls",
+    "title": "Display story owner badge",
+    "description": "Show the assigned owner badge on the planning board card using the existing directory data.",
+    "acceptance_criteria": [
+      {"criterion": "Each story card shows the owner display name badge"},
+      {"criterion": "If no owner exists the badge is hidden"},
+      {"criterion": "Board load time does not regress"}
+    ],
+    "story_points": 2,
+    "labels": ["ui"],
+    "components": ["planning-ui"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-01-15T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-004",
+    "epic_title": "Planning Controls",
+    "title": "Expose release tag in list view",
+    "description": "Add the release tag field to the story table and keep existing sort behavior intact.",
+    "acceptance_criteria": [
+      {"criterion": "Release tag is visible in the story table"},
+      {"criterion": "Users can still sort by title and status"}
+    ],
+    "story_points": 2,
+    "labels": ["ui", "reporting"],
+    "components": ["planning-ui"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-01-18T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-005",
+    "epic_title": "Audit Controls",
+    "title": "Audit estimate changes",
+    "description": "Write an audit record whenever a story point estimate is changed from the planning board.",
+    "acceptance_criteria": [
+      {"criterion": "Audit event captures old estimate, new estimate, user, and timestamp"},
+      {"criterion": "Audit records are viewable from the admin report"},
+      {"criterion": "Failed audit writes do not block the UI save path"}
+    ],
+    "story_points": 3,
+    "labels": ["audit", "backend"],
+    "components": ["planning-api"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-01-22T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-006",
+    "epic_title": "Access Views",
+    "title": "Restrict velocity dashboard by role",
+    "description": "Ensure only delivery managers and product leads can access the velocity dashboard endpoint and UI route.",
+    "acceptance_criteria": [
+      {"criterion": "Unauthorized users receive a forbidden response from the API"},
+      {"criterion": "Hidden navigation entry is removed for unauthorized users"},
+      {"criterion": "Access events are logged for review"}
+    ],
+    "story_points": 3,
+    "labels": ["security", "ui", "backend"],
+    "components": ["planning-api", "planning-ui"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-01-25T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-007",
+    "epic_title": "Reporting Workspace",
+    "title": "Export estimate variance dashboard",
+    "description": "Provide an estimate variance dashboard with filters by release and allow CSV export for PMO review.",
+    "acceptance_criteria": [
+      {"criterion": "Dashboard displays variance by release and squad"},
+      {"criterion": "CSV export matches the filtered dataset"},
+      {"criterion": "Filters include release and team"}
+    ],
+    "story_points": 5,
+    "labels": ["reporting", "ui", "backend"],
+    "components": ["reporting-api", "planning-ui"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-02-01T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-008",
+    "epic_title": "Partner Sync",
+    "title": "Retry failed webhook deliveries",
+    "description": "Add retry handling and operator visibility for failed outbound estimate webhooks to an external partner system.",
+    "acceptance_criteria": [
+      {"criterion": "Failed webhook deliveries are retried with exponential backoff"},
+      {"criterion": "Operators can view retry status and terminal failures"},
+      {"criterion": "Dead-lettered events can be replayed manually"}
+    ],
+    "story_points": 5,
+    "labels": ["integration", "async"],
+    "components": ["notification-service"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-02-05T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-009",
+    "epic_title": "Identity Hardening",
+    "title": "Enable OAuth for planning admin API",
+    "description": "Protect planning admin endpoints with OAuth client credentials and role-based permission mapping.",
+    "acceptance_criteria": [
+      {"criterion": "Admin API requires a valid OAuth token"},
+      {"criterion": "Role mapping controls access to protected routes"},
+      {"criterion": "Token validation failures are logged securely"}
+    ],
+    "story_points": 8,
+    "labels": ["security", "backend"],
+    "components": ["planning-api", "identity"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-02-09T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-010",
+    "epic_title": "Bulk Planning",
+    "title": "Bulk assign stories to release train",
+    "description": "Allow planners to bulk assign selected stories to a release train with validation, audit logging, and undo support.",
+    "acceptance_criteria": [
+      {"criterion": "Users can select multiple stories and assign them to a release train"},
+      {"criterion": "Validation prevents incompatible release assignments"},
+      {"criterion": "Bulk updates are captured in the audit trail"},
+      {"criterion": "Users can undo the bulk assignment within the current session"}
+    ],
+    "story_points": 8,
+    "labels": ["ui", "backend", "audit"],
+    "components": ["planning-ui", "planning-api"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-02-12T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-011",
+    "epic_title": "Approval Workflow",
+    "title": "Introduce estimate approval workflow",
+    "description": "Create a multi-step estimate approval workflow with reviewer assignment, email notifications, reminders, and final status synchronization to Jira.",
+    "acceptance_criteria": [
+      {"criterion": "Estimates move through draft, submitted, approved, and rejected states"},
+      {"criterion": "Reviewers receive notifications on submission and reminder cadence"},
+      {"criterion": "Final approval status is synchronized back to Jira"},
+      {"criterion": "Workflow actions are fully audited"}
+    ],
+    "story_points": 13,
+    "labels": ["workflow", "integration", "audit"],
+    "components": ["planning-api", "notification-service", "jira-sync"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-02-16T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-012",
+    "epic_title": "Data Reliability",
+    "title": "Migrate estimate history schema",
+    "description": "Extend the estimate history schema, backfill prior records, and keep reporting and export APIs compatible during rollout.",
+    "acceptance_criteria": [
+      {"criterion": "New schema fields are added without data loss"},
+      {"criterion": "Historical estimate records are backfilled"},
+      {"criterion": "Existing reports continue to work during the migration"},
+      {"criterion": "Rollback instructions are documented and tested"}
+    ],
+    "story_points": 13,
+    "labels": ["database", "migration", "reporting"],
+    "components": ["planning-api", "reporting-api", "database"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-02-20T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-013",
+    "epic_title": "Estimator Platform",
+    "title": "Create standalone estimation microservice",
+    "description": "Build a new estimation microservice that accepts story lists, computes explainable Fibonacci estimates, persists audit logs, and exposes secure APIs for planning orchestrators.",
+    "acceptance_criteria": [
+      {"criterion": "Service exposes authenticated estimate endpoints"},
+      {"criterion": "Every estimation request is audit logged"},
+      {"criterion": "Responses include rationale and similar story references"},
+      {"criterion": "Health and sample payload endpoints are available for local testing"},
+      {"criterion": "Operational metrics are emitted for monitoring"}
+    ],
+    "story_points": 21,
+    "labels": ["microservice", "security", "audit", "api"],
+    "components": ["estimator-api", "audit-service"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-02-24T10:00:00Z"
+  },
+  {
+    "story_id": "HIST-014",
+    "epic_title": "Estimator Platform",
+    "title": "Synchronize estimates across Jira and Azure DevOps",
+    "description": "Design a secure integration path that propagates approved estimates to Jira and Azure DevOps, handles retries, stores reconciliation status, and alerts operators on sync drift.",
+    "acceptance_criteria": [
+      {"criterion": "Approved estimates are sent to both Jira and Azure DevOps"},
+      {"criterion": "Transient sync failures retry automatically"},
+      {"criterion": "Reconciliation status is stored for each story"},
+      {"criterion": "Operators are alerted when sync drift persists"},
+      {"criterion": "Secrets are managed without exposing credentials in logs"}
+    ],
+    "story_points": 21,
+    "labels": ["integration", "security", "async"],
+    "components": ["jira-sync", "ado-sync", "notification-service"],
+    "team_id": "planning-core",
+    "source": "synthetic",
+    "completed_at": "2026-02-27T10:00:00Z"
+  }
+]

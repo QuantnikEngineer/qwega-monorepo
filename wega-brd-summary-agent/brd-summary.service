@@ -1,0 +1,26 @@
+[Unit]
+Description=BRD Summary Agent - AI-powered BRD summarization service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/brd-agent-gcp
+Environment="PATH=/opt/brd-agent-gcp/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PORT=8080"
+ExecStart=/opt/brd-agent-gcp/venv/bin/python /opt/brd-agent-gcp/brd_analyzer.py
+Restart=always
+RestartSec=10
+
+# Environment variables (set these as needed)
+# Environment="GOOGLE_CLOUD_API_KEY=your-api-key"
+# Environment="CONFLUENCE_EMAIL=your-email@company.com"
+# Environment="CONFLUENCE_API_TOKEN=your-token"
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=brd-summary-agent
+
+[Install]
+WantedBy=multi-user.target

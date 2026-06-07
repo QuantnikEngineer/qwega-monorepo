@@ -1,0 +1,32 @@
+# Python
+venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Version control
+.git/
+.gitignore
+
+# IDE / OS
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# Docs / misc
+README.md
+*.md
+
+# Tests (not needed in production image)
+tests/
+.pytest_cache/
+*.log
+.env
+env.yaml

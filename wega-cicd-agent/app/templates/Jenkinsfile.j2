@@ -1,0 +1,44 @@
+pipeline {
+  agent any
+
+  options {
+    timeout(time: {{ request.execution.timeoutMinutes }}, unit: 'MINUTES')
+  }
+
+  stages {
+{% for stage in stages %}
+    stage('{{ stage.name }}') {
+      steps {
+{% if stage.id == 'checkout' %}
+        checkout scm
+{% endif %}
+        sh '''
+{% for command in stage.commands %}
+{{ command }}
+{% endfor %}
+        '''
+      }
+    }
+{% endfor %}
+{% if approvals.enabled %}
+    stage('Approval Gate') {
+      steps {
+        timeout(time: {{ approvals.timeout_minutes }}, unit: 'MINUTES') {
+          input message: 'Approve rollout to {{ rollout.environment }} for {{ rollout.deployment_target }}.', ok: 'Approve'
+        }
+      }
+    }
+{% endif %}
+{% if rollout.enabled %}
+{% for region in rollout.regions %}
+    stage('Rollout {{ region.name }}') {
+      steps {
+        sh '''
+{{ region.command }}
+        '''
+      }
+    }
+{% endfor %}
+{% endif %}
+  }
+}

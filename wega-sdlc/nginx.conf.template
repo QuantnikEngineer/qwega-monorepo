@@ -1,0 +1,101 @@
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Allow larger request bodies (BRD generation can send ~5MB+ payloads)
+    client_max_body_size 50M;
+
+    # Enable gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Gateway-owned backend routes
+    location /api/ {
+        proxy_pass ${GATEWAY_UPSTREAM};
+        proxy_http_version 1.1;
+
+        # Required for SSE / long-running streaming responses (e.g. User Manual ~2 min)
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_connect_timeout 60s;
+
+        # SSE keep-alive: suppress "Connection: close" so the stream stays open
+        proxy_set_header Connection '';
+        proxy_set_header X-Accel-Buffering no;
+    }
+
+    location /auth/ {
+        proxy_pass ${GATEWAY_UPSTREAM};
+        proxy_http_version 1.1;
+    }
+
+    # Tool proxy — explicit allowlist (security boundary).
+    # Passthrough: /{tool}/ → gateway as-is
+    location ~ ^/(jira|confluence|github|qtest|sonarqube|sharepoint|harness-pipelines|harness-repo|snyk|trivy)/ {
+        proxy_pass ${GATEWAY_UPSTREAM};
+        proxy_http_version 1.1;
+    }
+
+    # Legacy frontend prefix rewrite: /{tool}-api/path → /{tool}/path
+    location ~ ^/(?<tool>jira|confluence|github|qtest|sonarqube|sharepoint|harness-pipelines|harness-repo|snyk|trivy)-api/ {
+        rewrite ^/[^/]+-api/(.*)$ /$tool/$1 break;
+        proxy_pass ${GATEWAY_UPSTREAM};
+        proxy_http_version 1.1;
+    }
+
+    # Health check — local response so Cloud Run health checks pass
+    # independently of gateway availability
+    location = /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+
+    # Xray Cloud API — external service, NOT routed through gateway
+    location /xray-api/ {
+        rewrite ^/xray-api/(.*)$ /$1 break;
+
+        proxy_pass https://xray.cloud.getxray.app;
+        proxy_ssl_server_name on;
+        proxy_set_header Host xray.cloud.getxray.app;
+        proxy_set_header Content-Type "application/json";
+
+        # CORS headers for the response
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Authorization, Content-Type, Accept" always;
+
+        # Handle preflight OPTIONS requests
+        if ($request_method = 'OPTIONS') {
+            add_header Access-Control-Allow-Origin "*";
+            add_header Access-Control-Allow-Methods "GET, POST, OPTIONS";
+            add_header Access-Control-Allow-Headers "Authorization, Content-Type, Accept";
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+    }
+
+    # Cache static assets
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # SPA routing - serve index.html for all routes
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+}

@@ -1,0 +1,251 @@
+{
+  "platforms": [
+    {
+      "value": "azure-devops",
+      "label": "Azure DevOps",
+      "template": "azure-pipelines.yml.j2",
+      "artifactPath": "azure-pipelines.yml"
+    },
+    {
+      "value": "github-actions",
+      "label": "GitHub Actions",
+      "template": "workflow.yml.j2",
+      "artifactPath": ".github/workflows/ci.yml"
+    },
+    {
+      "value": "gitlab-ci",
+      "label": "GitLab CI",
+      "template": ".gitlab-ci.yml.j2",
+      "artifactPath": ".gitlab-ci.yml"
+    },
+    {
+      "value": "harness",
+      "label": "Harness",
+      "template": "harness-pipeline.yml.j2",
+      "artifactPath": "harness/pipeline.yaml"
+    },
+    {
+      "value": "jenkins",
+      "label": "Jenkins",
+      "template": "Jenkinsfile.j2",
+      "artifactPath": "Jenkinsfile"
+    }
+  ],
+  "languages": [
+    {
+      "value": "node",
+      "label": "Node.js",
+      "tools": ["npm", "yarn", "pnpm"],
+      "artifactTypes": ["none", "container", "package"]
+    },
+    {
+      "value": "python",
+      "label": "Python",
+      "tools": ["poetry", "pip", "pipenv"],
+      "artifactTypes": ["none", "container", "package"]
+    },
+    {
+      "value": "java",
+      "label": "Java",
+      "tools": ["maven", "gradle"],
+      "artifactTypes": ["binary", "container"]
+    },
+    {
+      "value": "dotnet",
+      "label": ".NET",
+      "tools": ["dotnet"],
+      "artifactTypes": ["binary", "container", "package"]
+    },
+    {
+      "value": "go",
+      "label": "Go",
+      "tools": ["go"],
+      "artifactTypes": ["binary", "container"]
+    }
+  ],
+  "deploymentTargets": [
+    {"value": "none", "label": "No deployment handoff"},
+    {"value": "kubernetes", "label": "Kubernetes"},
+    {"value": "vm", "label": "Virtual Machine"},
+    {"value": "serverless", "label": "Serverless"},
+    {"value": "container-apps", "label": "Container Apps"}
+  ],
+  "stages": [
+    {
+      "id": "checkout",
+      "name": "Checkout",
+      "description": "Load repository source.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    },
+    {
+      "id": "restore",
+      "name": "Restore Dependencies",
+      "description": "Install or restore dependencies.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    },
+    {
+      "id": "build",
+      "name": "Build",
+      "description": "Compile or package the application.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    },
+    {
+      "id": "unit-test",
+      "name": "Unit Test",
+      "description": "Run fast validation tests.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    },
+    {
+      "id": "lint",
+      "name": "Lint",
+      "description": "Apply style and rule checks.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    },
+    {
+      "id": "static-analysis",
+      "name": "Static Analysis",
+      "description": "Run quality and code analysis checks.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    },
+    {
+      "id": "secret-scan",
+      "name": "Secret Scan",
+      "description": "Scan the repository for secrets.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    },
+    {
+      "id": "dependency-scan",
+      "name": "Dependency Scan",
+      "description": "Scan third-party libraries.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    },
+    {
+      "id": "iac-validate",
+      "name": "IaC Validate",
+      "description": "Validate infrastructure definitions.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    },
+    {
+      "id": "helm-package",
+      "name": "Helm Lint",
+      "description": "Validate Helm packaging.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    },
+    {
+      "id": "docker-build",
+      "name": "Docker Build",
+      "description": "Build the container image.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    },
+    {
+      "id": "publish-artifacts",
+      "name": "Publish Artifacts",
+      "description": "Push versioned output to a registry.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    },
+    {
+      "id": "notifications",
+      "name": "Notifications",
+      "description": "Notify stakeholders of the run result.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"]
+    }
+  ],
+  "tools": [
+    {
+      "id": "unit-tests",
+      "name": "Unit Tests",
+      "category": "Build and Validation",
+      "description": "Execute fast application tests.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"],
+      "stages": ["unit-test"]
+    },
+    {
+      "id": "linting",
+      "name": "Linting",
+      "category": "Build and Validation",
+      "description": "Apply static lint rules.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"],
+      "stages": ["lint"]
+    },
+    {
+      "id": "coverage",
+      "name": "Coverage Gate",
+      "category": "Build and Validation",
+      "description": "Enforce minimum coverage.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"],
+      "stages": ["unit-test"]
+    },
+    {
+      "id": "sonarqube",
+      "name": "SonarQube",
+      "category": "Quality and Security",
+      "description": "Centralized static analysis.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"],
+      "stages": ["static-analysis"]
+    },
+    {
+      "id": "semgrep",
+      "name": "Semgrep",
+      "category": "Quality and Security",
+      "description": "Lightweight static analysis.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"],
+      "stages": ["static-analysis"]
+    },
+    {
+      "id": "gitleaks",
+      "name": "Gitleaks",
+      "category": "Quality and Security",
+      "description": "Secret scanning.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"],
+      "stages": ["secret-scan"]
+    },
+    {
+      "id": "snyk",
+      "name": "Snyk",
+      "category": "Quality and Security",
+      "description": "Dependency vulnerability scanning.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"],
+      "stages": ["dependency-scan"]
+    },
+    {
+      "id": "terraform",
+      "name": "Terraform Validate",
+      "category": "Packaging and Delivery",
+      "description": "Infrastructure validation.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"],
+      "stages": ["iac-validate"]
+    },
+    {
+      "id": "helm",
+      "name": "Helm Lint",
+      "category": "Packaging and Delivery",
+      "description": "Helm chart validation.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"],
+      "stages": ["helm-package"]
+    },
+    {
+      "id": "docker-build",
+      "name": "Docker Build",
+      "category": "Packaging and Delivery",
+      "description": "Container build stage.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"],
+      "stages": ["docker-build"]
+    },
+    {
+      "id": "artifact-publish",
+      "name": "Artifact Publish",
+      "category": "Packaging and Delivery",
+      "description": "Publish build artifacts.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"],
+      "stages": ["publish-artifacts"]
+    },
+    {
+      "id": "notifications",
+      "name": "Notifications",
+      "category": "Collaboration",
+      "description": "Send notifications after execution.",
+      "platforms": ["azure-devops", "github-actions", "gitlab-ci", "harness"],
+      "stages": ["notifications"]
+    }
+  ]
+}

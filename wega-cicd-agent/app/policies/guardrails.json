@@ -1,0 +1,28 @@
+{
+  "requiredStages": ["checkout", "restore", "build"],
+  "stageRules": [
+    {
+      "stageId": "docker-build",
+      "artifactTypes": ["container"],
+      "message": "Stage 'docker-build' requires build.artifactType 'container'."
+    },
+    {
+      "stageId": "publish-artifacts",
+      "artifactTypes": ["binary", "container", "package"],
+      "message": "Stage 'publish-artifacts' requires an artifact type of binary, container, or package."
+    },
+    {
+      "stageId": "helm-package",
+      "deploymentTargets": ["kubernetes"],
+      "message": "Stage 'helm-package' requires target.deploymentTarget 'kubernetes'."
+    }
+  ],
+  "stageToolRequirements": {
+    "static-analysis": ["sonarqube", "semgrep"],
+    "secret-scan": ["gitleaks"],
+    "dependency-scan": ["snyk"],
+    "iac-validate": ["terraform"],
+    "helm-package": ["helm"],
+    "notifications": ["notifications"]
+  }
+}

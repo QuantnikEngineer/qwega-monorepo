@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment / secrets
+.env
+
+# Eval outputs
+results_*.json
+
+# Temp scripts
+test_traces.py
+inspect_traces.py
+debug_results.py
+
+# Streamlit runtime logs
+streamlit.out.log
+streamlit.err.log
+
+# Office lock files
+~$*
+
+# OS
+Thumbs.db
+.DS_Store

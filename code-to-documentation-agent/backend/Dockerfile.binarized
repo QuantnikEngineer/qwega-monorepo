@@ -1,0 +1,73 @@
+## Builder stage -------------------------------------------------------------
+FROM python:3.11-slim AS builder
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /build
+
+# Build tooling for PyInstaller and optional UPX compression
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        gcc \
+        libc-dev \
+        upx-ucl \
+        patchelf \
+        file \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies along with PyInstaller
+COPY requirements.txt ./
+
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir pyinstaller
+
+# Copy application source (spec file ships alongside code)
+COPY . .
+
+# Compile the backend into a single-file executable using the spec recipe
+RUN pyinstaller agent-documentation-backend.spec --clean --noconfirm
+
+# Verify the binary was created successfully
+RUN ls -lh /build/dist/agent-documentation-backend/ && \
+    test -f /build/dist/agent-documentation-backend/agent-documentation-backend
+
+# Optional: Compress with UPX (skip if it causes issues with PyInstaller)
+# Note: UPX can sometimes corrupt PyInstaller executables, so we skip it
+# RUN upx --best --lzma /build/dist/agent-documentation-backend/agent-documentation-backend || true
+
+
+## Runtime stage -------------------------------------------------------------
+FROM python:3.11-slim AS runtime
+
+WORKDIR /app
+
+# Libraries required at runtime for the frozen binary
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libstdc++6 \
+    libffi8 \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r appuser && useradd -r -g appuser appuser
+
+# Copy the compiled binary and its _internal library bundle
+COPY --from=builder /build/dist/agent-documentation-backend/ /app/
+
+# Create documents directory for runtime storage
+RUN mkdir -p /app/documents && chown -R appuser:appuser /app/documents
+
+# Harden permissions and drop root
+RUN chmod +x /app/agent-documentation-backend && chown -R appuser:appuser /app
+
+USER appuser
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    ENVIRONMENT=production \
+    LOG_LEVEL=INFO \
+    PORT=8000
+
+EXPOSE 8000
+
+ENTRYPOINT ["./agent-documentation-backend"]

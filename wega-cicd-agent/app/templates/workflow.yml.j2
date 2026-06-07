@@ -1,0 +1,74 @@
+name: {{ pipeline_name }}
+
+on:
+{% if triggers.push %}
+  push:
+    branches: [{{ branch }}]
+{% endif %}
+{% if triggers.pull_request %}
+  pull_request:
+    branches: [{{ branch }}]
+{% endif %}
+{% if not triggers.push and not triggers.pull_request %}
+  workflow_dispatch:
+{% endif %}
+{% if image.enabled or rollout.enabled %}
+
+env:
+{% if image.enabled %}
+  IMAGE_REPOSITORY: {{ image.repository }}
+  PRIMARY_IMAGE_TAG: {{ image.primary_tag }}
+  IMAGE_TAGS: {{ image.tags | join(',') }}
+{% endif %}
+{% if rollout.enabled %}
+  DEPLOYMENT_TARGET: {{ rollout.deployment_target }}
+  DEPLOYMENT_ENVIRONMENT: {{ rollout.environment }}
+{% endif %}
+{% endif %}
+
+jobs:
+{% for stage in stages %}
+  {{ stage.id | replace('-', '_') }}:
+    runs-on: ubuntu-latest
+{% if not loop.first %}
+    needs: [{{ stages[loop.index0 - 1].id | replace('-', '_') }}]
+{% endif %}
+    steps:
+      - uses: actions/checkout@v4
+      - name: {{ stage.name }}
+        shell: bash
+        run: |
+{% for command in stage.commands %}
+          {{ command }}
+{% endfor %}
+{% endfor %}
+{% if rollout.enabled and approvals.enabled %}
+  approval_gate:
+    name: Approval Gate
+    needs: [{{ stages[-1].id | replace('-', '_') }}]
+    runs-on: ubuntu-latest
+    environment:
+      name: {{ rollout.environment }}-approval
+    steps:
+      - name: Await protected environment approval
+        shell: bash
+        run: |
+          echo "Approval granted for {{ rollout.environment }} regional rollout"
+          echo "Required approvers or groups: {{ approvals.approvers | join(', ') }}"
+{% endif %}
+{% if rollout.enabled %}
+{% for region in rollout.regions %}
+  rollout_{{ region.identifier }}:
+    name: Rollout {{ region.name }}
+    needs: [{{ 'approval_gate' if approvals.enabled else stages[-1].id | replace('-', '_') }}]
+    runs-on: ubuntu-latest
+    environment:
+      name: {{ region.environment_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy {{ region.name }}
+        shell: bash
+        run: |
+          {{ region.command }}
+{% endfor %}
+{% endif %}

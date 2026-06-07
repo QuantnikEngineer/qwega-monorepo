@@ -1,0 +1,59 @@
+version: "3.11"
+
+services:
+
+  # ── Critical Postgres DB ──────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: sdlc_kb_postgres
+    environment:
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB:       sdlc_kb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_critical_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sdlc_kb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Non-Critical Postgres DB ──────────────────────────────────────────────
+  # Completely isolated instance — can be dropped or replaced with a
+  # text-file store without touching the critical DB.
+  postgres_nc:
+    image: postgres:16-alpine
+    container_name: sdlc_kb_postgres_nc
+    environment:
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB:       sdlc_kb_non_critical
+    ports:
+      - "5433:5432"    # host:container — avoids port clash with critical DB
+    volumes:
+      - postgres_nc_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sdlc_kb_non_critical"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Qdrant (both collections live here — sdlc_kb + sdlc_kb_non_critical) ──
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: sdlc_kb_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+volumes:
+  postgres_critical_data:
+  postgres_nc_data:
+  qdrant_data:

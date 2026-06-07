@@ -1,0 +1,130 @@
+# Kubernetes Deployment for Wega Userstory Validator
+# Deploy to GKE with: kubectl apply -f k8s/
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wega-userstory-validator
+  labels:
+    app: wega-userstory-validator
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: wega-userstory-validator
+  template:
+    metadata:
+      labels:
+        app: wega-userstory-validator
+        version: v1
+    spec:
+      serviceAccountName: wega-validator-ksa
+      containers:
+        - name: wega-userstory-validator
+          # Replace PROJECT_ID with your actual project ID
+          image: us-central1-docker.pkg.dev/digital-rig-poc/wega-userstory-validator-repo/wega-userstory-validator:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "8080"
+            - name: GOOGLE_CLOUD_PROJECT
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONFLUENCE_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: wega-validator-secrets
+                  key: CONFLUENCE_EMAIL
+            - name: CONFLUENCE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: wega-validator-secrets
+                  key: CONFLUENCE_API_TOKEN
+            - name: GOOGLE_CLOUD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wega-validator-secrets
+                  key: GOOGLE_CLOUD_API_KEY
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wega-validator-service
+  labels:
+    app: wega-userstory-validator
+spec:
+  type: LoadBalancer
+  selector:
+    app: wega-userstory-validator
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: wega-validator-ksa
+  annotations:
+    # Replace PROJECT_ID with your actual project ID
+    iam.gke.io/gcp-service-account: wega-validator-sa@digital-rig-poc.iam.gserviceaccount.com
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: wega-validator-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: wega-userstory-validator
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

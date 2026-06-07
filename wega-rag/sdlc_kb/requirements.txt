@@ -1,0 +1,54 @@
+# API
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+pydantic-settings
+
+# Database
+sqlalchemy[asyncio]
+asyncpg
+alembic
+psycopg
+psycopg[binary]
+
+# Document parsing
+pymupdf
+python-docx
+openpyxl
+pandas
+
+# Vertex AI
+vertexai
+
+# Chunking
+langchain
+langchain-text-splitters
+
+# Vector DB
+qdrant-client
+
+# Guardrails
+guardrails-ai
+
+# Web scraping
+beautifulsoup4
+lxml
+
+# Observability
+structlog
+
+# Utils
+python-dotenv
+aiofiles
+httpx
+pyyaml
+
+#Guardrails
+presidio-analyzer
+presidio-anonymizer
+spacy
+guardrails-ai
+better-profanity 
+scikit-learn
+

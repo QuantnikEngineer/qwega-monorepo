@@ -1,0 +1,25 @@
+# Claude Code per-user state — keep only user-managed skills/plugins in the repo
+.claude-user/*
+!.claude-user/skills/
+!.claude-user/plugins/
+.claude-user/plugins/marketplaces/
+
+# Runtime data — must never be committed. Each deployment owns its own DB,
+# project workspaces, uploads, and service logs. Committing them would mean
+# every `git pull` on the server overwrites the live state with whatever was
+# in the last commit, which has happened before and wiped a freshly-created
+# project. Keep this allow-list narrow.
+backend/data/*
+!backend/data/.gitkeep
+
+# Build artifacts
+frontend/dist/
+frontend/node_modules/
+backend/node_modules/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,10 @@
+{
+  "session_id": "test_sess_001",
+  "message": "Context Enrichment",
+  "explicit_intent": "context_enrich_ingest",
+  "context": {
+    "source": "website",
+    "project_name": "my-project",
+    "urls": ["https://www.atlassian.com/software/jira"]
+  }
+}

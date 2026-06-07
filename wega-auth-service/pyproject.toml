@@ -1,0 +1,15 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+markers = [
+    "unit: Unit tests (no database, no HTTP)",
+    "integration: Integration tests (requires test database and HTTP client)",
+    "migration: Migration tests validating Alembic schema evolution",
+    "slow: Slow tests (skip with -m 'not slow')",
+]

@@ -1,0 +1,32 @@
+# FastAPI and Server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# Pydantic
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# LangGraph & LangChain
+langgraph>=0.0.40
+langchain-core>=0.1.0
+langchain-openai>=0.0.5
+langchain-google-vertexai>=1.0.0
+
+# Google AI
+google-genai>=0.3.0
+
+# HTTP Client
+httpx>=0.25.0
+certifi>=2023.11.17
+google-auth>=2.23.0
+
+# Logging
+structlog>=23.2.0
+
+# Redis (optional, for production)
+redis>=5.0.0
+
+# Development
+pytest>=7.4.0
+pytest-asyncio>=0.21.0

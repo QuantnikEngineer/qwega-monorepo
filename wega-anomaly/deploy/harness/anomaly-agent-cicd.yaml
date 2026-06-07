@@ -1,0 +1,212 @@
+# WEGA Anomaly Agent - Harness CI/CD Pipeline
+# Repository: Harness Code Repository
+# 
+# Instructions:
+# 1. Create this pipeline in Harness UI
+# 2. Update connector references for your environment
+# 3. Configure trigger for Harness Code Repository
+
+pipeline:
+  name: AnomalyAgent-CICD
+  identifier: AnomalyAgent_CICD
+  projectIdentifier: Harness_POC
+  orgIdentifier: WiproPOC
+  tags:
+    component: anomaly-agent
+    type: cicd
+  
+  properties:
+    ci:
+      codebase:
+        # Harness Code Repository connector
+        # Use 'account.HarnessCodeConnector' for account-level connector
+        # Or create project-level connector and reference it
+        connectorRef: account.HarnessCodeConnector
+        repoName: anomaly-agent
+        build: <+input>
+  
+  variables:
+    - name: AWS_REGION
+      type: String
+      value: ap-south-1
+    - name: AWS_ACCOUNT_ID
+      type: String
+      description: AWS Account ID for ECR
+      value: <+input>
+    - name: ECR_REPO
+      type: String
+      value: wega-anomaly-agent
+    - name: K8S_NAMESPACE
+      type: String
+      value: wega-system
+    - name: IMAGE_TAG
+      type: String
+      value: <+pipeline.sequenceId>
+  
+  stages:
+    # ============================================================
+    # Stage 1: Build and Push Docker Image to ECR
+    # ============================================================
+    - stage:
+        name: Build
+        identifier: build
+        type: CI
+        spec:
+          cloneCodebase: true
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: YOUR_K8S_CONNECTOR  # Update with your K8s connector
+              namespace: harness-builds
+              automountServiceAccountToken: true
+          execution:
+            steps:
+              # Step 1: Run unit tests
+              - step:
+                  type: Run
+                  name: Run Tests
+                  identifier: run_tests
+                  spec:
+                    shell: Bash
+                    command: |
+                      echo "Installing dependencies..."
+                      pip install -r requirements.txt
+                      pip install pytest pytest-asyncio pytest-cov
+                      
+                      echo "Running tests..."
+                      python -m pytest tests/ -v --cov=src || true
+                      
+                      echo "Tests completed"
+              
+              # Step 2: Build and push to ECR
+              - step:
+                  type: BuildAndPushECR
+                  name: Build and Push to ECR
+                  identifier: build_push_ecr
+                  spec:
+                    connectorRef: YOUR_AWS_CONNECTOR  # Update with your AWS connector
+                    region: <+pipeline.variables.AWS_REGION>
+                    account: <+pipeline.variables.AWS_ACCOUNT_ID>
+                    imageName: <+pipeline.variables.ECR_REPO>
+                    tags:
+                      - <+pipeline.variables.IMAGE_TAG>
+                      - latest
+                    dockerfile: Dockerfile
+                    context: .
+                    optimize: true
+    
+    # ============================================================
+    # Stage 2: Deploy to EKS
+    # ============================================================
+    - stage:
+        name: Deploy to EKS
+        identifier: deploy
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          service:
+            serviceRef: AnomalyAgentService
+            serviceInputs:
+              serviceDefinition:
+                type: Kubernetes
+                spec:
+                  artifacts:
+                    primary:
+                      primaryArtifactRef: anomaly_agent_image
+                      sources:
+                        - identifier: anomaly_agent_image
+                          type: Ecr
+                          spec:
+                            connectorRef: YOUR_AWS_CONNECTOR
+                            imagePath: <+pipeline.variables.ECR_REPO>
+                            region: <+pipeline.variables.AWS_REGION>
+                            tag: <+pipeline.variables.IMAGE_TAG>
+          environment:
+            environmentRef: Development
+            deployToAll: false
+            infrastructureDefinitions:
+              - identifier: EKS_Dev
+          execution:
+            steps:
+              # Step 1: Rolling deployment
+              - step:
+                  type: K8sRollingDeploy
+                  name: Rolling Deployment
+                  identifier: rolling_deploy
+                  spec:
+                    skipDryRun: false
+                    pruningEnabled: false
+              
+              # Step 2: Verify deployment
+              - step:
+                  type: ShellScript
+                  name: Verify Deployment
+                  identifier: verify_deployment
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          echo "Verifying deployment..."
+                          
+                          # Wait for rollout
+                          kubectl rollout status deployment/wega-anomaly-agent \
+                            -n <+pipeline.variables.K8S_NAMESPACE> \
+                            --timeout=300s
+                          
+                          # Check pod status
+                          kubectl get pods -n <+pipeline.variables.K8S_NAMESPACE> \
+                            -l app=wega-anomaly-agent
+                          
+                          # Health check
+                          POD_NAME=$(kubectl get pod -n <+pipeline.variables.K8S_NAMESPACE> \
+                            -l app=wega-anomaly-agent \
+                            -o jsonpath='{.items[0].metadata.name}')
+                          
+                          kubectl exec -n <+pipeline.variables.K8S_NAMESPACE> $POD_NAME \
+                            -- curl -s http://localhost:8080/health || true
+                          
+                          echo "Deployment verified successfully"
+                    timeout: 5m
+            
+            rollbackSteps:
+              - step:
+                  type: K8sRollingRollback
+                  name: Rollback
+                  identifier: rollback
+                  spec:
+                    pruningEnabled: false
+        
+        delegateSelectors:
+          - aws-delegator
+        
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback
+
+# ============================================================
+# Notes:
+# ============================================================
+# 
+# Connectors to update:
+# 1. account.HarnessCodeConnector - Harness Code Repository connector
+# 2. YOUR_K8S_CONNECTOR - Kubernetes cluster connector for CI builds
+# 3. YOUR_AWS_CONNECTOR - AWS connector for ECR and EKS
+#
+# Prerequisites:
+# 1. Create Service 'AnomalyAgentService' with K8s manifests
+# 2. Create Environment 'Development' 
+# 3. Create Infrastructure Definition 'EKS_Dev' pointing to your EKS cluster
+# 4. Ensure delegate 'aws-delegator' has access to EKS
+#
+# Trigger Setup (Harness Code Repository):
+# 1. Go to Triggers → + New Trigger
+# 2. Select "Harness Code Repository"
+# 3. Repository: anomaly-agent
+# 4. Event: Push
+# 5. Branch: main

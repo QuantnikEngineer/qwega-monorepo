@@ -1,0 +1,67 @@
+{
+  "modal": {
+    "title": "Project Team Management",
+    "subtitle": "Add and manage team members with their roles and contact information",
+    "saveButtonText": "Save Team Configuration",
+    "cancelButtonText": "Cancel",
+    "addMemberButtonText": "Add Team Member"
+  },
+  "projectDetails": {
+    "sectionTitle": "Project Details",
+    "fields": {
+      "name": {
+        "label": "Project Name",
+        "placeholder": "Enter project name",
+        "required": true
+      },
+      "location": {
+        "label": "Location",
+        "placeholder": "e.g., New York, USA",
+        "required": false
+      },
+      "technologies": {
+        "label": "Technology Landscape",
+        "placeholder": "e.g., React, Node.js, PostgreSQL",
+        "addButtonText": "Add",
+        "required": false
+      }
+    },
+    "defaults": {
+      "name": "",
+      "location": "Bangalore, India",
+      "technologies": ["React", "TypeScript", "Node.js", "PostgreSQL", "Docker"]
+    }
+  },
+  "teamMembers": {
+    "sectionTitle": "Team Members",
+    "fields": {
+      "role": {
+        "label": "Role",
+        "placeholder": "e.g., Product Owner / Business Sponsor"
+      },
+      "name": {
+        "label": "Full Name",
+        "placeholder": "Enter full name"
+      },
+      "email": {
+        "label": "Email Address",
+        "placeholder": "email@company.com"
+      }
+    },
+    "defaultMembers": [
+      { "id": "0", "role": "Product Owner", "name": "Abhinav Krishna", "email": "abhinav.krishna@wipro.com" },
+      { "id": "1", "role": "Business Sponsor", "name": "Vamshi Meda", "email": "vamshidhar.meda@wipro.com" },
+      { "id": "2", "role": "Business SME", "name": "Vamshi Meda", "email": "vamshidhar.meda@wipro.com" },
+      { "id": "3", "role": "Process Analyst", "name": "Sanjay Kumar", "email": "sanjay.kumar95@wipro.com" },
+      { "id": "4", "role": "UX Researcher", "name": "Abhai Shukla", "email": "abhai.shukla@wipro.com" },
+      { "id": "5", "role": "Solution Architect", "name": "Abhai Shukla", "email": "abhai.shukla@wipro.com" },
+      { "id": "6", "role": "Compliance", "name": "Abhinav Krishna", "email": "abhinav.krishna@wipro.com" },
+      { "id": "7", "role": "Information Security Officer", "name": "Prasanna Venkatesan", "email": "venkatesan.prasanna@wipro.com" }
+    ],
+    "mandatoryRole": "Product Owner"
+  },
+  "validation": {
+    "missingFieldsError": "Please fill in all required fields for team members with partial data.",
+    "invalidEmailError": "Please enter a valid email address."
+  }
+}

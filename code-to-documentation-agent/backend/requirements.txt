@@ -1,0 +1,22 @@
+python-dotenv==1.1.0
+fastapi==0.115.12
+uvicorn==0.34.0
+autogen_agentchat==0.6.1
+pyautogen==0.9
+autogen-ext[azure]==0.6.1
+openai==2.8.0
+python-multipart==0.0.20
+asyncio
+# mcp-atlassian
+mcp
+litellm==1.80.7
+boto3
+botocore
+msal
+python-docx
+# litellm[proxy]
+google-auth
+google-cloud-aiplatform
+google-auth-oauthlib
+google-auth-httplib2
+fastmcp>=2.0.0

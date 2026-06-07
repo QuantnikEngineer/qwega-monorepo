@@ -1,0 +1,13 @@
+# === Core Framework ===
+fastapi>=0.109.0
+uvicorn>=0.27.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# === Gateway Dependencies ===
+httpx>=0.25.0
+PyJWT[crypto]>=2.8.0
+cryptography>=42.0.0
+
+# === Testing ===
+pytest>=7.4.0

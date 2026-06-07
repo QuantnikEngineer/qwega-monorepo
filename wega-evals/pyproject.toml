@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wega-evals"
+version = "0.1.0"
+description = "Reusable LLM agent evaluation framework with Langfuse integration"
+requires-python = ">=3.11"
+dependencies = [
+    "langfuse>=4.0",
+    "google-genai>=1.0",
+    "pydantic>=2.0",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+dashboard = [
+    "streamlit>=1.35",
+    "pandas>=2.0",
+]
+
+[project.scripts]
+wega-eval = "wega_evals.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["wega_evals*"]

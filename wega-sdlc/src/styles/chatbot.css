@@ -1,0 +1,684 @@
+/* Embedded Chatbot Styles — Terminal Theme */
+
+/* ── Droid Terminal Animations ── */
+@keyframes terminalBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes terminalPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Droid Terminal Styles ── */
+.droid-terminal-container {
+  transition: all 0.2s ease;
+}
+
+.droid-terminal-header:hover {
+  filter: brightness(1.1);
+}
+
+.droid-terminal-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(91, 141, 239, 0.3) transparent;
+}
+
+.droid-terminal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.droid-terminal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.droid-terminal-body::-webkit-scrollbar-thumb {
+  background: rgba(91, 141, 239, 0.3);
+  border-radius: 3px;
+}
+
+.droid-terminal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(91, 141, 239, 0.5);
+}
+
+.droid-terminal-resize-handle:hover {
+  background: rgba(91, 141, 239, 0.12) !important;
+}
+
+.embedded-chatbot-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--chatbot-bg, #0d1117);
+  border-radius: 0;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', monospace;
+}
+
+/* ── Light / Dark CSS custom properties ── */
+.dark .embedded-chatbot-container {
+  --chatbot-bg: #0d1117;
+  --chatbot-border: #1b2430;
+  --chatbot-text: #c9d1d9;
+  --chatbot-text-muted: #8b949e;
+  --chatbot-bot-bg: #111922;
+  --chatbot-user-bg: #131525;
+  --chatbot-user-border: #252a4a;
+  --chatbot-error-bg: #1a1215;
+  --chatbot-error-border: #3d1519;
+  --chatbot-input-group-bg: #1c2938;
+  --chatbot-input-group-border: #2a4060;
+  --chatbot-input-section-bg: rgba(52, 152, 179, 0.08);
+  --chatbot-input-section-border: rgba(52, 152, 179, 0.2);
+  --chatbot-table-header-bg: #161b22;
+  --chatbot-table-hover: rgba(27, 36, 48, 0.5);
+  --chatbot-collapsible-bg: #111922;
+  --chatbot-scrollbar-track: #0d1117;
+  --chatbot-scrollbar-thumb: #1b2430;
+  --chatbot-label-color: #0ac4c5;
+  --chatbot-summary-hover: #161b22;
+}
+
+.embedded-chatbot-container {
+  --chatbot-bg: #ffffff;
+  --chatbot-border: #e0e4e8;
+  --chatbot-text: #1f2937;
+  --chatbot-text-muted: #6b7280;
+  --chatbot-bot-bg: #f3f6f9;
+  --chatbot-user-bg: #eef0fb;
+  --chatbot-user-border: #c7cce6;
+  --chatbot-error-bg: #fef2f2;
+  --chatbot-error-border: #fecaca;
+  --chatbot-input-group-bg: #f0f4f8;
+  --chatbot-input-group-border: #d1d9e0;
+  --chatbot-input-section-bg: rgba(52, 152, 179, 0.05);
+  --chatbot-input-section-border: rgba(52, 152, 179, 0.15);
+  --chatbot-table-header-bg: #f0f3f6;
+  --chatbot-table-hover: rgba(0, 0, 0, 0.03);
+  --chatbot-collapsible-bg: #f3f6f9;
+  --chatbot-scrollbar-track: #f5f5f5;
+  --chatbot-scrollbar-thumb: #d1d5db;
+  --chatbot-label-color: #088a8b;
+  --chatbot-summary-hover: #eef1f4;
+}
+
+.embedded-chatbot-container *,
+.embedded-chatbot-container input,
+.embedded-chatbot-container textarea,
+.embedded-chatbot-container select,
+.embedded-chatbot-container button,
+.embedded-chatbot-container label {
+  font-family: inherit;
+}
+
+/* Glossy Analyze Button Effect */
+.glossy-analyze-button {
+  position: relative;
+}
+
+.glossy-analyze-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.25) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.glossy-analyze-button::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  height: 40%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.glossy-analyze-button:hover::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.glossy-analyze-button:active {
+  transform: translateY(1px);
+}
+
+.glossy-analyze-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.glossy-analyze-button:disabled::before,
+.glossy-analyze-button:disabled::after {
+  opacity: 0.5;
+}
+
+/* Glossy Clear Button Effect */
+.glossy-clear-button {
+  position: relative;
+}
+
+.glossy-clear-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.glossy-clear-button::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  height: 40%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.glossy-clear-button:hover::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.glossy-clear-button:active {
+  transform: translateY(1px);
+}
+
+
+.embedded-chat-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--chatbot-bg);
+  border-bottom: 1px solid var(--chatbot-border);
+  min-height: 0;
+  min-width: 0;
+}
+
+.embedded-message {
+  margin-bottom: 16px;
+  animation: fadeIn 0.3s ease-in;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.embedded-user-message {
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
+.embedded-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  font-family: inherit;
+  margin-top: 2px;
+}
+
+.embedded-avatar-bot {
+  color: #3498B3;
+}
+
+.embedded-avatar-user {
+  color: #7c8aef;
+}
+
+.embedded-avatar-error {
+  color: #f85149;
+  border: 1px solid #f85149;
+}
+
+.embedded-message-content {
+  padding: 12px 14px;
+  border-radius: 4px 12px 12px 12px;
+  max-width: 85%;
+  line-height: 1.6;
+  font-size: 0.82rem;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  font-family: inherit;
+  width: fit-content;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.embedded-message-content a {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.embedded-bot-message .embedded-message-content {
+  background: var(--chatbot-bot-bg);
+  border: 1px solid var(--chatbot-border);
+  color: var(--chatbot-text);
+  border-radius: 4px 12px 12px 12px;
+}
+
+.embedded-user-message .embedded-message-content {
+  background: var(--chatbot-user-bg);
+  color: var(--chatbot-text);
+  border: 1px solid var(--chatbot-user-border);
+  border-radius: 12px 4px 12px 12px;
+  flex: unset;
+  max-width: 85%;
+}
+
+.embedded-error-message .embedded-message-content {
+  background: var(--chatbot-error-bg);
+  border: 1px solid var(--chatbot-error-border);
+  color: #f85149;
+  border-radius: 4px 12px 12px 12px;
+}
+
+.embedded-message-content p {
+  margin-bottom: 8px;
+}
+
+.embedded-message-content p:last-child {
+  margin-bottom: 0;
+}
+
+.embedded-message-content ul {
+  margin-left: 20px;
+  margin-top: 8px;
+}
+
+.embedded-message-content li {
+  margin-bottom: 4px;
+}
+
+.embedded-message-content strong {
+  font-weight: 600;
+}
+
+.embedded-message-content em {
+  font-style: italic;
+}
+
+/* Agent-specific fields inside chat area */
+.embedded-agent-fields {
+  padding: 12px 0 4px;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.embedded-agent-fields:empty {
+  display: none;
+}
+
+.embedded-agent-fields .embedded-input-group {
+  background: var(--chatbot-input-group-bg);
+  border: 1px solid var(--chatbot-input-group-border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.embedded-agent-fields .embedded-input-group label {
+  color: var(--chatbot-label-color);
+}
+
+.embedded-input-section {
+  padding: 10px 12px;
+  background: var(--chatbot-input-section-bg);
+  border-top: 1px solid var(--chatbot-input-section-border);
+  flex-shrink: 0;
+  backdrop-filter: blur(8px);
+}
+
+.embedded-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.embedded-query-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.4;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.embedded-query-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 179, 0.5);
+}
+
+.embedded-action-btn {
+  flex-shrink: 0;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+}
+
+.embedded-input-group {
+  margin-bottom: 12px;
+}
+
+.embedded-input-group:last-of-type {
+  margin-bottom: 16px;
+}
+
+.embedded-button-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Scrollbar styling — terminal theme */
+.embedded-chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.embedded-chat-messages::-webkit-scrollbar-track {
+  background: var(--chatbot-scrollbar-track);
+}
+
+.embedded-chat-messages::-webkit-scrollbar-thumb {
+  background: var(--chatbot-scrollbar-thumb);
+  border-radius: 3px;
+}
+
+.embedded-chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #3498B3;
+}
+
+/* ── Collapsible Test Scenarios / Test Cases ── */
+.collapsible-section {
+  margin: 10px 0;
+}
+
+.collapsible-section-header {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+  color: #3498B3;
+}
+
+.collapsible-test-item {
+  border: 1px solid var(--chatbot-border);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  background: var(--chatbot-collapsible-bg);
+  overflow: hidden;
+}
+
+.collapsible-test-item summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  user-select: none;
+  list-style: none;          /* hide default marker */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+}
+
+.collapsible-test-item summary::before {
+  content: '▶';
+  font-size: 0.65rem;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.collapsible-test-item[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.collapsible-test-item summary:hover {
+  background: var(--chatbot-summary-hover);
+}
+
+.collapsible-test-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.collapsible-test-body {
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--chatbot-border);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--chatbot-text);
+}
+
+.collapsible-field {
+  margin-bottom: 4px;
+}
+
+.collapsible-steps {
+  margin-top: 8px;
+}
+
+.collapsible-steps-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 4px;
+  font-size: 0.82rem;
+  table-layout: fixed;
+}
+
+/* ── Milestone animated dots ── */
+.milestone-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.milestone-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0.85;
+}
+
+.milestone-dots--active .milestone-dot {
+  animation: milestoneDotBounce 1.4s ease-in-out infinite;
+}
+
+.milestone-dots--active .milestone-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.milestone-dots--active .milestone-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes milestoneDotBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes milestoneShimmer {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes codeAssistantLabelGlow {
+  0%, 100% { text-shadow: 0 0 4px rgba(52,152,179,0.3); filter: brightness(1); }
+  50% { text-shadow: 0 0 10px rgba(52,152,179,0.6), 0 0 20px rgba(10,196,197,0.25); filter: brightness(1.15); }
+}
+
+.code-assistant-stream pre {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(52, 152, 179, 0.3) transparent;
+}
+
+.code-assistant-stream pre::-webkit-scrollbar {
+  height: 6px;
+}
+
+.code-assistant-stream pre::-webkit-scrollbar-thumb {
+  background: rgba(52, 152, 179, 0.3);
+  border-radius: 3px;
+}
+
+.collapsible-steps-table th,
+.collapsible-steps-table td {
+  border: 1px solid var(--chatbot-border);
+  padding: 5px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.collapsible-steps-table th {
+  background: var(--chatbot-table-header-bg);
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--chatbot-text-muted);
+}
+
+.collapsible-steps-table tr:hover td {
+  background: var(--chatbot-table-hover);
+}
+
+/* Jira push result collapsible */
+.collapsible-jira {
+  border-color: var(--chatbot-border);
+}
+
+.collapsible-jira-summary {
+  color: #58a6ff;
+  font-size: 0.92rem;
+}
+
+/* Dark mode adjustments are now handled via CSS custom properties above */
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .embedded-button-group {
+    flex-direction: column;
+  }
+
+  .embedded-message-content {
+    max-width: 95%;
+  }
+
+  .embedded-action-btn {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+  }
+
+  .embedded-query-input {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+/* ── New Jira Create List Tree ── */
+.new-jira-create-tree {
+  font-size: 0.82rem;
+}
+
+.new-jira-story-item {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.new-jira-story-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.new-jira-story-item[open] .new-jira-chevron {
+  transform: rotate(90deg);
+}
+
+.new-jira-chevron {
+  transition: transform 0.2s ease;
+}
+
+.dark .new-jira-create-tree {
+  background: rgba(52, 152, 179, 0.08) !important;
+}

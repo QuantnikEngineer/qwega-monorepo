@@ -1,0 +1,386 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Droid Chat API",
+    "description": "API endpoints for the Droid Chat service. Enables chat interactions, model listing, repository management, and markdown retrieval.",
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "https://dev-wega-code-assistant-agent-204952354085.us-central1.run.app",
+      "description": "Cloud Run (dev)"
+    },
+    {
+      "url": "http://localhost:4300",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/api/chat": {
+      "post": {
+        "tags": ["Chat"],
+        "summary": "Start a chat session",
+        "description": "Sends a message to the droid and returns a session ID for streaming events.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chat session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chat/events": {
+      "get": {
+        "tags": ["Chat"],
+        "summary": "Stream chat events (SSE)",
+        "description": "Returns a Server-Sent Events stream for the given chat session.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The session ID returned from POST /api/chat"
+          },
+          {
+            "name": "lastEventId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": -1
+            },
+            "description": "Resume from this event ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-Sent Events stream",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing sessionId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models": {
+      "get": {
+        "tags": ["Models"],
+        "summary": "List available models",
+        "description": "Returns the list of model options loaded from models.json.",
+        "responses": {
+          "200": {
+            "description": "Model list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "models": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ModelOption"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/markdown": {
+      "get": {
+        "tags": ["Utilities"],
+        "summary": "Get MCP boilerplate markdown",
+        "description": "Returns the contents of the MCP boilerplate markdown file.",
+        "responses": {
+          "200": {
+            "description": "Markdown content",
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Markdown file not found"
+          }
+        }
+      }
+    },
+    "/api/repo/lock": {
+      "post": {
+        "tags": ["Repository"],
+        "summary": "Lock a local repository workspace",
+        "description": "Configures a local working directory by cloning or attaching to an existing repository folder.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepoLockRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Repository locked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or lock failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/repo/sync": {
+      "post": {
+        "tags": ["Repository"],
+        "summary": "Sync a local repository workspace",
+        "description": "Pulls or pushes changes for a local repository workspace.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepoSyncRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or sync failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChatRequest": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "User message to send (max 8000 chars)"
+          },
+          "history": {
+            "type": "array",
+            "description": "Conversation history",
+            "items": {
+              "$ref": "#/components/schemas/HistoryTurn"
+            }
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository path or name"
+          },
+          "model": {
+            "type": "string",
+            "description": "Model identifier to use"
+          },
+          "autonomy": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Autonomy level for the droid"
+          },
+          "reasoning": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Reasoning level for the droid"
+          }
+        }
+      },
+      "ChatResponse": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Session ID for SSE streaming"
+          }
+        }
+      },
+      "HistoryTurn": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["user", "assistant"]
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      },
+      "ModelOption": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "RepoLockRequest": {
+        "type": "object",
+        "required": ["mode", "folderMode", "folderName", "branchName"],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": ["new", "existing"],
+            "description": "Clone mode"
+          },
+          "folderMode": {
+            "type": "string",
+            "enum": ["new", "existing"],
+            "description": "Folder creation mode"
+          },
+          "folderName": {
+            "type": "string",
+            "description": "Target folder name (alphanumeric, '.', '_', '-')"
+          },
+          "branchName": {
+            "type": "string",
+            "description": "Git branch name"
+          },
+          "overwriteExisting": {
+            "type": "boolean",
+            "default": false,
+            "description": "Overwrite existing folder if present"
+          }
+        }
+      },
+      "RepoSyncRequest": {
+        "type": "object",
+        "required": ["direction", "localPath", "branchName"],
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": ["pull", "push"],
+            "description": "Sync direction"
+          },
+          "localPath": {
+            "type": "string",
+            "description": "Local repository path"
+          },
+          "branchName": {
+            "type": "string",
+            "description": "Git branch name"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

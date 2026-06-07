@@ -1,0 +1,37 @@
+# Docker Compose for local development
+# Usage: docker-compose up --build
+
+version: '3.8'
+
+services:
+  wega-userstory-validator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wega-userstory-validator
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - PORT=${PORT:-8080}
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-your-project-id}
+      - GOOGLE_CLOUD_API_KEY=${GOOGLE_CLOUD_API_KEY}
+      - CONFLUENCE_EMAIL=${CONFLUENCE_EMAIL}
+      - CONFLUENCE_API_TOKEN=${CONFLUENCE_API_TOKEN}
+    # Mount GCP credentials for local development
+    volumes:
+      - ${HOME}/.config/gcloud:/home/appuser/.config/gcloud:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - brd-network
+
+networks:
+  brd-network:
+    driver: bridge

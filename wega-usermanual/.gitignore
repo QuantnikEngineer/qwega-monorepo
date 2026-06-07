@@ -1,0 +1,76 @@
+# --------------------
+# Python cache / bytecode
+# --------------------
+__pycache__/
+*.py[cod]
+*.pyo
+.python-version
+
+# --------------------
+# Virtual environments
+# --------------------
+venv/
+.venv/
+env/
+ENV/
+
+
+# --------------------
+# ADK / Agent artifacts
+# --------------------
+.adk/
+.adk/artifacts/
+**/.adk/
+
+# --------------------
+# Logs
+# --------------------
+*.log
+
+# --------------------
+# OS / Editor files
+# --------------------
+.DS_Store
+Thumbs.db
+
+# --------------------
+# IDE specific
+# --------------------
+.vscode/
+.idea/
+
+# --------------------
+# Test / coverage
+# --------------------
+.coverage
+htmlcov/
+.pytest_cache/
+
+# --------------------
+# Build / distribution
+# --------------------
+build/
+dist/
+*.egg-info/
+
+# --------------------
+# Jupyter
+# --------------------
+.ipynb_checkpoints/
+
+# --------------------
+# Environment / secrets
+# --------------------
+# .env intentionally tracked – remove this comment and uncomment below to ignore again
+.env
+.env.*
+
+# --------------------
+# Generated outputs
+# --------------------
+outputs/*.pdf
+
+# --------------------
+# Unused data files
+# --------------------
+data/extracted_images/

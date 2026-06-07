@@ -1,0 +1,57 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.venv
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation (not needed in container)
+*.md
+DEPLOYMENT.md
+DEPLOY_DIGITAL_RIG.md
+POSTMAN_GUIDE.md
+README.md
+
+# Deployment files (not needed in container)
+deploy.sh
+Procfile
+*.service
+
+# Environment files
+.env
+.env.local
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+tests/
+*.test.py
+
+# Temporary files
+*.tmp
+tmp/
+temp/

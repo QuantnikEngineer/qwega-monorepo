@@ -1,0 +1,43 @@
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Virtualenv & caches
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Tests, helper scripts, docs (not needed at runtime)
+tests/
+get_ghtoken.py
+prompt.md
+prompt-001.md
+scan-report.md
+seq-flow.mermaid
+sys-depl-architecture.mermaid
+openapi.yaml
+CODE_CONTEXT.md
+
+# Persisted reports — runtime data, not source
+reports/
+
+# Bogus requirements.txt (pyproject.toml is the real source of truth)
+requirements.txt
+
+# Secrets — must NEVER end up in the image
+.env
+.env.*
+*.pem
+*.key
+
+# Git / IDE / OS / logs
+.git/
+.gitignore
+.factory/
+.DS_Store
+*.log

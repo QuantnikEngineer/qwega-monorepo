@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.benchmarks/
+htmlcov/
+.coverage
+
+# Environment files (will be set via Cloud Run)
+.env
+.env.*
+!.env.example
+
+# Documentation
+*.md
+!README.md
+
+# Deployment scripts
+deploy.sh
+cloudbuild.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/

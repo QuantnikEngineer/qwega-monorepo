@@ -1,0 +1,136 @@
+pipeline:
+  name: wega-ci-pipeline
+  identifier: wega_ci_pipeline
+  properties:
+    ci:
+      codebase:
+        connectorRef: account.repo_connector
+        repoName: https://git.harness.io/2KolbecvR0aAcgQ5uXBObA/default/WEGA_Build_AI/wega-userstory-estimator.git
+  stages:
+    - stage:
+        name: Checkout
+        identifier: checkout
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Checkout
+                  spec:
+                    shell: Sh
+                    command: |
+                      echo "Checkout handled by the platform source connector"
+    - stage:
+        name: Restore Dependencies
+        identifier: restore
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Restore Dependencies
+                  spec:
+                    shell: Sh
+                    command: |
+                      python -m pip install -r requirements.txt
+    - stage:
+        name: Build
+        identifier: build
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Build
+                  spec:
+                    shell: Sh
+                    command: |
+                      python -m compileall .
+    - stage:
+        name: Unit Test
+        identifier: unit_test
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Unit Test
+                  spec:
+                    shell: Sh
+                    command: |
+                      pytest
+    - stage:
+        name: Static Analysis
+        identifier: static_analysis
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Static Analysis
+                  spec:
+                    shell: Sh
+                    command: |
+                      sonar-scanner
+    - stage:
+        name: Docker Build
+        identifier: docker_build
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Docker Build
+                  spec:
+                    shell: Sh
+                    command: |
+                      docker build -t registry.example.com/wega-ci-pipeline:dev -t registry.example.com/wega-ci-pipeline:dev-20260422-2150 .
+    - stage:
+        name: Publish Artifacts
+        identifier: publish_artifacts
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Publish Artifacts
+                  spec:
+                    shell: Sh
+                    command: |
+                      docker push registry.example.com/wega-ci-pipeline:dev
+                      docker push registry.example.com/wega-ci-pipeline:dev-20260422-2150
+    - stage:
+        name: Notifications
+        identifier: notifications
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Notifications
+                  spec:
+                    shell: Sh
+                    command: |
+                      echo "Notify owning team with pipeline results"
+    - stage:
+        name: Rollout us-east-1
+        identifier: rollout_us-east-1
+        type: CI
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Deploy us-east-1
+                  spec:
+                    shell: Sh
+                    command: |
+                      echo "Deploy registry.example.com/wega-ci-pipeline:dev to the us-east-1 serverless target for dev"
