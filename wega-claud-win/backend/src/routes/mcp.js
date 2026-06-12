@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { db } from '../db.js';
 import { projectForRead, projectForWrite } from './projectAccess.js';
+import { getMcpServersFromEnv } from '../config.js';
 
 export const mcp = Router();
 
@@ -34,6 +35,17 @@ function lastInit(projectId) {
   try { return JSON.parse(row.payload); } catch { return null; }
 }
 
+function maskedEnvServers() {
+  const servers = getMcpServersFromEnv();
+  return Object.fromEntries(Object.entries(servers).map(([name, cfg]) => [name, {
+    type: cfg.type || (cfg.command ? 'stdio' : cfg.url ? 'http' : 'unknown'),
+    command: cfg.command,
+    args: cfg.args || [],
+    url: cfg.url,
+    hasAuth: !!(cfg.headers || cfg.env),
+  }]));
+}
+
 function validateConfig(cfg) {
   if (!cfg || typeof cfg !== 'object') return 'config must be an object';
   if (cfg.type === 'stdio' || cfg.command) {
@@ -57,6 +69,7 @@ mcp.get('/:projectId', (req, res) => {
   const runtime = lastInit(req.params.projectId);
   res.json({
     local: s.mcpServers || {},
+    env: maskedEnvServers(),
     runtime: runtime?.mcpServers || [],
   });
 });

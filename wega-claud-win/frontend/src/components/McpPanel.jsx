@@ -61,7 +61,7 @@ function McpRow({ name, status, transport, url, json, onAuth, onRemove }) {
 }
 
 export function McpPanel({ project, sessionInfo }) {
-  const [data, setData] = useState({ local: {}, runtime: [] });
+  const [data, setData] = useState({ local: {}, env: {}, runtime: [] });
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const dialogRef = useRef(null);
@@ -112,6 +112,7 @@ export function McpPanel({ project, sessionInfo }) {
   };
 
   const localEntries = Object.entries(data.local || {});
+  const envEntries = Object.entries(data.env || {});
   const runtime = sessionInfo?.mcpServers || data.runtime || [];
   const activeCount = runtime.filter((s) => s.status === 'connected').length;
 
@@ -144,6 +145,31 @@ export function McpPanel({ project, sessionInfo }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {runtime.map((s) => (
                   <McpRow key={s.name} name={s.name} status={s.status} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Backend env */}
+          <div>
+            <SectionLabel tone="amber" right={<Pill>service-wide</Pill>}>
+              // backend env · configured
+            </SectionLabel>
+            {envEntries.length === 0 ? (
+              <div style={{ color: 'var(--w-text-3)', font: '11.5px/1.4 var(--w-mono)', padding: '10px 14px', border: '1px dashed var(--w-line)', borderRadius: 3 }}>
+                no backend environment MCP servers configured.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {envEntries.map(([name, cfg]) => (
+                  <McpRow
+                    key={name}
+                    name={name}
+                    status={runtime.find((s) => s.name === name)?.status || 'pending'}
+                    transport={cfg.type || (cfg.command ? 'stdio' : 'http')}
+                    url={cfg.url || cfg.command}
+                    json={JSON.stringify(cfg, null, 2)}
+                  />
                 ))}
               </div>
             )}
@@ -204,6 +230,10 @@ export function McpPanel({ project, sessionInfo }) {
               <div>
                 <div style={{ color: 'var(--w-text-3)', fontSize: 10 }}>LOCAL</div>
                 <div style={{ color: 'var(--w-text-0)', fontSize: 18 }}>{localEntries.length}</div>
+              </div>
+              <div>
+                <div style={{ color: 'var(--w-text-3)', fontSize: 10 }}>ENV</div>
+                <div style={{ color: 'var(--w-amber)', fontSize: 18 }}>{envEntries.length}</div>
               </div>
               <div>
                 <div style={{ color: 'var(--w-text-3)', fontSize: 10 }}>TOOLS</div>
