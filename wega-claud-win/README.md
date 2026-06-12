@@ -101,7 +101,7 @@ Set per project in the Settings tab:
 - `plan` — read-only planning mode, no edits or shell.
 - `bypassPermissions` — auto-approves everything. Use with care.
 
-A future iteration should hook "canUseTool" and surface approval prompts
+A future iteration should hook `canUseTool` and surface approval prompts
 inline in the chat.
 
 ## Roadmap toward multi-user
