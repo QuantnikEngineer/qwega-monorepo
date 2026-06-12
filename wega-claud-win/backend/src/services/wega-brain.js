@@ -1,4 +1,4 @@
-// WEGA BRAIN — RAG generation. Given a question, retrieve top-K context
+// Quantnik Brain — RAG generation. Given a question, retrieve top-K context
 // chunks (from the Context Fabric), pass them to Claude as system context,
 // and return a grounded answer with citations.
 //
@@ -27,7 +27,7 @@ const DEFAULT_BEDROCK_REGION = 'us-east-1';
 function buildSystemPrompt(userName) {
   const name = userName ? userName.split(/[.@\s]/)[0].replace(/^./, (c) => c.toUpperCase()) : null;
   const addressed = name ? name : 'friend';
-  return `You are WEGA BRAIN — the wega2 platform's resident know-it-all. You live inside the user's project, you've read everything they've ingested, and your job is to be useful and a little bit fun about it.
+  return `You are Quantnik Brain — the Quantnik platform's resident know-it-all. You live inside the user's project, you've read everything they've ingested, and your job is to be useful and a little bit fun about it.
 
 WHO YOU'RE TALKING TO
 ${name ? `The human's first name is ${name}. Address them by name occasionally (not every message — only when it feels natural, like "Yeah ${name}, …" or "Good question, ${name} —"). Never overdo it.` : `You don't know the user's name in this session, so call them "friend" sparingly or just skip the address.`}
@@ -163,7 +163,7 @@ async function generateViaBedrock({ system, messages }) {
 
 // In-memory cache for project facts — keyed by projectId. 5-min TTL.
 // gatherProjectFacts walks the repo for LOC each call otherwise, which on a
-// medium codebase can take 300-2000 ms. Caching keeps WEGA BRAIN snappy for
+// medium codebase can take 300-2000 ms. Caching keeps Quantnik Brain snappy for
 // follow-up questions on the same project within a working session.
 const FACTS_TTL_MS = 5 * 60 * 1000;
 const factsCache = new Map(); // projectId → { at, value }
@@ -312,7 +312,7 @@ function buildUserMessage(question, retrieved, factsBlock) {
 }
 
 /**
- * Run a WEGA BRAIN query end-to-end.
+ * Run a Quantnik Brain query end-to-end.
  *
  * @param {{
  *   question: string,

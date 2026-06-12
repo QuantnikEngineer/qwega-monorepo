@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
-/* WEGA — cyber-terminal theme tokens
+/* Quantnik — cyber-terminal theme tokens
    Phosphor-green/cyan on near-black. All-mono. Dark default; .light flips. */
 
 :root {
@@ -213,8 +213,8 @@ button, input, textarea, select {
 
 button { cursor: pointer; }
 
-/* Wipro logo (white-on-transparent) — invert in light theme */
-.light .w-wipro-mark { filter: invert(1); }
+/* Quantnik logo treatment in light theme */
+.light .w-quantnik-mark { filter: invert(1); }
 
 /* Scanline overlay */
 .w-scan { position: relative; }

@@ -9,10 +9,8 @@ export const auth = Router();
 // short enough that a leaked token isn't a forever problem.
 const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
-// Registration is gated to @wipro.com — this is THE business rule the user
-// asked for. Loose validation otherwise: trim + lowercase the email, require
-// at least 8 chars for the password.
-const WIPRO_DOMAIN = '@wipro.com';
+// Registration is open to any valid email. Keep validation deliberately simple:
+// trim + lowercase the email, require a conventional email shape and 8+ chars.
 const MIN_PASSWORD_LEN = 8;
 
 function normaliseEmail(e) {
@@ -51,11 +49,7 @@ auth.post('/register', async (req, res) => {
   const password = String(req.body?.password || '');
   const name = String(req.body?.name || '').trim() || null;
 
-  if (!email.endsWith(WIPRO_DOMAIN)) {
-    return res.status(400).json({ error: `registration is restricted to ${WIPRO_DOMAIN} addresses` });
-  }
-  // Basic email shape — anything@wipro.com with at least one char before the @
-  if (!/^[A-Za-z0-9._%+-]+@wipro\.com$/.test(email)) {
+  if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email)) {
     return res.status(400).json({ error: 'invalid email format' });
   }
   if (password.length < MIN_PASSWORD_LEN) {

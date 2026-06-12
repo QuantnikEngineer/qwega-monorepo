@@ -131,10 +131,10 @@ export const api = {
   reposAvailableForContext: (projectId) => req(`/context/repos-available?projectId=${projectId}`),
   bulkAddContextSources: (sources) => req('/context/sources/bulk', { method: 'POST', body: JSON.stringify({ sources }) }),
   autoInitContext: (projectId) => req(`/context/auto-init?projectId=${projectId}`, { method: 'POST' }),
-  // WEGA BRAIN — RAG-grounded conversational Q&A. Returns { answer,
+  // Quantnik Brain — RAG-grounded conversational Q&A. Returns { answer,
   // citations[], usage, costUsd, model, via }. Optional history is the
   // prior multi-turn exchange; pass the whole local conversation each call.
-  askWegaBrain: ({ scope, projectId, question, topK, model, history, userName }) =>
+  askQuantnikBrain: ({ scope, projectId, question, topK, model, history, userName }) =>
     req('/context/ask', { method: 'POST', body: JSON.stringify({ scope, projectId, question, topK, model, history, userName }) }),
 
   listRepos: (projectId) => req(`/repos/${projectId}`),

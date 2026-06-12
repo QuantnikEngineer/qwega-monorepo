@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
 import { openChatSocket } from '../lib/ws.js';
 import { Pill, KeyCap, Btn, S, formatModel } from './ui.jsx';
-import { WegaBrainBlock } from './WegaBrainBlock.jsx';
+import { QuantnikBrainBlock } from './QuantnikBrainBlock.jsx';
 
 const STATUS_TONE = {
   running: { tone: 'cyan', label: 'RUN', border: 'var(--w-cyan)' },
@@ -1457,8 +1457,8 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
           <TokenMeter usage={usage} cost={costAcc} />
         </div>
 
-        {/* WEGA BRAIN — chat-side RAG Q&A. Collapsed by default. */}
-        <WegaBrainBlock project={project} />
+        {/* Quantnik Brain — chat-side RAG Q&A. Collapsed by default. */}
+        <QuantnikBrainBlock project={project} />
 
         {/* Stream */}
         <div ref={logRef} style={{ flex: 1, overflowY: 'auto', padding: '0 22px' }}>

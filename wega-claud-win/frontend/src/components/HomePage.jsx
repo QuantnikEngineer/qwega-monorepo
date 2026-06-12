@@ -85,14 +85,14 @@ export function HomePage({ projects, onPickProject }) {
         {/* Hero */}
         <div style={{ marginBottom: 36 }}>
           <div style={{ color: 'var(--w-phosphor)', font: '10.5px/1 var(--w-mono)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 10 }}>
-            wega · v0.4.2-α
+            Quantnik · v0.4.2-α
           </div>
           <h1 style={{
             color: 'var(--w-text-0)', font: '700 32px/1.15 var(--w-mono)',
             letterSpacing: '-0.01em', margin: '0 0 10px',
             textShadow: '0 0 16px var(--w-phosphor-glow)',
           }}>
-            Welcome to <span style={{ color: 'var(--w-phosphor)' }}>WEGA</span>
+            Welcome to <span style={{ color: 'var(--w-phosphor)' }}>Quantnik</span>
           </h1>
           <div style={{ color: 'var(--w-text-1)', font: '15px/1.5 var(--w-mono)', maxWidth: 700 }}>
             The integrated, one-stop build platform. Plan, build, test, deploy, and ship — all
@@ -127,7 +127,7 @@ export function HomePage({ projects, onPickProject }) {
               Upload requirement docs (PDF, DOCX, MD, images). Skills also drop their artifacts here — tokenomics PDFs / xlsx, deployment manifests, generated reports.
             </TabCard>
             <TabCard glyph="▣" name="repos" oneLine="git working trees">
-              Register source repos by remote URL. wega2 clones them locally; skills like feature-dev and orchestrator write generated code straight to these working copies on a fresh branch.
+              Register source repos by remote URL. Quantnik clones them locally; skills like feature-dev and orchestrator write generated code straight to these working copies on a fresh branch.
             </TabCard>
             <TabCard glyph="⚙" name="skills" oneLine="agent capabilities">
               Per-project skill files (live alongside the user-level seed catalog). Each skill is a <S c="var(--w-cyan)">SKILL.md</S> that teaches Claude how to do one job — read, edit, ship via slash command.
@@ -157,7 +157,7 @@ export function HomePage({ projects, onPickProject }) {
 
           <SkillCard slash="/sdlc-orchestrator" kicker="execute · ship" title="End-to-end autonomous SDLC pipeline">
             <p style={{ margin: '0 0 8px' }}>
-              The flagship. After a single Phase-0 intake questionnaire, it runs eleven phases in sequence — fully autonomous except for one deliberate auto-fix prompt during test execution. Phase 0 starts with a hard-gate <code style={{ color: 'var(--w-phosphor)' }}>config-check</code> that verifies git remotes, Jira + Confluence MCPs, and the wega2 service itself, so the run never burns minutes against a broken integration.
+              The flagship. After a single Phase-0 intake questionnaire, it runs eleven phases in sequence — fully autonomous except for one deliberate auto-fix prompt during test execution. Phase 0 starts with a hard-gate <code style={{ color: 'var(--w-phosphor)' }}>config-check</code> that verifies git remotes, Jira + Confluence MCPs, and the Quantnik service itself, so the run never burns minutes against a broken integration.
             </p>
             <p style={{ margin: '0 0 8px' }}>
               Pipeline: <S c="var(--w-cyan)">BRD generation</S> → INVEST user stories pushed to Jira → full-stack code scaffold → vulnerability scan + auto-fix → tech-debt scan + auto-fix → Jira/Xray test cases → Playwright test scripts → install + boot dev servers → run Playwright suite + log Jira bugs for failures → production build deployed under <code style={{ color: 'var(--w-cyan)' }}>claude.wegaplatform.com/&lt;slug&gt;</code> → deploy-time sanity check published to Confluence.
@@ -172,10 +172,10 @@ export function HomePage({ projects, onPickProject }) {
           </div>
         </Section>
 
-        {/* WEGA BRAIN — hero card. The chatbot lives inside every project's
+        {/* Quantnik Brain — hero card. The chatbot lives inside every project's
             Chat tab; the most direct way in is to pick a project below and
             it'll be the first thing you see. */}
-        <Section kicker="ask anything" title="WEGA BRAIN — your project's autobiographer">
+        <Section kicker="ask anything" title="Quantnik Brain — your project's autobiographer">
           <div style={{
             display: 'flex',
             gap: 14,
@@ -204,7 +204,7 @@ export function HomePage({ projects, onPickProject }) {
                 What does Phase 6 actually do? Just ask.
               </div>
               <div style={{ color: 'var(--w-text-2)', font: '11.5px/1.55 var(--w-mono)' }}>
-                Pick a project below to start a conversation. WEGA BRAIN auto-expands at the top of
+                Pick a project below to start a conversation. Quantnik Brain auto-expands at the top of
                 that project's chat — addresses you by name, holds the thread, grounds answers in
                 facts and cites the sources.
               </div>
@@ -235,8 +235,8 @@ export function HomePage({ projects, onPickProject }) {
               <span style={{ color: 'var(--w-text-3)', font: '10.5px/1 var(--w-mono)' }}>/context</span>
             </div>
             <div style={{ color: 'var(--w-text-1)', font: '12px/1.5 var(--w-mono)' }}>
-              The wega2-level RAG knowledge layer. Register runbooks, brand guides, architecture
-              decisions, or policy documents once — every project's queries (incl. WEGA BRAIN) see them.
+              The Quantnik-level RAG knowledge layer. Register runbooks, brand guides, architecture
+              decisions, or policy documents once — every project's queries (incl. Quantnik Brain) see them.
               Admin-managed.
             </div>
           </button>
@@ -279,7 +279,7 @@ export function HomePage({ projects, onPickProject }) {
           font: '10.5px/1.6 var(--w-mono)',
           display: 'flex', justifyContent: 'space-between',
         }}>
-          <span>Click the <S c="var(--w-phosphor)">wega</S> logo in the sidebar any time to come back here.</span>
+          <span>Click the <S c="var(--w-phosphor)">Quantnik</S> logo in the sidebar any time to come back here.</span>
           <span>build · v0.4.2-α</span>
         </div>
       </div>

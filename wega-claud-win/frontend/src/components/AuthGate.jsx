@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, authToken } from '../lib/api.js';
-import wiproLogo from '../assets/wipro-logo.png';
+import quantnikLogo from '../assets/quantnik-logo.png';
 
 // Renders <children> only when the user has a valid session. Otherwise
 // shows a centred login / register card. On successful auth, the children
@@ -75,8 +75,8 @@ export function AuthGate({ children }) {
         padding: '28px 28px 22px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-          <img src={wiproLogo} alt="Wipro" style={{ height: 28 }} />
-          <span style={{ color: 'var(--w-text-3)', font: '11px/1 var(--w-mono)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>WEGA · Sign in</span>
+          <img src={quantnikLogo} alt="Quantnik" style={{ height: 34, width: 'auto', objectFit: 'contain' }} />
+          <span style={{ color: 'var(--w-text-3)', font: '11px/1 var(--w-mono)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Quantnik · Sign in</span>
         </div>
 
         {/* Mode tabs */}
@@ -108,19 +108,19 @@ export function AuthGate({ children }) {
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Abhinav Krishna"
+                placeholder="Your name"
                 style={inputStyle}
                 autoFocus
               />
             </>
           )}
 
-          <label style={labelStyle}>email <span style={{ color: 'var(--w-amber)' }}>· @wipro.com only</span></label>
+          <label style={labelStyle}>email</label>
           <input
             type="email"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            placeholder="abhinav.krishna@wipro.com"
+            placeholder="you@example.com"
             required
             autoFocus={mode === 'login'}
             style={inputStyle}
@@ -165,8 +165,7 @@ export function AuthGate({ children }) {
         </form>
 
         <p style={{ color: 'var(--w-text-3)', font: '10.5px/1.5 var(--w-mono)', marginTop: 14 }}>
-          Registration is restricted to Wipro accounts. Your projects are
-          private — every user sees only their own.
+          Your projects are private — every user sees only their own.
         </p>
       </div>
     </div>

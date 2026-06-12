@@ -1,4 +1,4 @@
-// WEGA BRAIN — chatbot. Lives at the top of the Chat panel as a real
+// Quantnik Brain — chatbot. Lives at the top of the Chat panel as a real
 // conversational surface (not a Q&A widget). Default-expanded, multi-turn,
 // addresses the user by name, persists history per project to localStorage.
 //
@@ -43,8 +43,8 @@ function renderAnswer(text) {
 function greeting(firstName) {
   const name = firstName || 'friend';
   const variants = [
-    `Hey ${name} 👋 I'm WEGA BRAIN — your project's autobiographer.\n\nI've read everything you've ingested into the Context Fabric: the code, the BRDs, the orchestrator's chat history, anything you've thrown at me. Ask me anything about this project and I'll dig.`,
-    `Hi ${name} — WEGA BRAIN reporting in 🧠\n\nI know what's been ingested, what the repos look like, how many lines of code, what the orchestrator said three Tuesdays ago. Want a guided tour, or do you have something specific in mind?`,
+    `Hey ${name} — I'm Quantnik Brain, your project's autobiographer.\n\nI've read everything you've ingested into the Context Fabric: the code, the BRDs, the orchestrator's chat history, anything you've thrown at me. Ask me anything about this project and I'll dig.`,
+    `Hi ${name} — Quantnik Brain reporting in.\n\nI know what's been ingested, what the repos look like, how many lines of code, what the orchestrator said three Tuesdays ago. Want a guided tour, or do you have something specific in mind?`,
     `${name}! What do you want to find out today?\n\nI've got the project's code metrics, every doc you've ingested, the BRD, the chat history. If it's in the Context Fabric, I can pull it. If it's not, I'll point you at how to add it.`,
     `Hey ${name} ☕ Coffee or work first?\n\nReady when you are. I can answer questions about this project's code, docs, BRDs, prior agent runs — anything you've ingested. Or just ask "what do you know about this project" and I'll lay it out.`,
   ];
@@ -148,12 +148,12 @@ function Bubble({ msg, firstName }) {
   );
 }
 
-export function WegaBrainBlock({ project }) {
+export function QuantnikBrainBlock({ project }) {
   const projectId = project?.id || 'noproj';
   const historyKey = LS_HISTORY_PREFIX + projectId;
   const collapsedKey = LS_COLLAPSED_PREFIX + '.' + projectId;
 
-  // Collapsed state — default EXPANDED on first visit to make WEGA BRAIN
+  // Collapsed state — default EXPANDED on first visit to make Quantnik Brain
   // visible by default. Once the user collapses it, the choice persists
   // per-project.
   const [collapsed, setCollapsed] = useState(() => {
@@ -243,7 +243,7 @@ export function WegaBrainBlock({ project }) {
     setHistory((h) => [...h, newUserMsg]);
     setBusy(true);
     try {
-      const r = await api.askWegaBrain({
+      const r = await api.askQuantnikBrain({
         scope: 'project',
         projectId,
         question: q,
@@ -284,7 +284,7 @@ export function WegaBrainBlock({ project }) {
   };
 
   const clearHistory = () => {
-    if (!confirm('Clear this conversation with WEGA BRAIN? The retrieval index is unaffected.')) return;
+    if (!confirm('Clear this conversation with Quantnik Brain? The retrieval index is unaffected.')) return;
     setHistory([]);
     greetingShownRef.current = false;
     try { localStorage.removeItem(historyKey); } catch {}
@@ -308,10 +308,10 @@ export function WegaBrainBlock({ project }) {
           gap: 12,
           userSelect: 'none',
         }}
-        title="open WEGA BRAIN"
+        title="open Quantnik Brain"
       >
         <span style={{ color: 'var(--w-phosphor)', font: '16px/1 var(--w-mono)' }}>🧠</span>
-        <span style={{ color: 'var(--w-phosphor)', font: '700 13px/1 var(--w-mono)', letterSpacing: '0.06em' }}>WEGA BRAIN</span>
+        <span style={{ color: 'var(--w-phosphor)', font: '700 13px/1 var(--w-mono)', letterSpacing: '0.06em' }}>Quantnik Brain</span>
         <span style={{ color: 'var(--w-text-2)', font: '11.5px/1.4 var(--w-mono)' }}>
           {firstName ? `${firstName}, click to chat — ` : 'click to chat — '}
           ask anything about this project
@@ -360,7 +360,7 @@ export function WegaBrainBlock({ project }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ color: 'var(--w-phosphor)', font: '700 14px/1 var(--w-mono)', letterSpacing: '0.06em', textShadow: '0 0 10px var(--w-phosphor-glow)' }}>
-              WEGA BRAIN
+              Quantnik Brain
             </span>
             <Pill tone="phosphor" dot>online</Pill>
             <span style={{ color: 'var(--w-text-3)', font: '11px/1.4 var(--w-mono)' }}>

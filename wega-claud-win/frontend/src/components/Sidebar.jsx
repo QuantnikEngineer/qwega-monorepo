@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api.js';
-import { WiproLockup, Pill, KeyCap, Btn, formatModel } from './ui.jsx';
+import { QuantnikLockup, Pill, KeyCap, Btn, formatModel } from './ui.jsx';
 
 const THEMES = [
   { id: 'cyber-dark',   label: 'cyber',   polarity: 'dark',  swatch: '#00ff9c', bg: '#04070a' },
@@ -64,7 +64,7 @@ export function Sidebar({
           userSelect: 'none',
         }}
       >
-        <WiproLockup mark={24} type={16} />
+        <QuantnikLockup mark={24} type={16} />
         <span style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>workbench</span>
       </div>
 

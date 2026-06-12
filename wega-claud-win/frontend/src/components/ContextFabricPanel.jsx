@@ -503,7 +503,7 @@ export function ContextFabricPanel({ mode = 'project', project }) {
       title={isGlobal ? 'Context Fabric — Global' : 'Context Fabric'}
       subtitle={
         isGlobal
-          ? <>Wega2-level RAG knowledge layer. Sources registered here are visible to <S c="var(--w-phosphor)">every project's queries</S> — runbooks, brand guidelines, architecture decisions, policy docs. Admin-managed.</>
+          ? <>Quantnik-level RAG knowledge layer. Sources registered here are visible to <S c="var(--w-phosphor)">every project's queries</S> — runbooks, brand guidelines, architecture decisions, policy docs. Admin-managed.</>
           : <>Project-scoped RAG knowledge — repos, documents, websites, agent output. Org-level sources from <a href="/context" style={{ color: 'var(--w-cyan)' }}>/context</a> are inherited automatically.</>
       }
       action={

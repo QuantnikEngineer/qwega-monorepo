@@ -4,9 +4,9 @@ export function Logo({ size = 32 }) {
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
       <img
-        src="/wipro-logo.png"
+        src="/quantnik-logo.png"
         height={size}
-        alt="Wipro"
+        alt="Quantnik"
         style={{ display: 'block', height: size, width: 'auto' }}
       />
       <span
@@ -17,7 +17,7 @@ export function Logo({ size = 32 }) {
           color: 'var(--text)',
         }}
       >
-        WEGA
+        Quantnik
       </span>
     </div>
   );

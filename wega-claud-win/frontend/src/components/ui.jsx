@@ -1,5 +1,5 @@
 import React from 'react';
-import wiproLogo from '../assets/wipro-logo.png';
+import quantnikLogo from '../assets/quantnik-logo.png';
 
 export const S = ({ c, children }) => <span style={{ color: c }}>{children}</span>;
 
@@ -33,22 +33,22 @@ export function formatModel(raw) {
   return s;
 }
 
-export const WiproMark = ({ size = 28 }) => (
+export const QuantnikMark = ({ size = 28 }) => (
   <img
-    src={wiproLogo}
-    alt="Wipro"
+    src={quantnikLogo}
+    alt="Quantnik"
     width={size}
     height={size}
-    className="w-wipro-mark"
+    className="w-quantnik-mark"
     style={{ display: 'block', width: size, height: size, objectFit: 'contain' }}
   />
 );
 
-export const WiproLockup = ({ mark = 28, type = 16 }) => (
+export const QuantnikLockup = ({ mark = 28, type = 16 }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-    <WiproMark size={mark} />
+    <QuantnikMark size={mark} />
     <span style={{ font: `700 ${type}px var(--w-display)`, color: 'var(--w-text-0)', letterSpacing: '0.04em' }}>
-      WEGA<span style={{ color: 'var(--w-phosphor)', marginLeft: 2 }}>_</span>
+      Quantnik<span style={{ color: 'var(--w-phosphor)', marginLeft: 2 }}>_</span>
     </span>
   </div>
 );
@@ -136,7 +136,7 @@ export const Btn = ({ tone = 'ghost', children, style = {}, icon = null, sub = n
   );
 };
 
-export const WindowFrame = ({ title = 'wega', theme = 'dark', children, cpu = 4, mem = 312, headerExtras = null }) => {
+export const WindowFrame = ({ title = 'Quantnik', theme = 'dark', children, cpu = 4, mem = 312, headerExtras = null }) => {
   const [time, setTime] = React.useState(() => new Date());
   React.useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 30_000);

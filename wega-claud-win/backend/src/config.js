@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
+const ATLASSIAN_MCP = path.join(__dirname, 'mcp', 'atlassian-rest.js');
 
 function loadEnv() {
   const envPath = path.join(ROOT, '.env');
@@ -62,30 +63,30 @@ export function getMcpServersFromEnv() {
     };
   }
 
-  // Atlassian/Jira + Confluence MCP — stdio servers with full CRUD via Basic auth.
-  // The official mcp.atlassian.com endpoint only exposes Teamwork Graph (read-only)
-  // tools over Basic auth; these stdio servers expose the full REST surface.
-  if (process.env.MCP_ATLASSIAN_TOKEN && process.env.MCP_ATLASSIAN_EMAIL && process.env.MCP_ATLASSIAN_SITE_NAME) {
+  const atlassianSite = normaliseAtlassianSite(process.env.MCP_ATLASSIAN_URL || process.env.MCP_ATLASSIAN_SITE_NAME);
+  const atlassianSiteName = atlassianSite
+    ? new URL(atlassianSite).hostname.replace(/\.atlassian\.net$/i, '')
+    : '';
+
+  // Atlassian/Jira + Confluence MCP — local stdio wrapper with Jira/Confluence
+  // REST tools shaped for the bundled skills: jira_get/post/put and conf_get/post/put.
+  if (process.env.MCP_ATLASSIAN_TOKEN && process.env.MCP_ATLASSIAN_EMAIL && atlassianSite) {
     const atlassianEnv = {
-      ATLASSIAN_SITE_NAME: process.env.MCP_ATLASSIAN_SITE_NAME,
+      ATLASSIAN_SITE_NAME: atlassianSiteName,
+      ATLASSIAN_SITE_URL: atlassianSite,
       ATLASSIAN_USER_EMAIL: process.env.MCP_ATLASSIAN_EMAIL,
       ATLASSIAN_API_TOKEN: process.env.MCP_ATLASSIAN_TOKEN,
     };
-    // Use absolute paths so the LocalSystem-running service can find the
-    // user-installed npm globals (which aren't on the service PATH).
-    const userNpmDir = process.env.USERPROFILE
-      ? `${process.env.USERPROFILE}\\AppData\\Roaming\\npm`
-      : 'C:\\Users\\abhinav.krishna\\AppData\\Roaming\\npm';
     mcpServers['Jira'] = {
       type: 'stdio',
-      command: `${userNpmDir}\\mcp-atlassian-jira.cmd`,
-      args: [],
+      command: process.execPath,
+      args: [ATLASSIAN_MCP, 'jira'],
       env: atlassianEnv,
     };
     mcpServers['Confluence'] = {
       type: 'stdio',
-      command: `${userNpmDir}\\mcp-atlassian-confluence.cmd`,
-      args: [],
+      command: process.execPath,
+      args: [ATLASSIAN_MCP, 'confluence'],
       env: atlassianEnv,
     };
   }
@@ -100,6 +101,17 @@ export function getMcpServersFromEnv() {
   }
 
   return mcpServers;
+}
+
+function normaliseAtlassianSite(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw.replace(/\.atlassian\.net$/i, '')}.atlassian.net`);
+    return `${url.protocol}//${url.hostname}`.replace(/\/+$/, '');
+  } catch {
+    return '';
+  }
 }
 
 fs.mkdirSync(config.projectsRoot, { recursive: true });

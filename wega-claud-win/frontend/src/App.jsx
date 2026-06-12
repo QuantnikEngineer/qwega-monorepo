@@ -171,7 +171,7 @@ export default function App() {
     <AuthGate>
     <div className="app-root">
       <WindowFrame
-        title={active ? `${active.name} / ${tab}` : 'wega'}
+        title={active ? `${active.name} / ${tab}` : 'Quantnik'}
         theme={theme.endsWith('-light') ? 'light' : 'dark'}
         headerExtras={<AuthHeader />}
       >

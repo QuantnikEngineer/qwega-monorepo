@@ -18,7 +18,7 @@ db.exec(`
   );
 
   -- Auth: users + sessions. Email is the unique identity; registration is
-  -- gated to @wipro.com domains in the route handler. Sessions store an
+  -- email/password auth. Sessions store an
   -- opaque token (32 bytes hex) with a TTL — clients send it in the
   -- Authorization header or as a query param on the WS upgrade.
   CREATE TABLE IF NOT EXISTS users (
@@ -114,7 +114,7 @@ ensureColumn('users', 'is_admin', 'INTEGER DEFAULT 0');
 // pattern as the Mobile project. Case-insensitive email match.
 try {
   db.prepare(`UPDATE users SET is_admin = 1
-              WHERE LOWER(email) = 'abhinav.krishna@wipro.com'
+              WHERE LOWER(email) = 'abhinavkaiser@gmail.com'
                 AND (is_admin IS NULL OR is_admin = 0)`).run();
 } catch (e) {
   console.warn('[db] admin-flag migration:', e?.message);
