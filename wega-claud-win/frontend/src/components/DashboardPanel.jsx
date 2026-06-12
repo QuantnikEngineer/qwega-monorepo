@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../lib/api.js';
-import { ScreenFrame, Pill, Btn, S, SectionLabel } from './ui.jsx';
+import { ScreenFrame, Pill, Btn, S, SectionLabel, formatModel } from './ui.jsx';
 import {
   aggregateUsage,
   extractAtlassian,
@@ -186,6 +186,33 @@ const STATUS_ICON = {
   failed:  { icon: '✕', color: 'var(--w-red)' },
 };
 
+// Modernization runs (code-modernizer skill) post custom phase names that
+// don't match the canonical SDLC orchestrator names (BRD / User Stories /
+// Feature Dev / ...). When 2+ phases carry modernization-style names, the
+// dashboard's pipeline panel relabels itself accordingly so the header
+// reads "modernization status" instead of "orchestrator pipeline".
+const MODERNIZATION_PHASE_NAMES = new Set([
+  'Discover & Understand',
+  'Recommend Strategy',
+  'Build Safety Net',
+  'Transform',
+  'Verify',
+  'Document',
+  'Deploy (canary)',
+  'Decommission',
+  // Also catch the slice-loop variant used inside the slice loop's running POSTs.
+  'Transform (slice loop)',
+]);
+function isModernizationMode(phases) {
+  const matches = (phases || []).filter((p) => p.name && MODERNIZATION_PHASE_NAMES.has(p.name)).length;
+  return matches >= 2;
+}
+
+// SDLC orchestrator phase tracker — 11 phases as defined by db.js's
+// CANONICAL_NAMES. Used only for runs of the sdlc-orchestrator skill.
+// Modernization runs (code-modernizer skill) render via the separate
+// ModernizationStatusPanel below; the dashboard picks one or the other
+// based on isModernizationMode().
 function PhaseTracker({ phases, anyTracked }) {
   const total = phases.length || 11;
   const doneCount    = phases.filter((p) => p.status === 'done' || p.status === 'skipped').length;
@@ -269,6 +296,165 @@ function PhaseTracker({ phases, anyTracked }) {
               <span style={{ color: 'var(--w-text-1)', font: '11.5px/1.3 var(--w-mono)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {p.name}
               </span>
+              <span style={{
+                color: s.color,
+                font: '9.5px/1 var(--w-mono)',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                flex: '0 0 auto',
+              }}>
+                {p.status}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Modernization phase tracker — a DIFFERENT panel from PhaseTracker, used
+// only when the code-modernizer skill is driving the project (detected by
+// modernization-style phase names). Reasons it is its own component:
+//
+//   1. Only 8 phases (vs 11 SDLC), so the % math + grid use 8 as the
+//      denominator. Rendering the same 11-row grid with phases 9-11 as
+//      perma-pending was misleading (and produced the famous '68% stuck'
+//      bug because of the SDLC denominator).
+//   2. Modernization has 3 human gates (Gate 1 / Gate 2 / Gate 3) anchored
+//      to specific phases (2 / 5 / 8). This panel renders 🚦 markers on
+//      those rows.
+//   3. Phases 4-7 are the per-slice loop, not a one-shot pipeline. This
+//      panel labels them '(per slice)' so the operator knows the row's
+//      status reflects the active slice, not the whole modernization.
+//   4. Header uses different palette + label ('// modernization status'
+//      with an amber border-left), to make it visually distinct from the
+//      SDLC orchestrator pipeline panel so an operator can't confuse the
+//      two workflows at a glance.
+const MODERNIZATION_GATES = { 2: 'Gate 1', 5: 'Gate 2', 8: 'Gate 3' };
+const MODERNIZATION_LOOP_PHASES = new Set([4, 5, 6, 7]);
+
+function ModernizationStatusPanel({ phases, anyTracked }) {
+  const visible = (phases || []).slice(0, 8);
+  const total = 8;
+  const doneCount    = visible.filter((p) => p.status === 'done' || p.status === 'skipped').length;
+  const runningCount = visible.filter((p) => p.status === 'running').length;
+  const failedCount  = visible.filter((p) => p.status === 'failed').length;
+  const percent      = total ? Math.round(((doneCount + runningCount * 0.5) / total) * 100) : 0;
+  const complete     = anyTracked && visible.length === total && visible.every((p) => p.status === 'done' || p.status === 'skipped');
+  // Modernization palette: amber for in-progress (not cyan), to differentiate
+  // visually from the SDLC orchestrator panel even at a glance.
+  const headerColor  = failedCount > 0
+    ? 'var(--w-red)'
+    : complete
+      ? 'var(--w-phosphor)'
+      : anyTracked
+        ? 'var(--w-amber)'
+        : 'var(--w-text-3)';
+  const subtitle = !anyTracked
+    ? 'no run yet — invoke /code-modernizer in chat'
+    : complete
+      ? 'modernization complete · all slices live · legacy retired'
+      : runningCount > 0
+        ? `running · ${doneCount} of ${total} phases done`
+        : failedCount > 0
+          ? `${failedCount} failed · ${doneCount} done`
+          : `${doneCount} of ${total} phases done`;
+
+  // Most recent meaningful note (e.g. "slice S2 · transformed · path-traversal
+  // guard added") — modernization tracker uses this as a one-line headline
+  // showing what the agent is doing right now.
+  const activeRow = visible.find((p) => p.status === 'running');
+  const headline  = activeRow?.note || (complete ? null : visible.filter((p) => p.note).slice(-1)[0]?.note || null);
+
+  return (
+    <div style={{
+      border: '1px solid var(--w-line)',
+      borderLeft: `2px solid ${headerColor}`,
+      background: 'var(--w-bg-2)',
+      borderRadius: 3,
+      padding: '14px 16px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 10,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+          <span style={{ color: headerColor, font: '10px/1 var(--w-mono)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+            // modernization status
+          </span>
+          <span style={{ color: 'var(--w-text-3)', font: '10.5px/1 var(--w-mono)' }}>{subtitle}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', letterSpacing: '0.08em' }}>{percent}%</span>
+          <Pill tone={failedCount > 0 ? 'red' : complete ? 'phosphor' : anyTracked ? 'amber' : 'phosphor'}>
+            {doneCount}/{total}
+          </Pill>
+        </div>
+      </div>
+
+      {headline && (
+        <div style={{
+          color: 'var(--w-text-2)',
+          font: '11px/1.3 var(--w-mono)',
+          background: 'var(--w-bg-1)',
+          border: '1px dashed var(--w-line)',
+          borderRadius: 2,
+          padding: '6px 8px',
+        }}>
+          <span style={{ color: 'var(--w-text-3)' }}>active:</span> {headline}
+        </div>
+      )}
+
+      {/* Progress bar */}
+      <div style={{ height: 4, background: 'var(--w-bg-1)', border: '1px solid var(--w-line)', borderRadius: 2, overflow: 'hidden', display: 'flex' }}>
+        {doneCount > 0 && <div style={{ flex: doneCount,    background: 'var(--w-phosphor)' }} />}
+        {runningCount > 0 && <div style={{ flex: runningCount, background: 'var(--w-amber)' }} />}
+        {failedCount > 0 && <div style={{ flex: failedCount,  background: 'var(--w-red)' }} />}
+        {(total - doneCount - runningCount - failedCount) > 0 && (
+          <div style={{ flex: total - doneCount - runningCount - failedCount, background: 'transparent' }} />
+        )}
+      </div>
+
+      {/* 8-row grid — one row per modernization phase, with gate + per-slice annotations. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', rowGap: 4 }}>
+        {visible.map((p) => {
+          const s = STATUS_ICON[p.status] || STATUS_ICON.pending;
+          const gate = MODERNIZATION_GATES[p.number];
+          const isLoop = MODERNIZATION_LOOP_PHASES.has(p.number);
+          return (
+            <div key={p.number} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '5px 6px',
+              borderBottom: '1px dashed var(--w-line)',
+              opacity: p.status === 'pending' ? 0.6 : 1,
+            }}>
+              <span style={{
+                color: s.color,
+                font: '13px/1 var(--w-mono)',
+                width: 14,
+                animation: s.pulse ? 'w-pulse 1.2s ease-in-out infinite' : undefined,
+              }}>{s.icon}</span>
+              <span style={{ color: 'var(--w-text-3)', font: '10.5px/1 var(--w-mono)', width: 18, textAlign: 'right' }}>
+                {String(p.number).padStart(2, '0')}
+              </span>
+              <span style={{ color: 'var(--w-text-1)', font: '11.5px/1.3 var(--w-mono)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {p.name}
+                {isLoop && (
+                  <span style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', marginLeft: 6 }}>(per slice)</span>
+                )}
+              </span>
+              {gate && (
+                <span title={`Human approval gate · ${gate}`} style={{
+                  color: p.status === 'done' ? 'var(--w-phosphor)' : 'var(--w-amber)',
+                  font: '10px/1 var(--w-mono)',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  flex: '0 0 auto',
+                }}>
+                  🚦 {gate}
+                </span>
+              )}
               <span style={{
                 color: s.color,
                 font: '9.5px/1 var(--w-mono)',
@@ -558,7 +744,7 @@ export function DashboardPanel({ project }) {
             <Metric
               label="session"
               value={(project.last_session_id || '—').slice(0, 7)}
-              hint={`model ${(project.model || 'opus-4-7').replace(/^claude-/, '')} · ${project.permission_mode}`}
+              hint={`model ${formatModel(project.model || 'opus-4-7')} · ${project.permission_mode}`}
               accent="phosphor"
             />
           </div>
@@ -567,7 +753,16 @@ export function DashboardPanel({ project }) {
               even before a run starts (all-pending) so the pipeline shape
               is visible. Polled every 5 s independently of the heavy
               dashboard refresh. */}
-          <PhaseTracker phases={phaseState.phases} anyTracked={phaseState.anyTracked} />
+          {/* Mutually exclusive: SDLC orchestrator pipeline vs Modernization
+              status. Phase names from the API tell us which workflow is
+              driving this project — see isModernizationMode(). Both
+              components live in this file (above) and have intentionally
+              different palettes (cyan vs amber) so an operator can tell
+              them apart at a glance. */}
+          {isModernizationMode(phaseState.phases)
+            ? <ModernizationStatusPanel phases={phaseState.phases} anyTracked={phaseState.anyTracked} />
+            : <PhaseTracker phases={phaseState.phases} anyTracked={phaseState.anyTracked} />
+          }
 
           {/* Row 2 — BRDs, Epics, Overview (counts) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, height: 260 }}>

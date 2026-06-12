@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import multer from 'multer';
 import { db } from '../db.js';
+import { projectForRead, projectForWrite } from './projectAccess.js';
 
 export const uploads = Router();
 
@@ -40,8 +41,10 @@ const upload = multer({
 // trace when the frontend has a stale project id cached.
 uploads.post('/:projectId',
   (req, res, next) => {
-    const project = db.prepare('SELECT id FROM projects WHERE id = ?').get(req.params.projectId);
-    if (!project) return res.status(404).json({ error: 'project not found — refresh the project list and retry' });
+    // Write gate — uploading a file mutates the project's filesystem.
+    // Admins do NOT bypass; only the owner (or loopback) may upload.
+    const project = projectForWrite(req.params.projectId, req, res);
+    if (!project) return; // projectForWrite already sent 404
     next();
   },
   (req, res, next) => {
@@ -72,8 +75,8 @@ uploads.post('/:projectId',
 );
 
 uploads.get('/:projectId', (req, res) => {
-  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.projectId);
-  if (!project) return res.status(404).json({ error: 'project not found' });
+  const project = projectForRead(req.params.projectId, req, res);
+  if (!project) return;
   const dir = path.join(project.path, UPLOAD_SUBDIR);
   if (!fs.existsSync(dir)) return res.json([]);
   const files = fs.readdirSync(dir).map((name) => {
@@ -85,8 +88,8 @@ uploads.get('/:projectId', (req, res) => {
 });
 
 uploads.delete('/:projectId/:filename', (req, res) => {
-  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.projectId);
-  if (!project) return res.status(404).json({ error: 'project not found' });
+  const project = projectForWrite(req.params.projectId, req, res);
+  if (!project) return;
   const name = req.params.filename;
   if (name.includes('/') || name.includes('\\') || name === '..' || name === '.') {
     return res.status(400).json({ error: 'invalid filename' });
@@ -97,8 +100,8 @@ uploads.delete('/:projectId/:filename', (req, res) => {
 });
 
 uploads.get('/:projectId/:filename/raw', (req, res) => {
-  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.projectId);
-  if (!project) return res.status(404).json({ error: 'project not found' });
+  const project = projectForRead(req.params.projectId, req, res);
+  if (!project) return;
   const name = req.params.filename;
   if (name.includes('/') || name.includes('\\') || name === '..' || name === '.') {
     return res.status(400).json({ error: 'invalid filename' });

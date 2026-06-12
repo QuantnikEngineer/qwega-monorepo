@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { writeWegaProjectFile } from './atlassian.js';
+import { projectForRead, projectForWrite } from './projectAccess.js';
 
 export const llm = Router();
 
@@ -15,10 +16,10 @@ export const PROVIDERS = {
     defaultModel: 'claude-opus-4-7',
   },
   bedrock: {
-    label: 'AWS Bedrock (Claude)',
+    label: 'AWS Bedrock (Claude) · house default',
     wired: true,
-    note: 'Claude via AWS Bedrock. Sets CLAUDE_CODE_USE_BEDROCK + AWS creds on the SDK process.',
-    defaultModel: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+    note: 'Claude Sonnet 4.6 via AWS Bedrock — the house default for new projects. Sets CLAUDE_CODE_USE_BEDROCK + AWS creds on the SDK process. Reads AWS_BEARER_TOKEN_BEDROCK + AWS_REGION + WEGA_CHAT_BEDROCK_MODEL from the service .env.',
+    defaultModel: 'us.anthropic.claude-sonnet-4-6-20251001-v1:0',
   },
   vertex: {
     label: 'GCP Vertex AI (Claude)',
@@ -46,12 +47,6 @@ export const PROVIDERS = {
   },
 };
 
-function projectOr404(id, res) {
-  const p = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
-  if (!p) { res.status(404).json({ error: 'project not found' }); return null; }
-  return p;
-}
-
 // Strip secrets for the GET path. Stored values stay in DB; the response
 // only signals whether each secret is set, not the value.
 function maskSecrets(cfg) {
@@ -65,7 +60,7 @@ function maskSecrets(cfg) {
 }
 
 llm.get('/:projectId', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForRead(req.params.projectId, req, res);
   if (!project) return;
   const provider = project.llm_provider || 'anthropic';
   let config = {};
@@ -81,7 +76,7 @@ llm.get('/:projectId', (req, res) => {
 });
 
 llm.put('/:projectId', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForWrite(req.params.projectId, req, res);
   if (!project) return;
   const { provider, model, config } = req.body || {};
   if (!provider || !PROVIDERS[provider]) {
@@ -127,11 +122,21 @@ llm.put('/:projectId', (req, res) => {
 // to prepare the SDK call. Returns true if the provider is wired and the
 // env was successfully prepared; false if the provider is config-only.
 export function applyProviderEnv(project, targetEnv) {
-  const provider = project.llm_provider || 'anthropic';
+  // Default is now Bedrock (house default, Sonnet 4.6). Older projects whose
+  // llm_provider column is NULL fall through to this default. Operators can
+  // explicitly opt back to anthropic/vertex/foundry/etc per project from the
+  // Settings panel.
+  const provider = project.llm_provider || 'bedrock';
   let cfg = {};
   if (project.llm_config) {
     try { cfg = JSON.parse(project.llm_config); } catch {}
   }
+  // Capture the service-wide AWS bearer + region BEFORE stripping; the
+  // bedrock branch falls back to these env-level values when a project
+  // has no per-project cfg.awsBearerToken (the common case now that
+  // Bedrock is the default for new projects).
+  const envAwsBearer = targetEnv.AWS_BEARER_TOKEN_BEDROCK || null;
+  const envAwsRegion = targetEnv.AWS_REGION || null;
   // Always strip prior provider envs so a stale earlier-call state can't leak.
   delete targetEnv.CLAUDE_CODE_USE_BEDROCK;
   delete targetEnv.CLAUDE_CODE_USE_VERTEX;
@@ -152,12 +157,26 @@ export function applyProviderEnv(project, targetEnv) {
       }
       return { wired: true, model: project.llm_model || PROVIDERS.anthropic.defaultModel };
     case 'bedrock':
+      // Strip direct-Anthropic creds so the SDK can't fall back to them.
+      delete targetEnv.ANTHROPIC_API_KEY;
+      delete targetEnv.CLAUDE_CODE_OAUTH_TOKEN;
       targetEnv.CLAUDE_CODE_USE_BEDROCK = '1';
-      if (cfg.awsRegion) targetEnv.AWS_REGION = cfg.awsRegion;
+      // Region: per-project cfg → env-level → us-east-1 fallback.
+      targetEnv.AWS_REGION = cfg.awsRegion || envAwsRegion || 'us-east-1';
+      // Bearer / IAM credentials: per-project cfg takes precedence; when
+      // absent, fall back to the service-wide env-level AWS_BEARER_TOKEN_BEDROCK
+      // captured above (the common case for projects using the house default).
       if (cfg.awsBearerToken) {
         // Long-term Bedrock API key (ABSK… format). Takes precedence over
         // IAM creds — and strip the IAM trio so a stale combo can't leak.
         targetEnv.AWS_BEARER_TOKEN_BEDROCK = cfg.awsBearerToken;
+        delete targetEnv.AWS_ACCESS_KEY_ID;
+        delete targetEnv.AWS_SECRET_ACCESS_KEY;
+        delete targetEnv.AWS_SESSION_TOKEN;
+      } else if (envAwsBearer) {
+        // House default: env-level bearer from backend/.env. Strip IAM trio
+        // for the same reason — no stale combos.
+        targetEnv.AWS_BEARER_TOKEN_BEDROCK = envAwsBearer;
         delete targetEnv.AWS_ACCESS_KEY_ID;
         delete targetEnv.AWS_SECRET_ACCESS_KEY;
         delete targetEnv.AWS_SESSION_TOKEN;
@@ -166,7 +185,12 @@ export function applyProviderEnv(project, targetEnv) {
         if (cfg.awsSecretAccessKey) targetEnv.AWS_SECRET_ACCESS_KEY = cfg.awsSecretAccessKey;
         if (cfg.awsSessionToken) targetEnv.AWS_SESSION_TOKEN = cfg.awsSessionToken;
       }
-      return { wired: true, model: project.llm_model || PROVIDERS.bedrock.defaultModel };
+      return {
+        wired: true,
+        model: project.llm_model
+            || process.env.WEGA_CHAT_BEDROCK_MODEL
+            || PROVIDERS.bedrock.defaultModel,
+      };
     case 'vertex':
       targetEnv.CLAUDE_CODE_USE_VERTEX = '1';
       if (cfg.gcpProjectId) targetEnv.ANTHROPIC_VERTEX_PROJECT_ID = cfg.gcpProjectId;

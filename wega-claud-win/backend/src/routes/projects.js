@@ -30,8 +30,24 @@ projects.get('/', (req, res) => {
   if (!req.user) {
     return res.json(db.prepare(`SELECT * FROM projects ORDER BY id DESC`).all());
   }
-  // Show the caller's own projects + every project flagged is_public = 1
-  // (shared workspaces — see db.js). Same ordering for both.
+  // Admins can opt into seeing every project across the workbench by
+  // passing `?scope=all`. The flag is silently ignored for non-admins —
+  // the rule is "admins choose what they want to see", not "anyone can
+  // ask and find out who has accounts". A scope=all from a non-admin
+  // falls through to the default scoping so the response shape stays
+  // consistent and we don't leak existence of any out-of-scope rows.
+  //
+  // NB: req.user uses snake_case `is_admin` here — auth.js's middleware
+  // sets that on the request object. The camelCase `isAdmin` only appears
+  // on the masked `/auth/me` response. Match what requireAdmin() does in
+  // auth.js (`req.user?.is_admin`) so we stay consistent.
+  if (req.query.scope === 'all' && req.user.is_admin) {
+    return res.json(db.prepare(`SELECT * FROM projects ORDER BY id DESC`).all());
+  }
+  // Default scoping: caller's own projects + every project flagged
+  // is_public = 1 (shared workspaces — see db.js). Same ordering as the
+  // admin-all view so the sidebar's selection cursor doesn't jump when
+  // an admin flips the toggle.
   res.json(
     db.prepare(`SELECT * FROM projects
                 WHERE owner_user_id = ? OR is_public = 1
@@ -65,11 +81,19 @@ projects.post('/', (req, res) => {
     // claimOrphanedProjects). Skills that scaffold projects from the agent
     // process therefore don't have to invent a fake owner.
     const ownerId = req.user?.id ?? null;
+    // Default LLM for newly-created projects: Bedrock + Sonnet 4.6. The
+    // operator can change this from the Settings panel any time. Sonnet 4.6
+    // via Bedrock is wega2's house default per the org's LLM standard;
+    // Anthropic direct is still selectable but no longer the new-project
+    // landing path.
+    const defaultModel = process.env.WEGA_CHAT_BEDROCK_MODEL || 'us.anthropic.claude-sonnet-4-6-20251001-v1:0';
     const result = db
       .prepare(`INSERT INTO projects
-        (name, path, permission_mode, jira_project_key, confluence_space_key, atlassian_labels, owner_user_id)
-        VALUES (?, ?, 'acceptEdits', ?, ?, ?, ?)`)
-      .run(name, projectPath, defaultJira, defaultConfluence, JSON.stringify([projectLabel]), ownerId);
+        (name, path, permission_mode, jira_project_key, confluence_space_key, atlassian_labels, owner_user_id,
+         llm_provider, llm_model, model)
+        VALUES (?, ?, 'acceptEdits', ?, ?, ?, ?, 'bedrock', ?, ?)`)
+      .run(name, projectPath, defaultJira, defaultConfluence, JSON.stringify([projectLabel]), ownerId,
+           defaultModel, defaultModel);
     const created = db.prepare('SELECT * FROM projects WHERE id = ?').get(result.lastInsertRowid);
     writeWegaProjectFile(created);
     res.json(created);
@@ -91,15 +115,21 @@ projects.get('/:id', (req, res) => {
   // Don't leak existence of other users' projects — return 404, not 403.
   // is_public projects are visible to every authenticated user.
   // Loopback callers bypass the ownership check (see isLocalCaller above).
-  if (!isLocalCaller(req) && project.owner_user_id !== req.user.id && !project.is_public) {
+  // Admins also bypass on READ — matches the contract documented in db.js:
+  // "admins can see everyone's projects". They still can't mutate them
+  // (PATCH/DELETE/reset-session use the stricter ownProjectOr404 helper).
+  if (!isLocalCaller(req) && project.owner_user_id !== req.user.id && !project.is_public && !req.user.is_admin) {
     return res.status(404).json({ error: 'not found' });
   }
   res.json(project);
 });
 
 // Read-side access gate. Returns the project if the caller is the owner OR
-// the project is is_public = 1; else writes 404 and returns null. Use for
-// listing, reading, and collaborative ops (chat / messages / file uploads).
+// the project is is_public = 1 OR the caller is an admin; else writes 404
+// and returns null. Use for listing, reading, and collaborative ops (chat /
+// messages / file uploads). The admin-read bypass matches the contract
+// documented in db.js — admins can see everyone's projects, but mutating
+// ops still go through ownProjectOr404 which stays strictly owner-only.
 function accessibleProjectOr404(req, res) {
   const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
   if (!project) {
@@ -107,7 +137,7 @@ function accessibleProjectOr404(req, res) {
     return null;
   }
   if (isLocalCaller(req)) return project;
-  if (project.owner_user_id !== req.user.id && !project.is_public) {
+  if (project.owner_user_id !== req.user.id && !project.is_public && !req.user.is_admin) {
     res.status(404).json({ error: 'not found' });
     return null;
   }

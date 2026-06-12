@@ -19,7 +19,9 @@ import { db } from '../db.js';
 import { retrieve } from './retrieval.js';
 
 const DEFAULT_MODEL          = 'claude-sonnet-4-6';
-const DEFAULT_BEDROCK_MODEL  = 'us.anthropic.claude-3-7-sonnet-20250219-v1:0';
+// House default for Bedrock: Sonnet 4.6 inference profile. Was 3.7 Sonnet
+// (now retired). Override per-instance via WEGA_BRAIN_BEDROCK_MODEL in .env.
+const DEFAULT_BEDROCK_MODEL  = 'us.anthropic.claude-sonnet-4-6-20251001-v1:0';
 const DEFAULT_BEDROCK_REGION = 'us-east-1';
 
 function buildSystemPrompt(userName) {
@@ -127,7 +129,7 @@ async function generateViaAnthropic({ model, system, messages }) {
     text: resp.content.filter((b) => b.type === 'text').map((b) => b.text).join(''),
     usage: resp.usage || {},
     modelUsed: model,
-    via: 'anthropic-direct',
+    via: 'anthropic',  // fallback path now (was the primary in the prior version).
   };
 }
 
@@ -155,7 +157,7 @@ async function generateViaBedrock({ system, messages }) {
     text: (parsed.content || []).filter((b) => b.type === 'text').map((b) => b.text).join(''),
     usage: parsed.usage || {},
     modelUsed: modelId,
-    via: 'bedrock-fallback',
+    via: 'bedrock',  // was 'bedrock-fallback' — Bedrock is the primary path now.
   };
 }
 
@@ -388,19 +390,23 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
 
   let resp;
   let fellBackReason = null;
-  if (hasAnthropic) {
+  // PRIMARY = Bedrock (Sonnet 4.6 — wega2's house default). Anthropic-direct
+  // is the FALLBACK now, the reverse of the old order. If Bedrock fails for
+  // a rate-limit / overload reason and Anthropic creds are present, retry
+  // there. Any other error from Bedrock propagates.
+  if (hasBedrock) {
     try {
-      resp = await generateViaAnthropic({ model: chosenModel, system: systemPrompt, messages });
+      resp = await generateViaBedrock({ system: systemPrompt, messages });
     } catch (err) {
-      if (hasBedrock && isRateLimitOrOverloaded(err)) {
-        fellBackReason = `anthropic-direct ${err?.status || err?.name || 'failed'} — using Bedrock`;
-        resp = await generateViaBedrock({ system: systemPrompt, messages });
+      if (hasAnthropic && isRateLimitOrOverloaded(err)) {
+        fellBackReason = `bedrock ${err?.status || err?.name || 'failed'} — using Anthropic direct`;
+        resp = await generateViaAnthropic({ model: chosenModel, system: systemPrompt, messages });
       } else {
         throw err;
       }
     }
   } else {
-    resp = await generateViaBedrock({ system: systemPrompt, messages });
+    resp = await generateViaAnthropic({ model: chosenModel, system: systemPrompt, messages });
   }
 
   const generationDoneAt = Date.now();
@@ -430,7 +436,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
     try {
       const projectId = scope.kind === 'project' ? scope.projectId : null;
       if (projectId) {
-        const modelTag = `wega-brain:${resp.via === 'bedrock-fallback' ? 'bedrock:' : ''}${resp.modelUsed}`;
+        const modelTag = `wega-brain:${resp.via === 'bedrock' ? 'bedrock:' : ''}${resp.modelUsed}`;
         db.prepare(`
           INSERT INTO usage_events
             (project_id, user_id, model, session_id,
@@ -468,7 +474,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
     retrieved: r.results.length,
     candidateCount: r.candidateCount ?? 0,
     model: resp.modelUsed,
-    via: resp.via,                   // 'anthropic-direct' | 'bedrock-fallback'
+    via: resp.via,                   // 'bedrock' (primary, default) | 'anthropic' (fallback)
     fellBackReason,                  // populated only when Bedrock kicked in
     usage: {
       input_tokens:  inT,

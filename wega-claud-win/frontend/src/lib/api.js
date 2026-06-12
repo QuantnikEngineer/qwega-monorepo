@@ -34,7 +34,10 @@ export const api = {
   me:       () => reqOrEmpty('/auth/me'),
 
   listPhases: (projectId) => reqOrEmpty(`/phases/${projectId}`),
-  listProjects: () => req('/projects'),
+  // scope: 'own' (default) | 'all'. 'all' only honored when the caller is an
+  // admin; the backend silently downgrades it otherwise.
+  listProjects: ({ scope = 'own' } = {}) =>
+    req(scope === 'all' ? '/projects?scope=all' : '/projects'),
   createProject: (data) => req('/projects', { method: 'POST', body: JSON.stringify(data) }),
   updateProject: (id, data) => req(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteProject: (id) => req(`/projects/${id}`, { method: 'DELETE' }),
@@ -107,6 +110,13 @@ export const api = {
   // Admin overview. 403 unless me().user.isAdmin === true. Single fat call
   // that returns users + projects + summary so the panel can render one shot.
   adminOverview: () => req('/admin/overview'),
+
+  // Admin user deletion. Body:
+  //   { disposition: 'transfer' | 'delete', transferToUserId?: number }
+  // disposition is only required when the user owns ≥1 project — the
+  // server returns 400 with the project count in the error if missing.
+  adminDeleteUser: (userId, body = {}) =>
+    req(`/admin/users/${userId}`, { method: 'DELETE', body: JSON.stringify(body) }),
 
   // Context Fabric — the RAG knowledge surface.
   contextHealth: () => req('/context/health'),

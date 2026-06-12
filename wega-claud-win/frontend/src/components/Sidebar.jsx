@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api.js';
-import { WiproLockup, Pill, KeyCap, Btn } from './ui.jsx';
+import { WiproLockup, Pill, KeyCap, Btn, formatModel } from './ui.jsx';
 
 const THEMES = [
   { id: 'cyber-dark',   label: 'cyber',   polarity: 'dark',  swatch: '#00ff9c', bg: '#04070a' },
@@ -10,7 +10,13 @@ const THEMES = [
   { id: 'sunset-light', label: 'sunset',  polarity: 'light', swatch: '#d94e2e', bg: '#fbf6ee' },
 ];
 
-export function Sidebar({ projects, activeId, onSelect, onChanged, theme, onChangeTheme, user = 'wega' }) {
+export function Sidebar({
+  projects, activeId, onSelect, onChanged, theme, onChangeTheme,
+  user = null,
+  projectScope = 'own',
+  onChangeProjectScope = () => {},
+}) {
+  const isAdmin = !!user?.isAdmin;
   const navigate = useNavigate();
   const dialogRef = useRef(null);
   const [name, setName] = useState('');
@@ -85,6 +91,34 @@ export function Sidebar({ projects, activeId, onSelect, onChanged, theme, onChan
         <span style={{ color: 'var(--w-text-3)' }}>{projects.length}</span>
       </div>
 
+      {/* Admin-only scope toggle. The default is 'mine'; admins can flip
+          to 'all' to see every project across the workbench. Hidden for
+          non-admins — the backend gates the actual access; this toggle is
+          purely a UI convenience. */}
+      {isAdmin && (
+        <div style={{
+          padding: '0 16px 6px',
+          display: 'flex', alignItems: 'center', gap: 6,
+          font: '10px/1 var(--w-mono)',
+          letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: 'var(--w-text-3)',
+        }}>
+          <span style={{ color: 'var(--w-amber)' }}>· admin scope:</span>
+          <button
+            type="button"
+            onClick={() => onChangeProjectScope('own')}
+            title="show only projects you own or that are shared (default)"
+            style={scopePillStyle(projectScope === 'own')}
+          >mine</button>
+          <button
+            type="button"
+            onClick={() => onChangeProjectScope('all')}
+            title="show every project across all users in the workbench (admin only)"
+            style={scopePillStyle(projectScope === 'all')}
+          >all</button>
+        </div>
+      )}
+
       <div style={{ padding: '0 8px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', flex: 1 }}>
         {projects.length === 0 && (
           <div style={{ padding: '20px 12px', color: 'var(--w-text-3)', font: '11.5px/1.4 var(--w-mono)', textAlign: 'center' }}>
@@ -122,7 +156,7 @@ export function Sidebar({ projects, activeId, onSelect, onChanged, theme, onChan
               {isActive && (
                 <div style={{ marginTop: 6, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <Pill tone="phosphor" dot>live</Pill>
-                  <Pill>{(p.model || 'opus-4-7').replace(/^claude-/, '')}</Pill>
+                  <Pill>{formatModel(p.model || 'opus-4-7')}</Pill>
                 </div>
               )}
             </div>
@@ -175,7 +209,7 @@ export function Sidebar({ projects, activeId, onSelect, onChanged, theme, onChan
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--w-text-2)', font: '10.5px/1.4 var(--w-mono)' }}>
           <span><span style={{ color: 'var(--w-phosphor)' }}>●</span> agent online</span>
-          <span>{user}</span>
+          <span>{user?.name || user?.email || 'wega'}</span>
         </div>
       </div>
 
@@ -195,4 +229,19 @@ export function Sidebar({ projects, activeId, onSelect, onChanged, theme, onChan
       </dialog>
     </aside>
   );
+}
+
+// Pill style for the admin scope toggle. Active pill is phosphor-highlighted.
+function scopePillStyle(active) {
+  return {
+    background: active ? 'var(--w-phosphor-veil)' : 'transparent',
+    border: `1px solid ${active ? 'var(--w-phosphor)' : 'var(--w-line)'}`,
+    color: active ? 'var(--w-phosphor)' : 'var(--w-text-2)',
+    font: '10px/1 var(--w-mono)',
+    letterSpacing: '0.1em',
+    padding: '3px 7px',
+    borderRadius: 2,
+    cursor: 'pointer',
+    textTransform: 'uppercase',
+  };
 }

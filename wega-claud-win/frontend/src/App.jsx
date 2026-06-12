@@ -62,6 +62,15 @@ export default function App() {
 
   const [projects, setProjects] = useState([]);
   const [pendingSend, setPendingSend] = useState(null);
+  const [user, setUser] = useState(null); // populated once after /auth/me; null for unauthed
+  const [projectScope, setProjectScope] = useState(() => {
+    // Admin opt-in: see every project across the workbench. Default 'own'.
+    // Persisted so the toggle survives reloads. The backend silently
+    // downgrades scope=all from a non-admin, so saving it for a future-admin
+    // user is safe — it'll just be ignored until they actually have the flag.
+    try { return localStorage.getItem('wega.admin.projectScope') === 'all' ? 'all' : 'own'; }
+    catch { return 'own'; }
+  });
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem('wega-theme');
     // migrate legacy values to the sunset family (the new default)
@@ -95,7 +104,7 @@ export default function App() {
   };
 
   const refresh = async () => {
-    const list = await api.listProjects();
+    const list = await api.listProjects({ scope: projectScope });
     setProjects(list);
 
     if (urlProjectId == null) {
@@ -126,6 +135,26 @@ export default function App() {
 
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
 
+  // Fetch the logged-in user once so the sidebar can show admin-only UI
+  // (the scope toggle). Non-admins never see it; the API endpoint is the
+  // ultimate gate, so showing the toggle is purely cosmetic.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const me = await api.me();
+      if (!cancelled && me?.user) setUser(me.user);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Re-fetch projects whenever the admin scope toggle flips. Persist the
+  // choice so it survives reloads.
+  const setProjectScopePersisted = (next) => {
+    setProjectScope(next);
+    try { localStorage.setItem('wega.admin.projectScope', next); } catch {}
+  };
+  useEffect(() => { refresh(); /* eslint-disable-next-line */ }, [projectScope]);
+
   const active = projects.find((p) => p.id === activeId);
 
   const tabsWithBadges = TABS.map((t) => {
@@ -153,6 +182,9 @@ export default function App() {
           onChanged={refresh}
           theme={theme}
           onChangeTheme={setTheme}
+          user={user}
+          projectScope={projectScope}
+          onChangeProjectScope={setProjectScopePersisted}
         />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           {!active && globalRoute === 'context' && (

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db.js';
+import { projectForRead, projectForWrite } from './projectAccess.js';
 
 export const phases = Router();
 
@@ -11,17 +12,11 @@ const CANONICAL_NAMES = {
   9: 'Test Execution', 10: 'Deployment', 11: 'Sanity Checks',
 };
 
-function projectOr404(id, res) {
-  const p = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
-  if (!p) { res.status(404).json({ error: 'project not found' }); return null; }
-  return p;
-}
-
 // GET — read the full phase map for a project. Returns 11 rows, filling in
 // any missing phases as 'pending' with their canonical name. Always-present
 // shape makes the frontend renderer trivial.
 phases.get('/:projectId', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForRead(req.params.projectId, req, res);
   if (!project) return;
   const rows = db.prepare(
     `SELECT phase_number, name, status, note, started_at, updated_at
@@ -50,7 +45,7 @@ phases.get('/:projectId', (req, res) => {
 // still pending/running is promoted to done (mirrors the client inference
 // but is now persisted, so re-renders are consistent).
 phases.post('/:projectId', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForWrite(req.params.projectId, req, res);
   if (!project) return;
   const { phase, status, name, note } = req.body || {};
   const phaseNum = Number(phase);
@@ -62,18 +57,25 @@ phases.post('/:projectId', (req, res) => {
   }
   const now = Math.floor(Date.now() / 1000);
   const startedAt = (status === 'running') ? now : null;
-  const canonicalName = name || CANONICAL_NAMES[phaseNum];
+  // For NEW rows (INSERT path), fall back to the canonical SDLC name when
+  // the caller didn't pass one. For EXISTING rows (UPDATE path), pass null
+  // when the caller didn't provide a name so COALESCE preserves what's
+  // already there — fixes a bug where a skill that POSTs `done` without
+  // re-passing `name` would silently revert its custom phase label back
+  // to the canonical default ("Discover & Understand" → "BRD", etc.).
+  const passedName = (typeof name === 'string' && name.trim()) ? name : null;
+  const insertName = passedName || CANONICAL_NAMES[phaseNum];
 
   db.prepare(
     `INSERT INTO project_phases (project_id, phase_number, name, status, note, started_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(project_id, phase_number) DO UPDATE SET
-       name = excluded.name,
+       name = COALESCE(?, project_phases.name),
        status = excluded.status,
        note = COALESCE(excluded.note, project_phases.note),
        started_at = COALESCE(excluded.started_at, project_phases.started_at),
        updated_at = excluded.updated_at`
-  ).run(project.id, phaseNum, canonicalName, status, note || null, startedAt, now);
+  ).run(project.id, phaseNum, insertName, status, note || null, startedAt, now, passedName);
 
   // Sequential-ordering inference, persisted. If we just set phase N to
   // running/done, every earlier phase must be done (they ran in order).
@@ -107,7 +109,7 @@ phases.post('/:projectId', (req, res) => {
 // DELETE — wipe the phase map for a project. Called at the start of a new
 // orchestrator run so the panel reflects the new pipeline, not the prior one.
 phases.delete('/:projectId', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForWrite(req.params.projectId, req, res);
   if (!project) return;
   const result = db.prepare(`DELETE FROM project_phases WHERE project_id = ?`).run(project.id);
   res.json({ ok: true, cleared: result.changes });

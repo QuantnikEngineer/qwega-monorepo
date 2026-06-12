@@ -2,14 +2,9 @@ import { Router } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { db } from '../db.js';
+import { projectForRead, projectForWrite } from './projectAccess.js';
 
 export const atlassian = Router();
-
-function projectOr404(id, res) {
-  const p = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
-  if (!p) { res.status(404).json({ error: 'project not found' }); return null; }
-  return p;
-}
 
 // Persist the wega2 project's atlassian + LLM scope into <project>/.claude/wega.json
 // so skills running inside the SDK (which can't read wega2.db) have a single
@@ -82,7 +77,7 @@ async function atlGet(creds, host, path, timeoutMs = 15_000) {
 
 // PUT /api/atlassian/:projectId/config — set the per-project Jira key + Confluence space.
 atlassian.put('/:projectId/config', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForWrite(req.params.projectId, req, res);
   if (!project) return;
   const {
     jiraProjectKey,
@@ -114,7 +109,7 @@ atlassian.put('/:projectId/config', (req, res) => {
 
 // GET /api/atlassian/:projectId/config — read it back
 atlassian.get('/:projectId/config', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForRead(req.params.projectId, req, res);
   if (!project) return;
   let labels = [];
   if (project.atlassian_labels) {
@@ -131,7 +126,7 @@ atlassian.get('/:projectId/config', (req, res) => {
 
 // GET /api/atlassian/:projectId/artifacts — pull live data scoped to this project.
 atlassian.get('/:projectId/artifacts', async (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForRead(req.params.projectId, req, res);
   if (!project) return;
 
   const creds = atlassianCreds();

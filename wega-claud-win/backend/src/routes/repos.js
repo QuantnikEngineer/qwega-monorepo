@@ -4,17 +4,12 @@ import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import { db } from '../db.js';
 import { config } from '../config.js';
+import { projectForRead, projectForWrite } from './projectAccess.js';
 
 export const repos = Router();
 
 const REPOS_ROOT = path.join(path.dirname(config.dbPath), 'repos');
 fs.mkdirSync(REPOS_ROOT, { recursive: true });
-
-function projectOr404(id, res) {
-  const p = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
-  if (!p) { res.status(404).json({ error: 'project not found' }); return null; }
-  return p;
-}
 
 function inspect(repoPath) {
   const exists = fs.existsSync(repoPath);
@@ -62,7 +57,7 @@ function gitClone(remoteUrl, targetPath) {
 }
 
 repos.get('/:projectId', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForRead(req.params.projectId, req, res);
   if (!project) return;
   const rows = db
     .prepare('SELECT * FROM project_repos WHERE project_id = ? ORDER BY id ASC')
@@ -71,7 +66,7 @@ repos.get('/:projectId', (req, res) => {
 });
 
 repos.post('/:projectId', async (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForWrite(req.params.projectId, req, res);
   if (!project) return;
   let { name, remoteUrl } = req.body || {};
   name = (name || '').trim();
@@ -123,7 +118,7 @@ repos.post('/:projectId', async (req, res) => {
 });
 
 repos.get('/:projectId/:repoId/tree', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForRead(req.params.projectId, req, res);
   if (!project) return;
   const repo = db
     .prepare('SELECT * FROM project_repos WHERE id = ? AND project_id = ?')
@@ -177,7 +172,7 @@ repos.get('/:projectId/:repoId/tree', (req, res) => {
 });
 
 repos.delete('/:projectId/:repoId', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForWrite(req.params.projectId, req, res);
   if (!project) return;
   db.prepare('DELETE FROM project_repos WHERE id = ? AND project_id = ?')
     .run(req.params.repoId, project.id);
@@ -185,7 +180,7 @@ repos.delete('/:projectId/:repoId', (req, res) => {
 });
 
 repos.post('/:projectId/:repoId/clone', async (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForWrite(req.params.projectId, req, res);
   if (!project) return;
   const repo = db
     .prepare('SELECT * FROM project_repos WHERE id = ? AND project_id = ?')

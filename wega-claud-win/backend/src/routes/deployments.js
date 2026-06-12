@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import http from 'node:http';
 import { db } from '../db.js';
+import { projectForWrite } from './projectAccess.js';
 
 export const deployments = Router();
 
@@ -232,8 +233,11 @@ export function restartLiveDeployments() {
 // ---- routes ----
 
 deployments.post('/:projectId', async (req, res) => {
-  const project = db.prepare(`SELECT * FROM projects WHERE id=?`).get(req.params.projectId);
-  if (!project) return res.status(404).json({ error: 'project not found' });
+  // Deploying mutates the deployments root + spawns processes — write gate
+  // (owner only). Admins do NOT bypass; only the owner (or loopback for
+  // the deploy-to-platform skill) may deploy.
+  const project = projectForWrite(req.params.projectId, req, res);
+  if (!project) return;
 
   const {
     slug: requestedSlug,

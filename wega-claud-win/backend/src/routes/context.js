@@ -14,6 +14,7 @@ import { ingestSource } from '../services/ingest.js';
 import { retrieve } from '../services/retrieval.js';
 import { isConfigured, authMode, getEmbeddingModel, getEmbeddingDim } from '../services/embedding.js';
 import { ask as wegaBrainAsk } from '../services/wega-brain.js';
+import { projectForRead, projectForWrite } from './projectAccess.js';
 
 export const context = Router();
 
@@ -129,8 +130,11 @@ context.post('/sources', (req, res) => {
   }
   if (scope === 'project') {
     if (!Number.isFinite(Number(projectId))) return res.status(400).json({ error: 'project scope requires projectId' });
-    const project = db.prepare('SELECT id FROM projects WHERE id = ?').get(Number(projectId));
-    if (!project) return res.status(404).json({ error: 'project not found' });
+    // Adding a context source to a project is a write — only the owner
+    // (or loopback) may do it. Admins do NOT bypass; they can READ
+    // someone else's project's context sources via the GET below, but
+    // not mutate them.
+    if (!projectForWrite(Number(projectId), req, res)) return;
   }
 
   const cfgStr = JSON.stringify(config || {});
@@ -261,8 +265,9 @@ context.post('/sources/bulk', async (req, res) => {
 context.post('/auto-init', (req, res) => {
   const projectId = Number(req.query.projectId ?? req.body?.projectId);
   if (!Number.isFinite(projectId)) return res.status(400).json({ error: 'projectId required' });
-  const project = db.prepare('SELECT id FROM projects WHERE id = ?').get(projectId);
-  if (!project) return res.status(404).json({ error: 'project not found' });
+  // Auto-init mutates context_sources — write gate (owner only).
+  const project = projectForWrite(projectId, req, res);
+  if (!project) return;
 
   const created = [];
 
@@ -364,8 +369,10 @@ context.post('/ask', async (req, res) => {
 context.get('/repos-available', (req, res) => {
   const projectId = Number(req.query.projectId);
   if (!Number.isFinite(projectId)) return res.status(400).json({ error: 'projectId required' });
-  const project = db.prepare('SELECT id FROM projects WHERE id = ?').get(projectId);
-  if (!project) return res.status(404).json({ error: 'project not found' });
+  // Read gate — admins can see what's available; only the owner can
+  // actually wire one up via POST /sources above.
+  const project = projectForRead(projectId, req, res);
+  if (!project) return;
 
   const repos = db.prepare(`SELECT id, name, path, remote_url FROM project_repos WHERE project_id = ?`).all(projectId);
   const alreadyRegistered = new Set(

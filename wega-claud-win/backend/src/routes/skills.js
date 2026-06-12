@@ -2,14 +2,9 @@ import { Router } from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
 import { db } from '../db.js';
+import { projectForRead, projectForWrite } from './projectAccess.js';
 
 export const skills = Router();
-
-function projectOr404(id, res) {
-  const p = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
-  if (!p) { res.status(404).json({ error: 'project not found' }); return null; }
-  return p;
-}
 
 function skillsDir(project) {
   const dir = path.join(project.path, '.claude', 'skills');
@@ -22,7 +17,7 @@ function safeName(name) {
 }
 
 skills.get('/:projectId', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForRead(req.params.projectId, req, res);
   if (!project) return;
   const dir = skillsDir(project);
   const list = fs.readdirSync(dir, { withFileTypes: true })
@@ -36,7 +31,7 @@ skills.get('/:projectId', (req, res) => {
 });
 
 skills.get('/:projectId/:name', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForRead(req.params.projectId, req, res);
   if (!project) return;
   if (!safeName(req.params.name)) return res.status(400).json({ error: 'invalid name' });
   const filePath = path.join(skillsDir(project), req.params.name, 'SKILL.md');
@@ -45,7 +40,7 @@ skills.get('/:projectId/:name', (req, res) => {
 });
 
 skills.put('/:projectId/:name', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForWrite(req.params.projectId, req, res);
   if (!project) return;
   if (!safeName(req.params.name)) return res.status(400).json({ error: 'invalid name' });
   const { content } = req.body || {};
@@ -57,7 +52,7 @@ skills.put('/:projectId/:name', (req, res) => {
 });
 
 skills.delete('/:projectId/:name', (req, res) => {
-  const project = projectOr404(req.params.projectId, res);
+  const project = projectForWrite(req.params.projectId, req, res);
   if (!project) return;
   if (!safeName(req.params.name)) return res.status(400).json({ error: 'invalid name' });
   const dir = path.join(skillsDir(project), req.params.name);

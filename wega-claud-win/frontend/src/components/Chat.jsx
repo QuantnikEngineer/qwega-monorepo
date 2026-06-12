@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
 import { openChatSocket } from '../lib/ws.js';
-import { Pill, KeyCap, Btn, S } from './ui.jsx';
+import { Pill, KeyCap, Btn, S, formatModel } from './ui.jsx';
 import { WegaBrainBlock } from './WegaBrainBlock.jsx';
 
 const STATUS_TONE = {
@@ -284,7 +284,7 @@ function ClaudeText({ text, model, streaming }) {
       <span style={{ color: 'var(--w-cyan)', font: '600 12px/1.5 var(--w-mono)', width: 14, flex: '0 0 14px' }}>◊</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', marginBottom: 6, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-          CLAUDE{model ? ` · ${model.replace(/^claude-/, '')}` : ''}
+          CLAUDE{model ? ` · ${formatModel(model)}` : ''}
         </div>
         <div style={{ color: 'var(--w-text-0)', font: '13px/1.6 var(--w-mono)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
           {text}
@@ -1675,7 +1675,7 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, font: '11.5px/1.5 var(--w-mono)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--w-text-2)' }}>model</span>
-              <span style={{ color: 'var(--w-text-0)' }}>{(sessionMeta.model || project.model || '—').replace(/^claude-/, '')}</span>
+              <span style={{ color: 'var(--w-text-0)' }}>{formatModel(sessionMeta.model || project.model) || '—'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--w-text-2)' }}>permission</span>

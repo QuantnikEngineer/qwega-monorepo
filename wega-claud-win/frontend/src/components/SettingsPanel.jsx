@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api.js';
-import { ScreenFrame, Pill, Btn, S } from './ui.jsx';
+import { ScreenFrame, Pill, Btn, S, formatModel } from './ui.jsx';
 
 // ---- Admin overview helpers ----------------------------------------------
 const nf = new Intl.NumberFormat('en-US');
@@ -14,6 +14,10 @@ function AdminOverview() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  // User-deletion modal: holds the user being deleted (or null for closed).
+  const [deletingUser, setDeletingUser] = useState(null);
+  const [me, setMe] = useState(null);
+  useEffect(() => { api.me().then((r) => setMe(r?.user || null)); }, []);
   // Default = collapsed on first load; persist the user's choice so the
   // section stays in whichever state they left it across reloads. Absence
   // of the localStorage key (first visit, or never toggled) reads as
@@ -131,26 +135,67 @@ function AdminOverview() {
               <th style={{ ...th, textAlign: 'right' }}>cache rd</th>
               <th style={{ ...th, textAlign: 'right' }}>cost</th>
               <th style={th}>role</th>
+              <th style={th}></th>{/* delete column */}
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
-              <tr key={u.id}>
-                <td style={td}>{u.email}</td>
-                <td style={td}>{fmtDate(u.created_at)}</td>
-                <td style={td}>{fmtDate(u.last_login_at)}</td>
-                <td style={tdNum}>{u.project_count}</td>
-                <td style={tdNum}>{fmtTokens(u.turn_count)}</td>
-                <td style={tdNum}>{fmtTokens(u.input_tokens)}</td>
-                <td style={tdNum}>{fmtTokens(u.output_tokens)}</td>
-                <td style={tdNum}>{fmtTokens(u.cache_read_input_tokens)}</td>
-                <td style={{ ...tdNum, color: 'var(--w-phosphor)' }}>{fmtCost(u.total_cost_usd)}</td>
-                <td style={td}>{u.is_admin ? <Pill tone="amber" dot>admin</Pill> : <span style={{ color: 'var(--w-text-3)' }}>—</span>}</td>
-              </tr>
-            ))}
+            {users.map((u) => {
+              // Last-admin protection mirrors the backend rule.
+              const adminCount = users.filter((x) => x.is_admin).length;
+              const isLastAdmin = u.is_admin && adminCount === 1;
+              const isSelf = me?.id === u.id;
+              const deletable = !isSelf && !isLastAdmin;
+              return (
+                <tr key={u.id}>
+                  <td style={td}>{u.email}</td>
+                  <td style={td}>{fmtDate(u.created_at)}</td>
+                  <td style={td}>{fmtDate(u.last_login_at)}</td>
+                  <td style={tdNum}>{u.project_count}</td>
+                  <td style={tdNum}>{fmtTokens(u.turn_count)}</td>
+                  <td style={tdNum}>{fmtTokens(u.input_tokens)}</td>
+                  <td style={tdNum}>{fmtTokens(u.output_tokens)}</td>
+                  <td style={tdNum}>{fmtTokens(u.cache_read_input_tokens)}</td>
+                  <td style={{ ...tdNum, color: 'var(--w-phosphor)' }}>{fmtCost(u.total_cost_usd)}</td>
+                  <td style={td}>{u.is_admin ? <Pill tone="amber" dot>admin</Pill> : <span style={{ color: 'var(--w-text-3)' }}>—</span>}</td>
+                  <td style={{ ...td, textAlign: 'right' }}>
+                    {deletable ? (
+                      <button
+                        type="button"
+                        onClick={() => setDeletingUser(u)}
+                        title="delete this user"
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid var(--w-line)',
+                          color: 'var(--w-red, var(--w-text-3))',
+                          font: '10px/1 var(--w-mono)',
+                          padding: '3px 7px',
+                          borderRadius: 2,
+                          cursor: 'pointer',
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                        }}
+                      >× delete</button>
+                    ) : (
+                      <span title={isSelf ? 'you (sign out instead)' : 'last admin'} style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)' }}>
+                        {isSelf ? 'you' : 'last admin'}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+
+      {deletingUser && (
+        <DeleteUserModal
+          target={deletingUser}
+          users={users}
+          onCancel={() => setDeletingUser(null)}
+          onDone={() => { setDeletingUser(null); load(); }}
+        />
+      )}
 
       {/* Projects table */}
       <div style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 6 }}>
@@ -178,7 +223,7 @@ function AdminOverview() {
                 <td style={td}>{p.name}</td>
                 <td style={td}>{p.owner_email || <span style={{ color: 'var(--w-text-3)' }}>—</span>}</td>
                 <td style={td}>{fmtDate(p.created_at)}</td>
-                <td style={td}>{(p.model || '').replace(/^claude-/, '') || <span style={{ color: 'var(--w-text-3)' }}>—</span>}</td>
+                <td style={td}>{formatModel(p.model) || <span style={{ color: 'var(--w-text-3)' }}>—</span>}</td>
                 <td style={td}>{p.is_public ? <Pill tone="phosphor" dot>shared</Pill> : <span style={{ color: 'var(--w-text-3)' }}>private</span>}</td>
                 <td style={tdNum}>{fmtTokens(p.turn_count)}</td>
                 <td style={tdNum}>{fmtTokens(p.input_tokens)}</td>
@@ -191,6 +236,176 @@ function AdminOverview() {
         </table>
       </div>
       </>)}
+    </div>
+  );
+}
+
+// Modal that drives the admin user-deletion flow. If the target has zero
+// projects, asks for a single confirm. If they own ≥1 project, the admin
+// must pick a disposition (transfer to another user OR delete the projects).
+function DeleteUserModal({ target, users, onCancel, onDone }) {
+  const hasProjects = target.project_count > 0;
+  // Default to 'transfer' when there are projects (less destructive). 'none'
+  // when there are no projects — server doesn't need disposition then.
+  const [disposition, setDisposition] = useState(hasProjects ? 'transfer' : 'none');
+  // For transfer: default to the first non-target user. If only the target
+  // exists (impossible in practice — last-admin protection blocks first),
+  // the dropdown is empty and transfer is disabled.
+  const transferCandidates = users.filter((u) => u.id !== target.id);
+  const [transferTo, setTransferTo] = useState(transferCandidates[0]?.id ?? null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const confirm = async () => {
+    setBusy(true); setError('');
+    try {
+      const body = hasProjects
+        ? (disposition === 'transfer'
+            ? { disposition: 'transfer', transferToUserId: Number(transferTo) }
+            : { disposition: 'delete' })
+        : {};
+      await api.adminDeleteUser(target.id, body);
+      onDone();
+    } catch (e) {
+      setError(e.message || 'delete failed');
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      onClick={onCancel}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.55)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16,
+      }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 480, maxWidth: '100%',
+          background: 'var(--w-bg-1)',
+          border: '1px solid var(--w-line)',
+          borderLeft: '3px solid var(--w-red, #d04a4a)',
+          borderRadius: 4,
+          padding: '20px 22px 18px',
+          font: '12px/1.4 var(--w-mono)',
+          color: 'var(--w-text-1)',
+        }}>
+        <div style={{ font: '600 13px/1 var(--w-mono)', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--w-red, #d04a4a)', marginBottom: 10 }}>
+          delete user
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <span style={{ color: 'var(--w-text-3)' }}>account:</span>{' '}
+          <span style={{ color: 'var(--w-text-0)' }}>{target.email}</span>
+        </div>
+
+        {!hasProjects && (
+          <div style={{ marginBottom: 14, color: 'var(--w-text-2)' }}>
+            This user owns no projects. The account row, their sessions, and
+            their usage_event history (user_id only) will be removed.
+            Historical project costs they accrued stay attributed to the
+            project, just not back to the user.
+          </div>
+        )}
+
+        {hasProjects && (
+          <>
+            <div style={{ marginBottom: 10, color: 'var(--w-text-2)' }}>
+              This user owns <span style={{ color: 'var(--w-amber)' }}>{target.project_count}</span> project(s).
+              Choose what to do with them:
+            </div>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 10, cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="disposition"
+                value="transfer"
+                checked={disposition === 'transfer'}
+                onChange={() => setDisposition('transfer')}
+                style={{ marginTop: 2 }}
+              />
+              <div>
+                <div style={{ color: 'var(--w-text-0)' }}>transfer to another user</div>
+                <div style={{ color: 'var(--w-text-3)', fontSize: 11 }}>
+                  Projects stay intact. owner_user_id changes. Sessions and
+                  history are preserved.
+                </div>
+                {disposition === 'transfer' && (
+                  <select
+                    value={transferTo ?? ''}
+                    onChange={(e) => setTransferTo(e.target.value)}
+                    style={{
+                      marginTop: 6,
+                      width: '100%',
+                      background: 'var(--w-bg-0)',
+                      border: '1px solid var(--w-line)',
+                      color: 'var(--w-text-0)',
+                      font: '12px/1.3 var(--w-mono)',
+                      padding: '6px 8px',
+                      borderRadius: 2,
+                    }}>
+                    {transferCandidates.length === 0 && (
+                      <option value="">(no other user available)</option>
+                    )}
+                    {transferCandidates.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.email}{u.is_admin ? ' · admin' : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 12, cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="disposition"
+                value="delete"
+                checked={disposition === 'delete'}
+                onChange={() => setDisposition('delete')}
+                style={{ marginTop: 2 }}
+              />
+              <div>
+                <div style={{ color: 'var(--w-text-0)' }}>delete the projects too</div>
+                <div style={{ color: 'var(--w-text-3)', fontSize: 11 }}>
+                  Project rows + their chat history, phases, repos, MCP
+                  configs, and per-project context sources cascade-delete.
+                  On-disk workspace folders are NOT removed — operator can
+                  clean those separately.
+                </div>
+              </div>
+            </label>
+          </>
+        )}
+
+        {error && (
+          <div style={{ color: 'var(--w-red, #d04a4a)', marginBottom: 10 }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 6 }}>
+          <Btn tone="ghost" onClick={onCancel} disabled={busy}>cancel</Btn>
+          <button
+            type="button"
+            onClick={confirm}
+            disabled={busy || (hasProjects && disposition === 'transfer' && !transferTo)}
+            style={{
+              background: 'var(--w-red, #d04a4a)',
+              color: 'var(--w-bg-0)',
+              border: 0,
+              padding: '7px 16px',
+              font: '600 11px/1 var(--w-mono)',
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              borderRadius: 3,
+              cursor: busy ? 'not-allowed' : 'pointer',
+              opacity: busy ? 0.6 : 1,
+            }}>
+            {busy ? '…' : 'delete user'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
