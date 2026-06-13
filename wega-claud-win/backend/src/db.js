@@ -1,4 +1,6 @@
 import Database from 'better-sqlite3';
+import fs from 'node:fs';
+import path from 'node:path';
 import { config } from './config.js';
 
 export const db = new Database(config.dbPath);
@@ -145,6 +147,27 @@ try {
   }
 } catch (e) {
   console.warn('[db] default-admin bootstrap:', e?.message);
+}
+
+// Managed project paths are environment-specific absolute paths. A database
+// committed from a laptop can point at /Users/.../backend/data/projects/foo,
+// which is invalid on a server checkout. For projects that clearly belong to
+// Quantnik's managed projects root, rewrite the path to this host's root.
+try {
+  const marker = `${path.sep}backend${path.sep}data${path.sep}projects${path.sep}`;
+  const rows = db.prepare('SELECT id, name, path FROM projects').all();
+  const update = db.prepare('UPDATE projects SET path = ? WHERE id = ?');
+  for (const p of rows) {
+    const current = String(p.path || '');
+    const managed = current.includes(marker) || current.startsWith(config.projectsRoot);
+    if (!managed) continue;
+    const projectDirName = path.basename(current) || p.name;
+    const repaired = path.join(config.projectsRoot, projectDirName);
+    if (current !== repaired) update.run(repaired, p.id);
+    fs.mkdirSync(path.join(repaired, '.claude', 'skills'), { recursive: true });
+  }
+} catch (e) {
+  console.warn('[db] managed-project-path repair:', e?.message);
 }
 
 // Per-turn usage capture. One row per agent turn — the SDK emits a `result`

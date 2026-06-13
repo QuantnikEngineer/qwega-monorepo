@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { spawn } from 'node:child_process';
 import { db } from '../db.js';
 
 export const admin = Router();
@@ -67,6 +68,51 @@ admin.get('/overview', (req, res) => {
     users,
     projects,
     generated_at: Math.floor(Date.now() / 1000),
+  });
+});
+
+// POST /api/admin/restart/backend
+// Respond first, then terminate the Node process. In production this should be
+// run under a supervisor (pm2/systemd/docker/node --watch) so it comes back up.
+admin.post('/restart/backend', (req, res) => {
+  res.json({
+    ok: true,
+    target: 'backend',
+    message: 'Backend restart requested. The process will exit after this response; the supervisor must restart it.',
+  });
+  setTimeout(() => {
+    process.exit(0);
+  }, 250);
+});
+
+// POST /api/admin/restart/frontend
+// Server deployments usually serve frontend/dist from the backend, so there is
+// no separate frontend process. Operators that do run one can set
+// FRONTEND_RESTART_CMD, for example: "pm2 restart quantnik-frontend".
+admin.post('/restart/frontend', (req, res) => {
+  const cmd = process.env.FRONTEND_RESTART_CMD?.trim();
+  if (!cmd) {
+    return res.json({
+      ok: true,
+      target: 'frontend',
+      restarted: false,
+      message: 'No FRONTEND_RESTART_CMD is configured. This deployment serves the frontend as static files; reload the browser or restart the backend after a new build.',
+    });
+  }
+
+  const child = spawn(cmd, {
+    shell: true,
+    detached: true,
+    stdio: 'ignore',
+    env: process.env,
+  });
+  child.unref();
+  res.json({
+    ok: true,
+    target: 'frontend',
+    restarted: true,
+    command: cmd,
+    message: 'Frontend restart command launched.',
   });
 });
 

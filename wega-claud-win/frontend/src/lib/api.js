@@ -117,6 +117,8 @@ export const api = {
   // server returns 400 with the project count in the error if missing.
   adminDeleteUser: (userId, body = {}) =>
     req(`/admin/users/${userId}`, { method: 'DELETE', body: JSON.stringify(body) }),
+  adminRestartBackend: () => req('/admin/restart/backend', { method: 'POST' }),
+  adminRestartFrontend: () => req('/admin/restart/frontend', { method: 'POST' }),
 
   // Context Fabric — the RAG knowledge surface.
   contextHealth: () => req('/context/health'),

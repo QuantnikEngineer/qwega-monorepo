@@ -14,6 +14,8 @@ function AdminOverview() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [opsMessage, setOpsMessage] = useState('');
+  const [opsBusy, setOpsBusy] = useState('');
   // User-deletion modal: holds the user being deleted (or null for closed).
   const [deletingUser, setDeletingUser] = useState(null);
   const [me, setMe] = useState(null);
@@ -39,6 +41,24 @@ function AdminOverview() {
       .catch((e) => { setError(e.message); setLoading(false); });
   };
   useEffect(() => { load(); }, []);
+
+  const restartService = async (target) => {
+    const label = target === 'backend' ? 'backend' : 'frontend';
+    if (!confirm(`Restart ${label}?`)) return;
+    setOpsBusy(target);
+    setOpsMessage('');
+    setError('');
+    try {
+      const result = target === 'backend'
+        ? await api.adminRestartBackend()
+        : await api.adminRestartFrontend();
+      setOpsMessage(result.message || `${label} restart requested`);
+    } catch (e) {
+      setError(e.message || `${label} restart failed`);
+    } finally {
+      setOpsBusy('');
+    }
+  };
 
   if (loading) {
     return (
@@ -115,6 +135,21 @@ function AdminOverview() {
       <div style={{ padding: '8px 12px', background: 'var(--w-bg-1)', borderLeft: '2px solid var(--w-amber)', borderRadius: 3, font: '11px/1.5 var(--w-mono)', color: 'var(--w-text-1)', marginBottom: 14 }}>
         Token usage and cost are recorded per-turn from this rollout forward.
         Activity before tracking started doesn't appear in these rollups.
+      </div>
+
+      <div style={{ padding: '10px 12px', background: 'var(--w-bg-1)', border: '1px solid var(--w-line)', borderRadius: 3, marginBottom: 14 }}>
+        <div style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 8 }}>
+          // service controls
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Btn tone="amber" disabled={!!opsBusy} onClick={() => restartService('backend')}>
+            {opsBusy === 'backend' ? 'restarting…' : 'restart backend'}
+          </Btn>
+          <Btn tone="line" disabled={!!opsBusy} onClick={() => restartService('frontend')}>
+            {opsBusy === 'frontend' ? 'restarting…' : 'restart frontend'}
+          </Btn>
+          {opsMessage && <span style={{ color: 'var(--w-text-2)', font: '11px/1.4 var(--w-mono)' }}>{opsMessage}</span>}
+        </div>
       </div>
 
       {/* Users table */}
