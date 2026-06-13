@@ -287,12 +287,10 @@ try {
   console.warn('[db] managed-project-path repair:', e?.message);
 }
 
-// Server bootstrap migration: when code is pulled onto a server that already
-// has a persistent SQLite DB, the checked-in project directories can exist
-// without matching rows in that live DB. Reconcile versioned project sidecars
-// into the projects table so locally-created/committed projects appear after
-// deploy without replacing the server's whole database.
-try {
+// Reconcile project sidecars into the projects table. This runs at startup
+// and before project-list responses so project folders created by skills or
+// restored from Git appear without a backend restart.
+export function reconcileProjectSidecars() {
   const admin = db.prepare("SELECT id FROM users WHERE LOWER(email) = 'abhinavkaiser@gmail.com'").get();
   const existingByName = db.prepare('SELECT id FROM projects WHERE name = ?');
   const idTaken = db.prepare('SELECT id FROM projects WHERE id = ?');
@@ -354,6 +352,14 @@ try {
       projectsRoot: config.projectsRoot,
     });
   }
+  return imported;
+}
+
+// Server bootstrap migration: when code is pulled onto a server that already
+// has a persistent SQLite DB, the checked-in project directories can exist
+// without matching rows in that live DB.
+try {
+  reconcileProjectSidecars();
 } catch (e) {
   console.warn('[db] versioned-project bootstrap:', e?.message);
 }

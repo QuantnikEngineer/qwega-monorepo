@@ -110,7 +110,16 @@ export default function App() {
       setProjects([]);
       return;
     }
-    const list = await api.listProjects({ scope: projectScope });
+    let list;
+    try {
+      list = await api.listProjects({ scope: projectScope });
+    } catch (e) {
+      // During logout/login transitions, an in-flight refresh can race a
+      // token clear. Preserve the current list unless the user is truly
+      // unauthenticated, so projects do not appear to vanish transiently.
+      if (!authToken.get()) setProjects([]);
+      return;
+    }
     setProjects(list);
 
     if (urlProjectId == null) {

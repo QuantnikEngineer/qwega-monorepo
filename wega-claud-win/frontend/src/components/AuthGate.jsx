@@ -33,7 +33,12 @@ export function AuthGate({ children }) {
     })();
     const handler = () => { setUser(null); authToken.clear(); };
     window.addEventListener('quantnik:auth-expired', handler);
-    return () => { cancelled = true; window.removeEventListener('quantnik:auth-expired', handler); };
+    window.addEventListener('quantnik:auth-logout', handler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('quantnik:auth-expired', handler);
+      window.removeEventListener('quantnik:auth-logout', handler);
+    };
   }, []);
 
   const submit = async (e) => {
@@ -104,7 +109,7 @@ export function AuthGate({ children }) {
             A project-scoped agent workbench — your repos, docs, Jira & Confluence, wired into one conversation that ships software end to end.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-            {['Project-scoped agents & skills', 'Atlassian-native — Jira & Confluence', 'Private by default — your data stays yours'].map((item, i) => (
+            {['Project-scoped agents & skills', 'Atlassian-native — Jira & Confluence', 'Shared workbench — projects persist'].map((item, i) => (
               <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
                 <span style={{ width: 30, height: 30, borderRadius: 9, background: '#fff', border: '1px solid #dfe7f5', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 3px rgba(16,24,40,.05)' }}>
                   <span style={{ width: 11, height: 11, borderRadius: 3, background: i === 0 ? 'linear-gradient(135deg,#2563eb,#5b9bff)' : i === 1 ? 'linear-gradient(135deg,#0d9488,#34d399)' : 'linear-gradient(135deg,#7c5cff,#a78bfa)', transform: 'rotate(45deg)' }} />
@@ -251,7 +256,7 @@ export function AuthGate({ children }) {
         </form>
 
           <p style={{ color: '#9aa4b2', font: '12.5px/1.6 var(--w-mono)', margin: '26px 0 0', textAlign: 'center' }}>
-          Your projects are private — every user sees only their own.
+          Projects persist in the shared Quantnik workbench after sign-out.
           </p>
         </div>
       </div>

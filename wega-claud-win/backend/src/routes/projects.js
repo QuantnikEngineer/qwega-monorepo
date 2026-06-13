@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
-import { db } from '../db.js';
+import { db, reconcileProjectSidecars } from '../db.js';
 import { config } from '../config.js';
 import { writeQuantnikProjectFile } from './atlassian.js';
 
@@ -20,6 +20,7 @@ function ensureClaudeDir(projectPath) {
 }
 
 projects.get('/', (req, res) => {
+  try { reconcileProjectSidecars(); } catch (e) { console.warn('[projects] sidecar reconcile failed:', e?.message); }
   // Loopback callers (the agent process — see requireAuthOrLocal in
   // auth.js) have no populated req.user; they see all projects since
   // they already have filesystem-level access to the project trees.
@@ -63,15 +64,18 @@ projects.post('/', (req, res) => {
     // provider state just because old AWS env vars happen to exist.
     const defaultProvider = 'anthropic';
     const defaultModel = process.env.QUANTNIK_CHAT_ANTHROPIC_MODEL || 'claude-sonnet-4-6';
-    const result = db
-      .prepare(`INSERT INTO projects
-        (name, path, permission_mode, jira_project_key, confluence_space_key, atlassian_labels, owner_user_id,
-         llm_provider, llm_model, model)
-        VALUES (?, ?, 'acceptEdits', ?, ?, ?, ?, ?, ?, ?)`)
-      .run(name, projectPath, defaultJira, defaultConfluence, JSON.stringify([projectLabel]), ownerId,
-           defaultProvider, defaultModel, defaultModel);
-    const created = db.prepare('SELECT * FROM projects WHERE id = ?').get(result.lastInsertRowid);
-    writeQuantnikProjectFile(created);
+    const created = db.transaction(() => {
+      const result = db
+        .prepare(`INSERT INTO projects
+          (name, path, permission_mode, jira_project_key, confluence_space_key, atlassian_labels, owner_user_id,
+           llm_provider, llm_model, model)
+          VALUES (?, ?, 'acceptEdits', ?, ?, ?, ?, ?, ?, ?)`)
+        .run(name, projectPath, defaultJira, defaultConfluence, JSON.stringify([projectLabel]), ownerId,
+             defaultProvider, defaultModel, defaultModel);
+      const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(result.lastInsertRowid);
+      writeQuantnikProjectFile(row);
+      return row;
+    })();
     res.json(created);
   } catch (e) {
     res.status(400).json({ error: e.message });
