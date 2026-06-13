@@ -7,6 +7,7 @@ const nf = new Intl.NumberFormat('en-US');
 const fmtTokens = (n) => nf.format(Number(n) || 0);
 const fmtCost = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 const fmtDate = (epoch) => epoch ? new Date(epoch * 1000).toISOString().slice(0, 10) : '—';
+const fmtDateTime = (epoch) => epoch ? new Date(epoch * 1000).toLocaleString() : '—';
 
 const ADMIN_COLLAPSED_KEY = 'wega.admin.collapsed';
 
@@ -270,10 +271,150 @@ function AdminOverview() {
           </tbody>
         </table>
       </div>
+
+      <AuditLogViewer />
       </>)}
     </div>
   );
 }
+
+function AuditLogViewer() {
+  const [levels, setLevels] = useState(['info', 'warning', 'error']);
+  const [search, setSearch] = useState('');
+  const [limit, setLimit] = useState(500);
+  const [data, setData] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [expanded, setExpanded] = useState(null);
+
+  const load = () => {
+    setBusy(true);
+    setError('');
+    api.adminAuditLogs({ levels, search, limit })
+      .then((r) => { setData(r); setBusy(false); })
+      .catch((e) => { setError(e.message || 'audit log load failed'); setBusy(false); });
+  };
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  const toggleLevel = (level) => {
+    setLevels((prev) => {
+      const next = prev.includes(level) ? prev.filter((x) => x !== level) : [...prev, level];
+      return next.length ? next : [level];
+    });
+  };
+
+  const tone = (level) => level === 'error' ? 'red' : level === 'warning' ? 'amber' : 'phosphor';
+  const rows = data?.rows || [];
+  const summary = data?.summary || {};
+
+  return (
+    <div style={{ marginTop: 16, border: '1px solid var(--w-line)', background: 'var(--w-bg-1)', borderRadius: 3, padding: '12px 14px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+        <div>
+          <div style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>
+            // audit logs
+          </div>
+          <div style={{ color: 'var(--w-text-0)', font: '13px/1.4 var(--w-mono)' }}>
+            persisted backend information, warnings, and errors
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Pill tone="phosphor">{summary.info || 0} info</Pill>
+          <Pill tone="amber">{summary.warning || 0} warnings</Pill>
+          <Pill tone="red">{summary.error || 0} errors</Pill>
+          <Btn tone="ghost" disabled={busy} onClick={load}>{busy ? 'loading…' : '[ ↻ ] refresh'}</Btn>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
+        {['info', 'warning', 'error'].map((level) => (
+          <button
+            key={level}
+            type="button"
+            onClick={() => toggleLevel(level)}
+            style={{
+              border: `1px solid var(--w-${levels.includes(level) ? tone(level) : 'line'})`,
+              background: levels.includes(level) ? 'var(--w-phosphor-veil)' : 'transparent',
+              color: levels.includes(level) ? `var(--w-${tone(level)})` : 'var(--w-text-3)',
+              borderRadius: 999,
+              padding: '6px 10px',
+              font: '600 11px/1 var(--w-mono)',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+            }}
+          >
+            {level}
+          </button>
+        ))}
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') load(); }}
+          placeholder="search message, source, metadata"
+          style={{ flex: '1 1 260px', minWidth: 220 }}
+        />
+        <select value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
+          {[100, 500, 1000, 5000].map((n) => <option key={n} value={n}>{n} rows</option>)}
+        </select>
+        <Btn tone="line" disabled={busy} onClick={load}>apply</Btn>
+      </div>
+
+      {error && <div style={{ color: 'var(--w-red)', font: '11.5px/1.4 var(--w-mono)', marginBottom: 8 }}>{error}</div>}
+
+      <div style={{ maxHeight: 460, overflow: 'auto', border: '1px solid var(--w-line)', borderRadius: 3 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              {['time', 'level', 'source', 'message', 'request'].map((h) => (
+                <th key={h} style={{ textAlign: 'left', position: 'sticky', top: 0, background: 'var(--w-bg-2)', color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '8px', borderBottom: '1px solid var(--w-line)', zIndex: 1 }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={5} style={{ color: 'var(--w-text-3)', font: '11.5px/1.4 var(--w-mono)', padding: 12 }}>no audit logs match the current filters.</td>
+              </tr>
+            )}
+            {rows.map((r) => (
+              <React.Fragment key={r.id}>
+                <tr onClick={() => setExpanded(expanded === r.id ? null : r.id)} style={{ cursor: 'pointer' }}>
+                  <td style={logTd}>{fmtDateTime(r.created_at)}</td>
+                  <td style={logTd}><Pill tone={tone(r.level)}>{r.level}</Pill></td>
+                  <td style={logTd}>{r.source}</td>
+                  <td style={{ ...logTd, whiteSpace: 'normal', minWidth: 360 }}>{r.message}</td>
+                  <td style={logTd}>{r.request_id || '—'}</td>
+                </tr>
+                {expanded === r.id && (
+                  <tr>
+                    <td colSpan={5} style={{ padding: 0, borderBottom: '1px solid var(--w-line)' }}>
+                      <pre style={{ margin: 0, padding: '10px 12px', background: 'var(--w-bg-2)', color: 'var(--w-text-1)', font: '11px/1.5 var(--w-mono)', whiteSpace: 'pre-wrap' }}>
+                        {JSON.stringify(r.meta || {}, null, 2)}
+                      </pre>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ marginTop: 8, color: 'var(--w-text-3)', font: '10.5px/1.4 var(--w-mono)' }}>
+        Captures console info/warn/error, HTTP status logs, route errors, process exceptions, rejections, and explicit admin actions from backend startup onward.
+      </div>
+    </div>
+  );
+}
+
+const logTd = {
+  color: 'var(--w-text-1)',
+  font: '11px/1.35 var(--w-mono)',
+  padding: '7px 8px',
+  borderBottom: '1px solid var(--w-line)',
+  whiteSpace: 'nowrap',
+  verticalAlign: 'top',
+};
 
 // Modal that drives the admin user-deletion flow. If the target has zero
 // projects, asks for a single confirm. If they own ≥1 project, the admin

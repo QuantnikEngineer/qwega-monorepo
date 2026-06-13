@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { spawn } from 'node:child_process';
-import { db } from '../db.js';
+import { auditLog, db } from '../db.js';
 
 export const admin = Router();
 
@@ -71,10 +71,68 @@ admin.get('/overview', (req, res) => {
   });
 });
 
+// GET /api/admin/audit-logs?level=info,warning,error&search=text&limit=500
+// Complete backend audit stream persisted in SQLite. Captures console info,
+// warnings, errors, HTTP statuses, process safety-net errors, and explicit
+// admin actions from the moment audit logging is installed on startup.
+admin.get('/audit-logs', (req, res) => {
+  const allowed = new Set(['info', 'warning', 'error']);
+  const levels = String(req.query.level || 'info,warning,error')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => allowed.has(s));
+  const selected = levels.length ? levels : ['info', 'warning', 'error'];
+  const limit = Math.min(Math.max(Number(req.query.limit || 500), 1), 5000);
+  const search = String(req.query.search || '').trim();
+  const params = [...selected];
+  let where = `level IN (${selected.map(() => '?').join(',')})`;
+  if (search) {
+    where += ' AND (message LIKE ? OR source LIKE ? OR meta LIKE ?)';
+    const q = `%${search}%`;
+    params.push(q, q, q);
+  }
+  params.push(limit);
+
+  const rows = db.prepare(`
+    SELECT id, level, source, message, meta, user_id, project_id, request_id, created_at
+      FROM audit_logs
+     WHERE ${where}
+     ORDER BY created_at DESC, id DESC
+     LIMIT ?
+  `).all(...params).map((r) => {
+    let meta = null;
+    try { meta = r.meta ? JSON.parse(r.meta) : null; } catch { meta = r.meta; }
+    return { ...r, meta };
+  });
+
+  const summary = db.prepare(`
+    SELECT
+      COUNT(*) AS total,
+      SUM(CASE WHEN level = 'info' THEN 1 ELSE 0 END) AS info,
+      SUM(CASE WHEN level = 'warning' THEN 1 ELSE 0 END) AS warning,
+      SUM(CASE WHEN level = 'error' THEN 1 ELSE 0 END) AS error,
+      MIN(created_at) AS oldest,
+      MAX(created_at) AS newest
+    FROM audit_logs
+  `).get();
+
+  res.json({
+    rows,
+    summary,
+    filters: { levels: selected, search, limit },
+    generated_at: Math.floor(Date.now() / 1000),
+  });
+});
+
 // POST /api/admin/restart/backend
 // Respond first, then terminate the Node process. In production this should be
 // run under a supervisor (pm2/systemd/docker/node --watch) so it comes back up.
 admin.post('/restart/backend', (req, res) => {
+  auditLog('warning', 'admin requested backend restart', {
+    source: 'admin',
+    userId: req.user?.id,
+    requestId: req.auditRequestId,
+  });
   res.json({
     ok: true,
     target: 'backend',
@@ -92,6 +150,11 @@ admin.post('/restart/backend', (req, res) => {
 admin.post('/restart/frontend', (req, res) => {
   const cmd = process.env.FRONTEND_RESTART_CMD?.trim();
   if (!cmd) {
+    auditLog('info', 'admin requested frontend restart; no command configured', {
+      source: 'admin',
+      userId: req.user?.id,
+      requestId: req.auditRequestId,
+    });
     return res.json({
       ok: true,
       target: 'frontend',
@@ -107,6 +170,12 @@ admin.post('/restart/frontend', (req, res) => {
     env: process.env,
   });
   child.unref();
+  auditLog('warning', 'admin launched frontend restart command', {
+    source: 'admin',
+    command: cmd,
+    userId: req.user?.id,
+    requestId: req.auditRequestId,
+  });
   res.json({
     ok: true,
     target: 'frontend',
@@ -201,6 +270,15 @@ admin.delete('/users/:id', (req, res) => {
     db.prepare('DELETE FROM users WHERE id = ?').run(targetId);
   });
   tx();
+  auditLog('warning', `admin deleted user ${target.email}`, {
+    source: 'admin',
+    userId: req.user?.id,
+    deletedUserId: targetId,
+    deletedUserEmail: target.email,
+    projectsHandled: projectCount,
+    disposition: projectCount > 0 ? disposition : 'none',
+    requestId: req.auditRequestId,
+  });
 
   res.json({
     ok: true,

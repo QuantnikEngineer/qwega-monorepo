@@ -23,19 +23,21 @@ import { admin } from './routes/admin.js';
 import { context } from './routes/context.js';
 import { deployments, deploymentDispatcher, restartLiveDeployments } from './routes/deployments.js';
 import { writeWegaProjectFile } from './routes/atlassian.js';
-import { db } from './db.js';
+import { auditLog, auditRequest, db, installAuditConsole } from './db.js';
 import { seedSkills } from './seed-skills.js';
 import { attachWebSocket } from './ws.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
+installAuditConsole();
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 // Auth-token decode happens on every /api/* request; routes downstream
 // either require auth (requireAuth) or are public (just /api/health and
 // /api/auth/{register,login}).
 app.use('/api', attachAuth);
+app.use('/api', auditRequest);
 app.use('/api/auth', auth);
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -103,6 +105,14 @@ if (fs.existsSync(distDir)) {
 // Last-resort error handler — never let a route-level throw crash the
 // service or return a raw stack trace to the client.
 app.use((err, req, res, _next) => {
+  auditLog('error', `[unhandled ${req.method} ${req.path}] ${err?.message || err}`, {
+    source: 'express-error',
+    method: req.method,
+    path: req.originalUrl || req.path,
+    requestId: req.auditRequestId,
+    userId: req.user?.id ?? null,
+    stack: err?.stack,
+  });
   console.error(`[unhandled ${req.method} ${req.path}]`, err);
   if (res.headersSent) return;
   const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 500;
@@ -112,9 +122,18 @@ app.use((err, req, res, _next) => {
 // Process-level safety nets so an unhandled rejection in a route handler or
 // MCP stdio callback doesn't take the whole service down.
 process.on('uncaughtException', (err) => {
+  auditLog('error', `[uncaughtException] ${err?.message || err}`, {
+    source: 'process',
+    stack: err?.stack,
+  });
   console.error('[uncaughtException]', err);
 });
 process.on('unhandledRejection', (reason) => {
+  auditLog('error', `[unhandledRejection] ${reason?.message || reason}`, {
+    source: 'process',
+    stack: reason?.stack,
+    reason: String(reason),
+  });
   console.error('[unhandledRejection]', reason);
 });
 

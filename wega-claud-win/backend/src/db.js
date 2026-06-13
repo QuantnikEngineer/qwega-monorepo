@@ -61,7 +61,115 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_project_repos_project ON project_repos(project_id);
+
+  CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    level TEXT NOT NULL CHECK (level IN ('info','warning','error')),
+    source TEXT NOT NULL DEFAULT 'backend',
+    message TEXT NOT NULL,
+    meta TEXT,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
+    request_id TEXT,
+    created_at INTEGER DEFAULT (strftime('%s', 'now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC, id DESC);
+  CREATE INDEX IF NOT EXISTS idx_audit_logs_level ON audit_logs(level, created_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_audit_logs_request ON audit_logs(request_id);
 `);
+
+const originalConsole = {
+  log: console.log.bind(console),
+  info: console.info.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console),
+};
+let auditConsoleInstalled = false;
+let auditInsert = null;
+
+function serialiseAuditArg(arg) {
+  if (arg instanceof Error) {
+    return {
+      name: arg.name,
+      message: arg.message,
+      stack: arg.stack,
+    };
+  }
+  if (typeof arg === 'string') return arg;
+  try { return JSON.stringify(arg); }
+  catch { return String(arg); }
+}
+
+function normaliseAuditLevel(level) {
+  if (level === 'warn') return 'warning';
+  if (level === 'warning' || level === 'error' || level === 'info') return level;
+  return 'info';
+}
+
+export function auditLog(level, message, meta = {}) {
+  try {
+    auditInsert ||= db.prepare(`
+      INSERT INTO audit_logs (level, source, message, meta, user_id, project_id, request_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const safeMeta = meta && typeof meta === 'object' ? meta : { value: meta };
+    auditInsert.run(
+      normaliseAuditLevel(level),
+      String(safeMeta.source || 'backend').slice(0, 120),
+      String(message || '').slice(0, 8000),
+      JSON.stringify(safeMeta).slice(0, 20000),
+      safeMeta.userId ?? null,
+      safeMeta.projectId ?? null,
+      safeMeta.requestId ?? null,
+      Math.floor(Date.now() / 1000),
+    );
+  } catch (e) {
+    originalConsole.error('[audit] write failed:', e?.message || e);
+  }
+}
+
+export function installAuditConsole() {
+  if (auditConsoleInstalled) return;
+  auditConsoleInstalled = true;
+  const patch = (method, level) => {
+    console[method] = (...args) => {
+      originalConsole[method](...args);
+      auditLog(level, args.map(serialiseAuditArg).join(' '), {
+        source: 'console',
+        args: args.map(serialiseAuditArg),
+      });
+    };
+  };
+  patch('log', 'info');
+  patch('info', 'info');
+  patch('warn', 'warning');
+  patch('error', 'error');
+  auditLog('info', 'audit logging installed', { source: 'audit' });
+}
+
+export function auditRequest(req, res, next) {
+  const started = Date.now();
+  const requestId = `${started.toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  req.auditRequestId = requestId;
+  res.on('finish', () => {
+    const status = res.statusCode;
+    const level = status >= 500 ? 'error' : status >= 400 ? 'warning' : 'info';
+    auditLog(level, `${req.method} ${req.originalUrl} ${status}`, {
+      source: 'http',
+      method: req.method,
+      path: req.originalUrl,
+      status,
+      durationMs: Date.now() - started,
+      userId: req.user?.id ?? null,
+      requestId,
+      ip: req.ip,
+    });
+  });
+  next();
+}
+
+installAuditConsole();
 
 // Lightweight migrations — additive columns only.
 function ensureColumn(table, column, ddl) {

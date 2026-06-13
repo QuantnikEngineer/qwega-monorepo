@@ -110,6 +110,8 @@ export const api = {
   // Admin overview. 403 unless me().user.isAdmin === true. Single fat call
   // that returns users + projects + summary so the panel can render one shot.
   adminOverview: () => req('/admin/overview'),
+  adminAuditLogs: ({ levels = ['info', 'warning', 'error'], search = '', limit = 500 } = {}) =>
+    req(`/admin/audit-logs?level=${encodeURIComponent(levels.join(','))}&search=${encodeURIComponent(search)}&limit=${encodeURIComponent(limit)}`),
 
   // Admin user deletion. Body:
   //   { disposition: 'transfer' | 'delete', transferToUserId?: number }
