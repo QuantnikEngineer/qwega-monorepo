@@ -1,0 +1,23 @@
+{
+  "generatedBy": "wega2",
+  "generatedAt": "2026-06-12T18:33:57.724Z",
+  "project": {
+    "id": 1,
+    "name": "tester",
+    "path": "/Users/akk/Documents/quantnik/qwega-monorepo/wega-claud-win/backend/data/projects/tester"
+  },
+  "atlassian": {
+    "siteName": null,
+    "siteUrl": null,
+    "jiraProjectKey": null,
+    "confluenceSpaceId": null,
+    "confluenceSpaceKey": null,
+    "labels": [
+      "wega-project-tester"
+    ]
+  },
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-6"
+  }
+}

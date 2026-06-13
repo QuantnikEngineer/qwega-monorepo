@@ -4,13 +4,10 @@
 !.claude-user/plugins/
 .claude-user/plugins/marketplaces/
 
-# Runtime data — must never be committed. Each deployment owns its own DB,
-# project workspaces, uploads, and service logs. Committing them would mean
-# every `git pull` on the server overwrites the live state with whatever was
-# in the last commit, which has happened before and wiped a freshly-created
-# project. Keep this allow-list narrow.
-backend/data/*
-!backend/data/.gitkeep
+# Runtime state committed by policy: SQLite DB, projects, uploads, repos,
+# deployment records, and project-local Claude configuration.
+# Keep generated model caches out of git; they are large and reproducible.
+backend/data/models/
 
 # Build artifacts
 frontend/dist/
