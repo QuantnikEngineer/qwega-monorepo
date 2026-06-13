@@ -711,6 +711,10 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
           return;
         }
         if (event.type === 'done') { setStreaming(false); return; }
+        if (event.type === 'error') {
+          setStreaming(false);
+          setPendingPerm(null);
+        }
         if (event.type === 'permission_request') { setPendingPerm(event); return; }
         if (event.type === 'result') {
           if (event.usage) setUsage(event.usage);

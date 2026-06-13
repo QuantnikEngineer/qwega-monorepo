@@ -26,26 +26,10 @@ projects.get('/', (req, res) => {
   if (!req.user) {
     return res.json(db.prepare(`SELECT * FROM projects ORDER BY id DESC`).all());
   }
-  // Admins see every project across the workbench by default. The UI still
-  // has a scope toggle, but the backend contract is simpler and safer:
-  // admin means complete visibility, non-admin means own + public only.
-  //
-  // NB: req.user uses snake_case `is_admin` here — auth.js's middleware
-  // sets that on the request object. The camelCase `isAdmin` only appears
-  // on the masked `/auth/me` response. Match what requireAdmin() does in
-  // auth.js (`req.user?.is_admin`) so we stay consistent.
-  if (req.user.is_admin) {
-    return res.json(db.prepare(`SELECT * FROM projects ORDER BY id DESC`).all());
-  }
-  // Default scoping: caller's own projects + every project flagged
-  // is_public = 1 (shared workspaces — see db.js). Same ordering as the
-  // admin-all view so the sidebar's selection cursor doesn't jump when
-  // an admin flips the toggle.
-  res.json(
-    db.prepare(`SELECT * FROM projects
-                WHERE owner_user_id = ? OR is_public = 1
-                ORDER BY id DESC`).all(req.user.id)
-  );
+  // Quantnik is a shared workbench: every authenticated user can see every
+  // project and use all project-level tools. Admin-only behavior lives under
+  // /api/admin/*, not in project visibility.
+  res.json(db.prepare(`SELECT * FROM projects ORDER BY id DESC`).all());
 });
 
 projects.post('/', (req, res) => {
@@ -105,24 +89,13 @@ const isLocalCaller = (req) => !req.user;
 projects.get('/:id', (req, res) => {
   const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
   if (!project) return res.status(404).json({ error: 'not found' });
-  // Don't leak existence of other users' projects — return 404, not 403.
-  // is_public projects are visible to every authenticated user.
-  // Loopback callers bypass the ownership check (see isLocalCaller above).
-  // Admins also bypass on READ — matches the contract documented in db.js:
-  // "admins can see everyone's projects". They still can't mutate them
-  // (PATCH/DELETE/reset-session use the stricter ownProjectOr404 helper).
-  if (!isLocalCaller(req) && project.owner_user_id !== req.user.id && !project.is_public && !req.user.is_admin) {
-    return res.status(404).json({ error: 'not found' });
-  }
+  // Every authenticated user can read every project. The mount middleware
+  // already guarantees auth or loopback.
   res.json(project);
 });
 
-// Read-side access gate. Returns the project if the caller is the owner OR
-// the project is is_public = 1 OR the caller is an admin; else writes 404
-// and returns null. Use for listing, reading, and collaborative ops (chat /
-// messages / file uploads). The admin-read bypass matches the contract
-// documented in db.js — admins can see everyone's projects, but mutating
-// ops still go through ownProjectOr404 which stays strictly owner-only.
+// Read-side access gate. Every authenticated user can access every project;
+// admin-only behavior belongs under /api/admin/*.
 function accessibleProjectOr404(req, res) {
   const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
   if (!project) {
@@ -130,19 +103,12 @@ function accessibleProjectOr404(req, res) {
     return null;
   }
   if (isLocalCaller(req)) return project;
-  if (project.owner_user_id !== req.user.id && !project.is_public && !req.user.is_admin) {
-    res.status(404).json({ error: 'not found' });
-    return null;
-  }
+  if (req.user) return project;
   return project;
 }
 
-// Ownership gate — strict. Used for destructive / configuration-mutating
-// operations (PATCH project fields, DELETE, reset-session). Public projects
-// can be read & chatted in by anyone, but only the owner can change settings
-// or delete them. Loopback callers (the agent process) are treated as the
-// owner for these operations — the agent already has filesystem access to
-// modify everything these endpoints touch.
+// Workbench write gate. Every authenticated user can mutate project-level
+// state. Only /api/admin/* requires admin.
 function ownProjectOr404(req, res) {
   const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
   if (!project) {
@@ -150,10 +116,7 @@ function ownProjectOr404(req, res) {
     return null;
   }
   if (isLocalCaller(req)) return project;
-  if (project.owner_user_id !== req.user.id) {
-    res.status(404).json({ error: 'not found' });
-    return null;
-  }
+  if (req.user) return project;
   return project;
 }
 

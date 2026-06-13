@@ -79,13 +79,9 @@ export function attachWebSocket(server) {
 
       const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
       if (!project) return send({ type: 'error', message: 'project not found' });
-      // Access gate — the WS-upgrade auth already proved who the user is,
-      // but the chat frame could carry any projectId. Refuse unless the
-      // caller owns it OR it's a shared workspace (is_public = 1).
-      // 404-shape — don't leak that it exists.
-      if (project.owner_user_id !== ws.user.id && !project.is_public) {
-        return send({ type: 'error', message: 'project not found' });
-      }
+      // Access gate — the WS-upgrade auth already proved who the user is.
+      // Quantnik is a shared workbench: any authenticated user can chat in
+      // any project. Admin-only behavior is limited to /api/admin/*.
 
       db.prepare('INSERT INTO messages (project_id, role, payload) VALUES (?, ?, ?)')
         .run(projectId, 'user', JSON.stringify({ text: message }));

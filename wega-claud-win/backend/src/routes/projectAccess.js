@@ -10,14 +10,13 @@
 // landed in /api/projects, those satellite endpoints stayed wide open.
 // This module closes that hole.
 //
-// Two access tiers:
+// Access model:
 //
-//   projectForRead   — owner OR is_public OR admin OR loopback
-//                      Use for GETs and non-mutating reads.
-//   projectForWrite  — owner OR loopback ONLY (NOT admin, NOT public)
-//                      Use for PATCH/PUT/POST that mutate config or state.
-//                      Per the documented contract in db.js: admins can
-//                      SEE everyone's projects but can't MUTATE them.
+//   Any authenticated user can read and work in any project. Quantnik is a
+//   shared workbench: users should be able to use chat, skills, MCPs, repos,
+//   uploads, project settings, and phases across the workspace.
+//
+//   Admin-only behavior belongs exclusively under /api/admin/*.
 //
 // Both helpers write the 404 response body themselves and return null on
 // denial so callers reduce to:
@@ -25,8 +24,7 @@
 //     const project = projectForRead(req.params.projectId, req, res);
 //     if (!project) return;
 //
-// 404 (not 403) on every denial — keeps the "don't leak existence"
-// property for non-admins probing for projects they can't see.
+// 404 only when the project truly does not exist.
 
 import { db } from '../db.js';
 
@@ -36,20 +34,18 @@ const isLoopback = (req) => !req.user;
 export function projectForRead(id, req, res) {
   const p = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
   if (!p) { res.status(404).json({ error: 'not found' }); return null; }
-  if (isLoopback(req))                       return p;
-  if (p.owner_user_id === req.user.id)       return p;
-  if (p.is_public)                            return p;
-  if (req.user.is_admin)                     return p;
-  res.status(404).json({ error: 'not found' });
+  if (isLoopback(req)) return p;
+  if (req.user) return p;
+  res.status(401).json({ error: 'authentication required' });
   return null;
 }
 
-/** Write-side gate. Strict — owner OR loopback only. */
+/** Write-side gate. Any authenticated user may work in a project. */
 export function projectForWrite(id, req, res) {
   const p = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
   if (!p) { res.status(404).json({ error: 'not found' }); return null; }
-  if (isLoopback(req))                       return p;
-  if (p.owner_user_id === req.user.id)       return p;
-  res.status(404).json({ error: 'not found' });
+  if (isLoopback(req)) return p;
+  if (req.user) return p;
+  res.status(401).json({ error: 'authentication required' });
   return null;
 }
