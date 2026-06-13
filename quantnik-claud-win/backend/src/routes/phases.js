@@ -12,6 +12,17 @@ const CANONICAL_NAMES = {
   9: 'Test Execution', 10: 'Deployment', 11: 'Sanity Checks',
 };
 
+const BUILD_SOFTWARE_CANONICAL_NAMES = {
+  1: 'Pipeline Start',
+  2: 'BRD → Confluence',
+  3: 'User Stories → Jira',
+  4: 'Validation → Confluence',
+  5: 'Test Cases → Jira',
+  6: 'Test Scripts → GitHub',
+  7: 'Code → GitHub',
+  8: 'Deploy → Live URL',
+};
+
 // GET — read the full phase map for a project. Returns 11 rows, filling in
 // any missing phases as 'pending' with their canonical name. Always-present
 // shape makes the frontend renderer trivial.

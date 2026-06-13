@@ -80,7 +80,7 @@ Reset the phases panel and mark Phase 1 as running:
 curl -s -X DELETE http://localhost:6060/api/phases/<projectId>
 curl -s -X POST http://localhost:6060/api/phases/<projectId> \
   -H "Content-Type: application/json" \
-  -d '{"phase":1,"status":"running"}'
+  -d '{"phase":1,"status":"running","name":"Pipeline Start"}'
 ```
 
 Start the build-software pipeline in async mode:
@@ -117,15 +117,15 @@ For each poll, read the `artifacts` field. For each new artifact key that appear
 
 ### Artifact → phase mapping
 
-| Artifact key | Phase number | Label |
-|---|---|---|
-| `brd_url` | 2 | BRD published to Confluence |
-| `jira_epic_url` | 3 | User stories pushed to Jira |
-| `validation_url` | 4 | Validation report published |
-| `test_cases_url` | 5 | Test cases uploaded to Jira |
-| `test_scripts_url` | 6 | Test scripts pushed to GitHub |
-| `repo_url` | 7 | Code pushed to GitHub |
-| `deployment_url` | 8 | Application deployed |
+| Artifact key | Phase | Name (pass exactly as shown) | Label |
+|---|---|---|---|
+| `brd_url` | 2 | `BRD → Confluence` | BRD published to Confluence |
+| `jira_epic_url` | 3 | `User Stories → Jira` | User stories pushed to Jira |
+| `validation_url` | 4 | `Validation → Confluence` | Validation report published |
+| `test_cases_url` | 5 | `Test Cases → Jira` | Test cases uploaded to Jira |
+| `test_scripts_url` | 6 | `Test Scripts → GitHub` | Test scripts pushed to GitHub |
+| `repo_url` | 7 | `Code → GitHub` | Code pushed to GitHub |
+| `deployment_url` | 8 | `Deploy → Live URL` | Application deployed |
 
 When an artifact appears, immediately:
 
@@ -135,18 +135,18 @@ When an artifact appears, immediately:
    → <artifact_url>
    ```
 
-2. POST phase update:
+2. POST phase update (always include the `name` field so the dashboard shows "Software Build"):
    ```bash
    curl -s -X POST http://localhost:6060/api/phases/<projectId> \
      -H "Content-Type: application/json" \
-     -d '{"phase":<N>,"status":"done","note":"<artifact_url>"}'
+     -d '{"phase":<N>,"status":"done","name":"<Name>","note":"<artifact_url>"}'
    ```
 
-3. Mark the NEXT phase as running:
+3. Mark the NEXT phase as running (include its name too):
    ```bash
    curl -s -X POST http://localhost:6060/api/phases/<projectId> \
      -H "Content-Type: application/json" \
-     -d '{"phase":<N+1>,"status":"running"}'
+     -d '{"phase":<N+1>,"status":"running","name":"<NextName>"}'
    ```
 
 Print a STATUS block after each new artifact.

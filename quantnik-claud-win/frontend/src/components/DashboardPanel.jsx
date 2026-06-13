@@ -208,18 +208,38 @@ function isModernizationMode(phases) {
   return matches >= 2;
 }
 
+// Build-software runs (build-software skill) post names from this set.
+// When 2+ phases match, the panel header changes to "// software build"
+// and the phase count is capped at 8 instead of 11.
+const BUILD_SOFTWARE_PHASE_NAMES = new Set([
+  'Pipeline Start',
+  'BRD → Confluence',
+  'User Stories → Jira',
+  'Validation → Confluence',
+  'Test Cases → Jira',
+  'Test Scripts → GitHub',
+  'Code → GitHub',
+  'Deploy → Live URL',
+]);
+function isBuildSoftwareMode(phases) {
+  const matches = (phases || []).filter((p) => p.name && BUILD_SOFTWARE_PHASE_NAMES.has(p.name)).length;
+  return matches >= 2;
+}
+
 // SDLC orchestrator phase tracker — 11 phases as defined by db.js's
 // CANONICAL_NAMES. Used only for runs of the sdlc-orchestrator skill.
 // Modernization runs (code-modernizer skill) render via the separate
 // ModernizationStatusPanel below; the dashboard picks one or the other
 // based on isModernizationMode().
-function PhaseTracker({ phases, anyTracked }) {
-  const total = phases.length || 11;
-  const doneCount    = phases.filter((p) => p.status === 'done' || p.status === 'skipped').length;
-  const runningCount = phases.filter((p) => p.status === 'running').length;
-  const failedCount  = phases.filter((p) => p.status === 'failed').length;
+function PhaseTracker({ phases, anyTracked, mode }) {
+  const isBuildSoftware = mode === 'build-software';
+  const visiblePhases   = isBuildSoftware ? phases.slice(0, 8) : phases;
+  const total           = isBuildSoftware ? 8 : (visiblePhases.length || 11);
+  const doneCount    = visiblePhases.filter((p) => p.status === 'done' || p.status === 'skipped').length;
+  const runningCount = visiblePhases.filter((p) => p.status === 'running').length;
+  const failedCount  = visiblePhases.filter((p) => p.status === 'failed').length;
   const percent      = total ? Math.round(((doneCount + runningCount * 0.5) / total) * 100) : 0;
-  const complete     = anyTracked && phases.every((p) => p.status === 'done' || p.status === 'skipped');
+  const complete     = anyTracked && visiblePhases.every((p) => p.status === 'done' || p.status === 'skipped');
   const headerColor  = failedCount > 0
     ? 'var(--w-red)'
     : complete
@@ -227,8 +247,12 @@ function PhaseTracker({ phases, anyTracked }) {
       : anyTracked
         ? 'var(--w-cyan)'
         : 'var(--w-text-3)';
+  const headerLabel = isBuildSoftware ? '// software build' : '// orchestrator pipeline';
+  const noRunHint   = isBuildSoftware
+    ? 'no run yet — invoke /build-software in chat'
+    : 'no run yet — invoke /sdlc-orchestrator in chat';
   const subtitle = !anyTracked
-    ? 'no run yet — invoke /sdlc-orchestrator in chat'
+    ? noRunHint
     : complete
       ? 'pipeline complete'
       : runningCount > 0
@@ -251,7 +275,7 @@ function PhaseTracker({ phases, anyTracked }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <span style={{ color: headerColor, font: '10px/1 var(--w-mono)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-            // orchestrator pipeline
+            {headerLabel}
           </span>
           <span style={{ color: 'var(--w-text-3)', font: '10.5px/1 var(--w-mono)' }}>{subtitle}</span>
         </div>
@@ -273,9 +297,9 @@ function PhaseTracker({ phases, anyTracked }) {
         )}
       </div>
 
-      {/* 11-row grid — compact, vertical, scannable */}
+      {/* Phase grid — 8 rows for build-software, 11 for SDLC orchestrator */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', columnGap: 16, rowGap: 4 }}>
-        {phases.map((p) => {
+        {visiblePhases.map((p) => {
           const s = STATUS_ICON[p.status] || STATUS_ICON.pending;
           return (
             <div key={p.number} style={{
@@ -759,9 +783,11 @@ export function DashboardPanel({ project }) {
               components live in this file (above) and have intentionally
               different palettes (cyan vs amber) so an operator can tell
               them apart at a glance. */}
-          {isModernizationMode(phaseState.phases)
-            ? <ModernizationStatusPanel phases={phaseState.phases} anyTracked={phaseState.anyTracked} />
-            : <PhaseTracker phases={phaseState.phases} anyTracked={phaseState.anyTracked} />
+          {isBuildSoftwareMode(phaseState.phases)
+            ? <PhaseTracker phases={phaseState.phases} anyTracked={phaseState.anyTracked} mode="build-software" />
+            : isModernizationMode(phaseState.phases)
+              ? <ModernizationStatusPanel phases={phaseState.phases} anyTracked={phaseState.anyTracked} />
+              : <PhaseTracker phases={phaseState.phases} anyTracked={phaseState.anyTracked} />
           }
 
           {/* Row 2 — BRDs, Epics, Overview (counts) */}
