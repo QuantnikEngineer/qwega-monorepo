@@ -1,0 +1,19 @@
+# config/azure/prod.yaml
+# Azure Container Apps - Production
+# ⚠️  CAUTION: Changes affect PRODUCTION!
+
+env:
+  ENVIRONMENT: prod
+  LOG_LEVEL: WARN
+  FEATURE_DEBUG_MODE: "false"
+  FEATURE_VERBOSE_ERRORS: "false"
+  
+  API_BASE_URL: https://api.quantnik.azurecontainer.io
+  
+  DB_HOST: prod-quantnik-db.postgres.database.azure.com
+  DB_PORT: "5432"
+  DB_NAME: quantnik_prod
+  
+  MAX_WORKERS: "8"
+  MAX_RETRIES: "5"
+  FEATURE_RATE_LIMITING: "true"

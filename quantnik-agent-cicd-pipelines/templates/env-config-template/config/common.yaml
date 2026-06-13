@@ -1,0 +1,15 @@
+# config/common.yaml
+# Global configuration - applies to ALL clouds and ALL environments
+# Maintained by: Development Team
+
+service:
+  name: SERVICE_NAME_HERE        # e.g., quantnik-brd
+
+env:
+  PYTHONUNBUFFERED: "1"
+  LOG_FORMAT: json
+  API_TIMEOUT: "30"
+  MAX_RETRIES: "3"
+  CONNECTION_TIMEOUT: "10"
+  FEATURE_METRICS_ENABLED: "true"
+  FEATURE_TRACING_ENABLED: "true"

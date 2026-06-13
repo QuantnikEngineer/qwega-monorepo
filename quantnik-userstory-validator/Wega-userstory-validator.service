@@ -1,0 +1,18 @@
+[Unit]
+Description=Quantnik Userstory Validator GCP Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/Quantnik-userstory-validator
+Environment="PATH=/opt/Quantnik-userstory-validator/venv/bin"
+EnvironmentFile=/opt/Quantnik-userstory-validator/.env
+ExecStart=/opt/Quantnik-userstory-validator/venv/bin/python /opt/Quantnik-userstory-validator/server.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

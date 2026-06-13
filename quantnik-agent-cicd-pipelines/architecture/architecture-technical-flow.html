@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUANTNIK SDLC Multi-Cloud CI/CD - Technical Documentation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        
+        header {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 1px solid #334155;
+        }
+        
+        h1 {
+            font-size: 2.8em;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, #38bdf8, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header-subtitle { color: #94a3b8; font-size: 1.2em; max-width: 700px; margin: 0 auto; }
+        .header-meta { margin-top: 20px; display: flex; justify-content: center; gap: 30px; color: #64748b; font-size: 0.9em; flex-wrap: wrap; }
+        
+        h2 { color: #38bdf8; font-size: 1.8em; margin: 50px 0 25px 0; padding-bottom: 10px; border-bottom: 2px solid #334155; }
+        h3 { color: #818cf8; font-size: 1.3em; margin: 30px 0 15px 0; }
+        h4 { color: #a78bfa; font-size: 1.1em; margin: 20px 0 10px 0; }
+        p { color: #cbd5e1; margin-bottom: 15px; }
+        
+        .section { background: #1e293b; border-radius: 12px; padding: 30px; margin: 25px 0; border: 1px solid #334155; }
+
+        /* Animated Flow Diagram */
+        .animated-flow {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border-radius: 16px;
+            padding: 40px 20px;
+            margin: 30px 0;
+            border: 1px solid #334155;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .flow-title {
+            text-align: center;
+            font-size: 1.4em;
+            color: #f1f5f9;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        
+        .flow-stage {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .flow-node {
+            background: linear-gradient(135deg, #334155, #475569);
+            border: 2px solid #64748b;
+            border-radius: 12px;
+            padding: 20px 30px;
+            text-align: center;
+            min-width: 180px;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+        
+        .flow-node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+        }
+        
+        .flow-node.git { border-color: #22c55e; background: linear-gradient(135deg, #14532d, #166534); }
+        .flow-node.trigger { border-color: #f59e0b; background: linear-gradient(135deg, #78350f, #92400e); }
+        .flow-node.orchestrator { border-color: #8b5cf6; background: linear-gradient(135deg, #4c1d95, #5b21b6); min-width: 280px; }
+        .flow-node.gcp { border-color: #4285f4; background: linear-gradient(135deg, #1e3a5f, #1e40af); }
+        .flow-node.azure { border-color: #0078d4; background: linear-gradient(135deg, #0c4a6e, #075985); }
+        .flow-node.aws { border-color: #ff9900; background: linear-gradient(135deg, #78350f, #9a3412); }
+        .flow-node.deploy-gcp { border-color: #34a853; background: linear-gradient(135deg, #14532d, #15803d); }
+        .flow-node.deploy-azure { border-color: #00bcf2; background: linear-gradient(135deg, #0c4a6e, #0284c7); }
+        .flow-node.deploy-aws { border-color: #ff9900; background: linear-gradient(135deg, #7c2d12, #c2410c); }
+        
+        .flow-node-icon { font-size: 2em; margin-bottom: 8px; }
+        .flow-node-label { font-size: 0.7em; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+        .flow-node-title { font-weight: 600; font-size: 1.1em; margin-top: 5px; }
+        .flow-node-detail { font-size: 0.8em; color: #cbd5e1; margin-top: 8px; }
+        
+        /* Animated Arrows */
+        .arrow-down {
+            width: 4px;
+            height: 60px;
+            background: linear-gradient(180deg, transparent, #38bdf8, transparent);
+            margin: 0 auto;
+            position: relative;
+            animation: flowDown 1.5s infinite;
+        }
+        
+        .arrow-down::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 15px solid #38bdf8;
+        }
+        
+        @keyframes flowDown {
+            0% { background: linear-gradient(180deg, #38bdf8, transparent, transparent); }
+            50% { background: linear-gradient(180deg, transparent, #38bdf8, transparent); }
+            100% { background: linear-gradient(180deg, transparent, transparent, #38bdf8); }
+        }
+        
+        /* Parallel Split */
+        .parallel-split {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            margin: 30px 0;
+            position: relative;
+            flex-wrap: wrap;
+        }
+        
+        .parallel-label {
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, #8b5cf6, #a855f7);
+            color: white;
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            letter-spacing: 1px;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+        }
+        
+        .parallel-branch {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .branch-line {
+            width: 3px;
+            height: 40px;
+            position: relative;
+        }
+        
+        .branch-line.gcp { background: linear-gradient(180deg, #4285f4, #34a853); animation: flowGcp 1.5s infinite; }
+        .branch-line.azure { background: linear-gradient(180deg, #0078d4, #00bcf2); animation: flowAzure 1.5s infinite 0.3s; }
+        .branch-line.aws { background: linear-gradient(180deg, #ff9900, #ff6600); animation: flowAws 1.5s infinite 0.6s; }
+        
+        @keyframes flowGcp {
+            0%, 100% { opacity: 0.5; height: 40px; }
+            50% { opacity: 1; height: 50px; }
+        }
+        @keyframes flowAzure {
+            0%, 100% { opacity: 0.5; height: 40px; }
+            50% { opacity: 1; height: 50px; }
+        }
+        @keyframes flowAws {
+            0%, 100% { opacity: 0.5; height: 40px; }
+            50% { opacity: 1; height: 50px; }
+        }
+        
+        .branch-line::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+        }
+        
+        .branch-line.gcp::after { border-top: 10px solid #34a853; }
+        .branch-line.azure::after { border-top: 10px solid #00bcf2; }
+        .branch-line.aws::after { border-top: 10px solid #ff6600; }
+        
+        /* Connecting Lines */
+        .split-connector {
+            position: relative;
+            height: 60px;
+            margin: 20px 0;
+        }
+        
+        .split-connector::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 30px;
+            background: #8b5cf6;
+        }
+        
+        .split-connector::after {
+            content: '';
+            position: absolute;
+            top: 30px;
+            left: 15%;
+            right: 15%;
+            height: 4px;
+            background: linear-gradient(90deg, #4285f4, #8b5cf6, #ff9900);
+            border-radius: 2px;
+        }
+        
+        .env-progression {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .env-box {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: 500;
+            position: relative;
+        }
+        
+        .env-box.dev { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid #22c55e; }
+        .env-box.qa { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; }
+        .env-box.staging { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; border: 1px solid #8b5cf6; }
+        .env-box.prod { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; }
+        
+        .env-arrow {
+            color: #64748b;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Data Flow Animation */
+        .data-packet {
+            width: 10px;
+            height: 10px;
+            background: #38bdf8;
+            border-radius: 50%;
+            position: absolute;
+            animation: dataFlow 2s infinite;
+        }
+        
+        @keyframes dataFlow {
+            0% { top: 0; opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        /* Tables and Cards */
+        .table-container { overflow-x: auto; margin: 20px 0; }
+        
+        table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; }
+        th { background: #334155; color: #f1f5f9; padding: 15px; text-align: left; font-weight: 600; }
+        td { padding: 12px 15px; border-bottom: 1px solid #334155; color: #cbd5e1; }
+        tr:hover { background: rgba(56, 189, 248, 0.05); }
+        
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: 500; }
+        .badge-gcp { background: rgba(66, 133, 244, 0.2); color: #4285f4; }
+        .badge-azure { background: rgba(0, 120, 212, 0.2); color: #0078d4; }
+        .badge-aws { background: rgba(255, 153, 0, 0.2); color: #ff9900; }
+        
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+        
+        .card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #334155;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            border-color: #38bdf8;
+            transform: translateY(-5px);
+        }
+        
+        .card-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .card-icon { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5em; }
+        .card-icon.gcp { background: rgba(66, 133, 244, 0.2); }
+        .card-icon.azure { background: rgba(0, 120, 212, 0.2); }
+        .card-icon.aws { background: rgba(255, 153, 0, 0.2); }
+
+        .code-block {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+        }
+        
+        .code-block pre { color: #e2e8f0; margin: 0; white-space: pre-wrap; }
+        .code-comment { color: #64748b; }
+        .code-key { color: #38bdf8; }
+        .code-string { color: #86efac; }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(56, 189, 248, 0.1));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .highlight-box h4 { color: #a78bfa; margin-top: 0; }
+        
+        .step-list { counter-reset: step; list-style: none; padding: 0; }
+        
+        .step-list li {
+            position: relative;
+            padding: 20px 20px 20px 70px;
+            margin: 15px 0;
+            background: #0f172a;
+            border-radius: 8px;
+            border-left: 3px solid #8b5cf6;
+        }
+        
+        .step-list li::before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 35px;
+            height: 35px;
+            background: #8b5cf6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .step-title { font-weight: 600; color: #f1f5f9; margin-bottom: 5px; }
+        .step-desc { color: #94a3b8; font-size: 0.95em; }
+        
+        .toc { background: #1e293b; border-radius: 12px; padding: 25px; margin: 30px 0; border: 1px solid #334155; }
+        .toc h3 { margin-top: 0; margin-bottom: 15px; }
+        .toc ul { list-style: none; padding: 0; columns: 2; }
+        .toc li { padding: 8px 0; }
+        .toc a { color: #38bdf8; text-decoration: none; }
+        .toc a:hover { color: #818cf8; }
+        
+        footer { text-align: center; padding: 40px 20px; color: #64748b; border-top: 1px solid #334155; margin-top: 50px; }
+        
+        @media (max-width: 768px) {
+            .toc ul { columns: 1; }
+            .parallel-split { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>QUANTNIK SDLC Multi-Cloud CI/CD</h1>
+        <p class="header-subtitle">
+            Technical documentation for automated build and deployment pipeline 
+            across Google Cloud Platform, Microsoft Azure, and Amazon Web Services
+        </p>
+        <div class="header-meta">
+            <span>📅 Version: 2.1</span>
+            <span>🏢 Platform: Harness CI/CD + Qwiet AI</span>
+            <span>📦 18 Microservices</span>
+            <span>☁️ 3 Cloud Providers + ECS Express</span>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- Table of Contents -->
+        <div class="toc">
+            <h3>📑 Table of Contents</h3>
+            <ul>
+                <li><a href="#overview">1. Architecture Overview</a></li>
+                <li><a href="#animated-flow">2. Animated Pipeline Flow</a></li>
+                <li><a href="#triggers">3. Trigger Configuration</a></li>
+                <li><a href="#orchestrator">4. QUANTNIK SDLC Orchestrator</a></li>
+                <li><a href="#workers">5. Worker Pipelines</a></li>
+                <li><a href="#security">6. Security & Quality Gates</a></li>
+                <li><a href="#testing">7. Automated Testing</a></li>
+                <li><a href="#environments">8. Environment Progression</a></li>
+                <li><a href="#verification">9. Release Verification</a></li>
+                <li><a href="#dataflow">10. Data Flow & Variables</a></li>
+                <li><a href="#implementation">11. Implementation Checklist</a></li>
+            </ul>
+        </div>
+        
+        <!-- Section 1: Overview -->
+        <section id="overview">
+            <h2>1. Architecture Overview</h2>
+            
+            <div class="section">
+                <h3>System Description</h3>
+                <p>
+                    The QUANTNIK SDLC Multi-Cloud CI/CD architecture enables automated build and deployment 
+                    of microservices to three cloud providers simultaneously. When code is pushed 
+                    to a monitored branch, the system automatically triggers a pipeline that builds 
+                    the application and deploys it to <strong>GCP Cloud Run</strong>, <strong>Azure Container Apps</strong>, 
+                    and <strong>AWS ECS Express Mode</strong> in parallel.
+                </p>
+                
+                <h4>Key Components</h4>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Git Repositories</strong></td>
+                                <td>Source</td>
+                                <td>18 QUANTNIK SDLC microservice repositories hosted on Harness Git</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Webhook Triggers</strong></td>
+                                <td>Automation</td>
+                                <td>Branch-level triggers on push events (main, develop, release/*)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Scheduled Triggers</strong></td>
+                                <td>Automation</td>
+                                <td>Cron-based triggers for nightly builds (2:00 AM daily)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>QUANTNIK SDLC Orchestrator</strong></td>
+                                <td>Pipeline</td>
+                                <td>Parent pipeline that coordinates multi-cloud deployment</td>
+                            </tr>
+                            <tr>
+                                <td><strong>CloudRun Worker</strong></td>
+                                <td>Pipeline</td>
+                                <td><span class="badge badge-gcp">GCP</span> Builds, scans, deploys to Cloud Run</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ACA Worker</strong></td>
+                                <td>Pipeline</td>
+                                <td><span class="badge badge-azure">Azure</span> Builds, scans, deploys to Container Apps</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ECS Express Worker</strong></td>
+                                <td>Pipeline</td>
+                                <td><span class="badge badge-aws">AWS</span> Builds, scans, deploys to ECS Express Mode</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 2: Animated Flow -->
+        <section id="animated-flow">
+            <h2>2. Animated Pipeline Flow</h2>
+            
+            <div class="animated-flow">
+                <div class="flow-title">🚀 Complete End-to-End CI/CD Pipeline Flow</div>
+                
+                <!-- Step 1: Git Push -->
+                <div class="flow-stage">
+                    <div class="flow-node git">
+                        <div class="flow-node-icon">📝</div>
+                        <div class="flow-node-label">Step 1: Source</div>
+                        <div class="flow-node-title">Developer Commits Code</div>
+                        <div class="flow-node-detail">Push to main / develop / release/*</div>
+                    </div>
+                </div>
+                
+                <div class="arrow-down"></div>
+                
+                <!-- Step 2: Webhook Trigger -->
+                <div class="flow-stage">
+                    <div class="flow-node trigger">
+                        <div class="flow-node-icon">⚡</div>
+                        <div class="flow-node-label">Step 2: Trigger</div>
+                        <div class="flow-node-title">Webhook Fires</div>
+                        <div class="flow-node-detail">Branch pattern matched → Pipeline invoked</div>
+                    </div>
+                </div>
+                
+                <div class="arrow-down"></div>
+                
+                <!-- Step 3: Orchestrator -->
+                <div class="flow-stage">
+                    <div class="flow-node orchestrator">
+                        <div class="flow-node-icon">🎯</div>
+                        <div class="flow-node-label">Step 3: Orchestrator</div>
+                        <div class="flow-node-title">QUANTNIK SDLC Orchestrator</div>
+                        <div class="flow-node-detail">deployTarget = "all" → Invokes 3 workers</div>
+                    </div>
+                </div>
+                
+                <div class="arrow-down"></div>
+                
+                <!-- Step 4: Security Scanning (Pre-Build) -->
+                <div class="flow-stage">
+                    <div class="flow-node" style="border-color: #ef4444; background: linear-gradient(135deg, #7f1d1d, #991b1b); min-width: 400px;">
+                        <div class="flow-node-icon">🔒</div>
+                        <div class="flow-node-label">Step 4: Pre-Build Security</div>
+                        <div class="flow-node-title">Security Scanning (Parallel)</div>
+                        <div style="display: flex; justify-content: center; gap: 15px; margin-top: 10px; flex-wrap: wrap;">
+                            <span style="background: rgba(239, 68, 68, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">🔐 TruffleHog</span>
+                            <span style="background: rgba(16, 185, 129, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">🔍 Semgrep</span>
+                            <span style="background: rgba(59, 130, 246, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">📊 SonarCloud</span>
+                            <span style="background: rgba(239, 68, 68, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">🛡️ Fortify</span>
+                            <span style="background: rgba(167, 139, 250, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">🧠 Qwiet AI</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="arrow-down"></div>
+                
+                <!-- Step 5: Unit Tests -->
+                <div class="flow-stage">
+                    <div class="flow-node" style="border-color: #22c55e; background: linear-gradient(135deg, #14532d, #166534); min-width: 320px;">
+                        <div class="flow-node-icon">🧪</div>
+                        <div class="flow-node-label">Step 5: Testing</div>
+                        <div class="flow-node-title">Unit Tests</div>
+                        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                            <span style="background: rgba(34, 197, 94, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">Pytest</span>
+                            <span style="background: rgba(34, 197, 94, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">Jest</span>
+                            <span style="background: rgba(34, 197, 94, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">≥80% Coverage</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="arrow-down"></div>
+                
+                <!-- Step 6: Build & Container Scan -->
+                <div class="flow-stage">
+                    <div class="flow-node" style="border-color: #8b5cf6; background: linear-gradient(135deg, #4c1d95, #5b21b6); min-width: 380px;">
+                        <div class="flow-node-icon">🐳</div>
+                        <div class="flow-node-label">Step 6: Build & Scan</div>
+                        <div class="flow-node-title">Docker Build + Container Security</div>
+                        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                            <span style="background: rgba(139, 92, 246, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">Docker Build</span>
+                            <span style="background: rgba(139, 92, 246, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">🐳 Trivy Scan</span>
+                            <span style="background: rgba(139, 92, 246, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">STO Ingest</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Split Connector -->
+                <div class="split-connector"></div>
+                
+                <!-- Step 7: Parallel Workers -->
+                <div class="parallel-split">
+                    <div class="parallel-label">⚡ PARALLEL CLOUD DEPLOYMENT</div>
+                    
+                    <!-- GCP Branch -->
+                    <div class="parallel-branch">
+                        <div class="flow-node gcp">
+                            <div class="flow-node-icon">☁️</div>
+                            <div class="flow-node-label">Push Registry</div>
+                            <div class="flow-node-title">GAR</div>
+                            <div class="flow-node-detail">Google Artifact Registry</div>
+                        </div>
+                        <div class="branch-line gcp"></div>
+                        <div class="flow-node deploy-gcp">
+                            <div class="flow-node-icon">🚀</div>
+                            <div class="flow-node-label">Deploy</div>
+                            <div class="flow-node-title">Cloud Run</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Azure Branch -->
+                    <div class="parallel-branch">
+                        <div class="flow-node azure">
+                            <div class="flow-node-icon">☁️</div>
+                            <div class="flow-node-label">Push Registry</div>
+                            <div class="flow-node-title">ACR</div>
+                            <div class="flow-node-detail">Azure Container Registry</div>
+                        </div>
+                        <div class="branch-line azure"></div>
+                        <div class="flow-node deploy-azure">
+                            <div class="flow-node-icon">🚀</div>
+                            <div class="flow-node-label">Deploy</div>
+                            <div class="flow-node-title">Container Apps</div>
+                        </div>
+                    </div>
+                    
+                    <!-- AWS Branch -->
+                    <div class="parallel-branch">
+                        <div class="flow-node aws">
+                            <div class="flow-node-icon">☁️</div>
+                            <div class="flow-node-label">Push Registry</div>
+                            <div class="flow-node-title">ECR</div>
+                            <div class="flow-node-detail">Elastic Container Registry</div>
+                        </div>
+                        <div class="branch-line aws"></div>
+                        <div class="flow-node deploy-aws">
+                            <div class="flow-node-icon">🚀</div>
+                            <div class="flow-node-label">Deploy</div>
+                            <div class="flow-node-title">ECS Express</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="arrow-down" style="margin-top: 30px;"></div>
+                
+                <!-- Step 8: Post-Deploy Testing -->
+                <div class="flow-stage">
+                    <div class="flow-node" style="border-color: #f59e0b; background: linear-gradient(135deg, #78350f, #92400e); min-width: 400px;">
+                        <div class="flow-node-icon">🔗</div>
+                        <div class="flow-node-label">Step 8: Post-Deploy Testing</div>
+                        <div class="flow-node-title">Integration & E2E Tests</div>
+                        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                            <span style="background: rgba(245, 158, 11, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">Smoke Tests</span>
+                            <span style="background: rgba(245, 158, 11, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">API Contract</span>
+                            <span style="background: rgba(245, 158, 11, 0.3); padding: 4px 10px; border-radius: 12px; font-size: 0.75em;">Cypress/Playwright</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="arrow-down"></div>
+                
+                <!-- Step 9: Notifications & Reporting -->
+                <div class="flow-stage">
+                    <div class="flow-node" style="border-color: #06b6d4; background: linear-gradient(135deg, #164e63, #0e7490); min-width: 450px;">
+                        <div class="flow-node-icon">📢</div>
+                        <div class="flow-node-label">Step 9: Notifications & Reporting</div>
+                        <div class="flow-node-title">Observability & Documentation</div>
+                        <div style="display: flex; justify-content: center; gap: 12px; margin-top: 10px; flex-wrap: wrap;">
+                            <span style="background: rgba(239, 68, 68, 0.3); padding: 4px 12px; border-radius: 12px; font-size: 0.75em;">📧 Email</span>
+                            <span style="background: rgba(99, 102, 241, 0.3); padding: 4px 12px; border-radius: 12px; font-size: 0.75em;">📊 Datadog</span>
+                            <span style="background: rgba(59, 130, 246, 0.3); padding: 4px 12px; border-radius: 12px; font-size: 0.75em;">📄 Confluence</span>
+                            <span style="background: rgba(245, 158, 11, 0.3); padding: 4px 12px; border-radius: 12px; font-size: 0.75em;">💬 Slack</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Environment Progression -->
+                <div style="text-align: center; margin-top: 40px;">
+                    <h4 style="color: #94a3b8; margin-bottom: 15px;">Environment Progression (Per Cloud)</h4>
+                    <div class="env-progression">
+                        <div class="env-box dev">🟢 Dev</div>
+                        <div class="env-arrow">→</div>
+                        <div class="env-box qa">🔵 QA</div>
+                        <div class="env-arrow">→</div>
+                        <div class="env-box staging">🟣 Staging</div>
+                        <div class="env-arrow">→</div>
+                        <div class="env-box prod">🟠 Production</div>
+                    </div>
+                    <p style="color: #64748b; font-size: 0.85em; margin-top: 15px;">
+                        Approval gates between QA → Staging → Production (14-day windows)
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Detailed Step Breakdown -->
+            <div class="section" style="margin-top: 30px;">
+                <h3>📋 Complete Pipeline Stage Breakdown</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Stage</th><th>Steps</th><th>Tools</th><th>Output</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>1. Source</strong></td>
+                                <td>Git Clone, Branch Resolution</td>
+                                <td>Harness GitClone</td>
+                                <td>Source code checkout</td>
+                            </tr>
+                            <tr>
+                                <td><strong>2. Pre-Build Security</strong></td>
+                                <td>Secret Scan, SAST, Code Quality</td>
+                                <td>TruffleHog, Semgrep, SonarCloud, Fortify, Qwiet AI</td>
+                                <td>Security reports, SARIF files</td>
+                            </tr>
+                            <tr>
+                                <td><strong>3. Unit Tests</strong></td>
+                                <td>Run test suites, Coverage report</td>
+                                <td>Pytest, Jest</td>
+                                <td>Test results, ≥80% coverage</td>
+                            </tr>
+                            <tr>
+                                <td><strong>4. Build</strong></td>
+                                <td>Docker build (backend + frontend)</td>
+                                <td>Docker, BuildKit</td>
+                                <td>Container images</td>
+                            </tr>
+                            <tr>
+                                <td><strong>5. Container Scan</strong></td>
+                                <td>Image vulnerability scan</td>
+                                <td>Trivy, Harness STO</td>
+                                <td>CVE reports, SARIF</td>
+                            </tr>
+                            <tr>
+                                <td><strong>6. Push Registry</strong></td>
+                                <td>Push to GAR/ACR/ECR</td>
+                                <td>Docker Push</td>
+                                <td>Tagged images in registry</td>
+                            </tr>
+                            <tr>
+                                <td><strong>7. Deploy</strong></td>
+                                <td>Deploy to cloud services</td>
+                                <td>gcloud, az, aws CLI</td>
+                                <td>Running services</td>
+                            </tr>
+                            <tr>
+                                <td><strong>8. Post-Deploy Tests</strong></td>
+                                <td>Smoke, Integration, E2E tests</td>
+                                <td>Cypress, Playwright, API tests</td>
+                                <td>Test results</td>
+                            </tr>
+                            <tr>
+                                <td><strong>9. Notifications</strong></td>
+                                <td>Send alerts, Update docs</td>
+                                <td>Email, Datadog, Confluence, Slack</td>
+                                <td>Notifications sent</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Notifications & Reporting Details -->
+            <div class="section" style="margin-top: 30px; border: 2px solid #06b6d4;">
+                <h3 style="color: #06b6d4;">📢 Notifications & Reporting Integration</h3>
+                
+                <div class="grid-3" style="margin-top: 20px;">
+                    <div class="card" style="border-color: #ef4444;">
+                        <h4 style="color: #ef4444; margin-bottom: 15px;">📧 Email Notifications</h4>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Pipeline success/failure alerts</li>
+                            <li>Approval request notifications</li>
+                            <li>Security scan summary reports</li>
+                            <li>Deployment completion status</li>
+                            <li>Configurable recipient groups</li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(239, 68, 68, 0.1); border-radius: 8px;">
+                            <strong style="color: #ef4444;">Trigger:</strong> <span style="color: #94a3b8;">On stage completion</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="border-color: #6366f1;">
+                        <h4 style="color: #6366f1; margin-bottom: 15px;">📊 Datadog Reporting</h4>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Pipeline metrics & duration</li>
+                            <li>Deployment frequency tracking</li>
+                            <li>Error rate monitoring</li>
+                            <li>Custom CI/CD dashboards</li>
+                            <li>APM integration post-deploy</li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(99, 102, 241, 0.1); border-radius: 8px;">
+                            <strong style="color: #6366f1;">Integration:</strong> <span style="color: #94a3b8;">Datadog API / Events</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="border-color: #3b82f6;">
+                        <h4 style="color: #3b82f6; margin-bottom: 15px;">📄 Confluence Documentation</h4>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Release notes auto-generation</li>
+                            <li>Deployment history log</li>
+                            <li>Security scan summaries</li>
+                            <li>Test coverage reports</li>
+                            <li>Change log documentation</li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
+                            <strong style="color: #3b82f6;">Integration:</strong> <span style="color: #94a3b8;">Confluence REST API</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="code-block" style="margin-top: 25px;">
+<pre><span class="code-comment"># Notification & Reporting Pipeline Steps</span>
+
+<span class="code-key">Post-Deploy Stage:</span>
+  <span class="code-key">steps:</span>
+    - <span class="code-string">Send_Email_Notification</span>
+        recipients: [<span class="code-string">"devops@company.com"</span>, <span class="code-string">"qa@company.com"</span>]
+        template: <span class="code-string">deployment-summary</span>
+        include: [status, duration, commits, security_summary]
+    
+    - <span class="code-string">Report_To_Datadog</span>
+        api_key: <span class="code-string">&lt;+secrets.getValue("datadog-api-key")&gt;</span>
+        metrics:
+          - pipeline.duration
+          - pipeline.status
+          - deployment.count
+          - security.findings
+        tags: [<span class="code-string">"env:&lt;+env.name&gt;"</span>, <span class="code-string">"repo:&lt;+repo.name&gt;"</span>]
+    
+    - <span class="code-string">Update_Confluence</span>
+        space_key: <span class="code-string">QUANTNIK</span>
+        page_title: <span class="code-string">"Release Notes - &lt;+pipeline.variables.imageTag&gt;"</span>
+        content:
+          - deployed_services
+          - git_commits
+          - security_scan_results
+          - test_coverage</pre>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 3: Triggers -->
+        <section id="triggers">
+            <h2>3. Trigger Configuration</h2>
+            
+            <div class="section">
+                <h3>Webhook Trigger (On Commit)</h3>
+                <p>
+                    Each repository has a dedicated webhook trigger that fires when code is pushed 
+                    to monitored branches. The trigger extracts the branch name and passes it to 
+                    the orchestrator pipeline.
+                </p>
+                
+                <div class="code-block">
+<pre><span class="code-comment"># Example: Webhook Trigger for quantnik-brd repository</span>
+<span class="code-key">trigger:</span>
+  <span class="code-key">name:</span> <span class="code-string">Trigger_WegaBrd_OnCommit</span>
+  <span class="code-key">pipelineIdentifier:</span> <span class="code-string">WEGASDLCOrchestrator</span>
+  <span class="code-key">source:</span>
+    <span class="code-key">type:</span> <span class="code-string">Webhook</span>
+    <span class="code-key">spec:</span>
+      <span class="code-key">repoName:</span> <span class="code-string">quantnik-brd</span>
+      <span class="code-key">actions:</span> [<span class="code-string">Push</span>]
+      <span class="code-key">payloadConditions:</span>
+        - <span class="code-key">key:</span> <span class="code-string">targetBranch</span>
+          <span class="code-key">operator:</span> <span class="code-string">Regex</span>
+          <span class="code-key">value:</span> <span class="code-string">^(main|develop|release/.*)$</span>
+  <span class="code-key">inputYaml:</span> <span class="code-string">|</span>
+    <span class="code-key">pipeline:</span>
+      <span class="code-key">variables:</span>
+        - <span class="code-key">name:</span> <span class="code-string">selectedRepo</span>
+          <span class="code-key">value:</span> <span class="code-string">quantnik-brd</span>
+        - <span class="code-key">name:</span> <span class="code-string">deployTarget</span>
+          <span class="code-key">value:</span> <span class="code-string">all</span>
+        - <span class="code-key">name:</span> <span class="code-string">branchwegaBrd</span>
+          <span class="code-key">value:</span> <span class="code-string">&lt;+trigger.branch&gt;</span></pre>
+                </div>
+                
+                <h4>Branch Pattern Reference & Release Strategy</h4>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Pattern</th><th>Example</th><th>Purpose</th><th>Auto-Deploy To</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>develop</code></td><td>develop</td><td>Integration branch (main development)</td><td>Dev only</td></tr>
+                            <tr><td><code>feature/*</code></td><td>feature/new-auth</td><td>Feature branches (cut from develop)</td><td>Dev only</td></tr>
+                            <tr><td><code>release/*</code></td><td>release/quantnik-04292026</td><td>Weekly release (cut from develop)</td><td>QA → Stage → Prod</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="highlight-box" style="margin-top: 20px;">
+                    <h4>📅 Release & Branching Strategy</h4>
+                    <p style="margin-bottom: 10px;">
+                        <strong>1. Development Flow:</strong> Developers work on <code>feature/*</code> branches cut from <code>develop</code>. 
+                        Both feature and develop branches deploy to <strong>Dev</strong> environment only.
+                    </p>
+                    <p style="margin-bottom: 10px;">
+                        <strong>2. Weekly Release:</strong> Every week, a <code>release/*</code> branch is cut from <code>develop</code>. 
+                        This release branch is deployed through the promotion pipeline: <strong>QA → Stage → Prod</strong>.
+                    </p>
+                    <p>
+                        <strong>3. Approval Gates:</strong> Release branches require approvals between QA → Stage and Stage → Prod (14-day windows).
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 4: Orchestrator -->
+        <section id="orchestrator">
+            <h2>4. QUANTNIK SDLC Orchestrator</h2>
+            
+            <div class="section">
+                <div class="highlight-box">
+                    <h4>🎯 Key Feature: deployTarget = "all"</h4>
+                    <p>
+                        When <code>deployTarget</code> is set to <code>"all"</code>, the orchestrator 
+                        invokes all three worker pipelines (CloudRun, ACA, AppRunner) in <strong>parallel</strong>, enabling 
+                        simultaneous deployment to all cloud providers from a single trigger event.
+                    </p>
+                </div>
+                
+                <h4>Stage Conditions</h4>
+                <div class="code-block">
+<pre><span class="code-comment"># Each worker stage evaluates this condition:</span>
+<span class="code-key">condition:</span> <span class="code-string">&lt;+pipeline.variables.deployTarget&gt; == "cloudrun" || &lt;+pipeline.variables.deployTarget&gt; == "all"</span>
+<span class="code-key">condition:</span> <span class="code-string">&lt;+pipeline.variables.deployTarget&gt; == "aca" || &lt;+pipeline.variables.deployTarget&gt; == "all"</span>
+<span class="code-key">condition:</span> <span class="code-string">&lt;+pipeline.variables.deployTarget&gt; == "ecsexpress" || &lt;+pipeline.variables.deployTarget&gt; == "all"</span></pre>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 5: Workers -->
+        <section id="workers">
+            <h2>5. Worker Pipelines</h2>
+            
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon gcp">☁️</div>
+                        <div>
+                            <h4 style="margin: 0;">CloudRun Worker</h4>
+                            <span class="badge badge-gcp">GCP</span>
+                        </div>
+                    </div>
+                    <p><strong>Registry:</strong> Google Artifact Registry (GAR)</p>
+                    <p><strong>Target:</strong> Cloud Run Services</p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon azure">☁️</div>
+                        <div>
+                            <h4 style="margin: 0;">ACA Worker</h4>
+                            <span class="badge badge-azure">Azure</span>
+                        </div>
+                    </div>
+                    <p><strong>Registry:</strong> Azure Container Registry (ACR)</p>
+                    <p><strong>Target:</strong> Azure Container Apps</p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon aws">⚡</div>
+                        <div>
+                            <h4 style="margin: 0;">ECS Express Worker</h4>
+                            <span class="badge badge-aws">AWS</span>
+                        </div>
+                    </div>
+                    <p><strong>Registry:</strong> Elastic Container Registry (ECR)</p>
+                    <p><strong>Target:</strong> Amazon ECS Express Mode</p>
+                </div>
+            </div>
+            
+            <!-- AWS ECS Express Mode Section -->
+            <div class="section" style="margin-top: 30px; border: 2px solid #ff9900;">
+                <h3 style="color: #ff9900;">⚡ AWS Amazon ECS Express Mode</h3>
+                <div class="highlight-box" style="background: linear-gradient(135deg, rgba(255, 153, 0, 0.15), rgba(255, 102, 0, 0.1)); border-color: rgba(255, 153, 0, 0.4);">
+                    <h4 style="color: #ff9900;">🚀 Simplified Container Deployment</h4>
+                    <p>
+                        <strong>Amazon ECS Express Mode</strong> reduces the complexity of deploying containerized applications by providing 
+                        sensible defaults and automating the configuration of supporting AWS services. Instead of managing configuration 
+                        parameters across multiple services, Express Mode requires only <strong>three things</strong> to get started:
+                    </p>
+                    <ul style="color: #cbd5e1; font-size: 0.9em; padding-left: 20px; margin-top: 10px;">
+                        <li><strong>Container Image</strong> - Your Docker image in ECR</li>
+                        <li><strong>Task Execution Role</strong> - IAM role for ECS tasks</li>
+                        <li><strong>Infrastructure Role</strong> - IAM role for infrastructure management</li>
+                    </ul>
+                </div>
+                
+                <h4 style="margin-top: 25px; color: #cbd5e1;">Key Benefits</h4>
+                <div class="grid-3" style="margin-top: 15px;">
+                    <div class="card" style="border-color: #ff9900;">
+                        <h4 style="color: #ff9900; margin-bottom: 10px;">⚡ Simplified Deployment</h4>
+                        <p style="color: #94a3b8; font-size: 0.85em;">
+                            Deploy production-ready containerized applications with sensible defaults. 
+                            ECS Express Mode orchestrates all necessary infrastructure automatically.
+                        </p>
+                    </div>
+                    
+                    <div class="card" style="border-color: #ff6600;">
+                        <h4 style="color: #ff6600; margin-bottom: 10px;">🔧 Auto-Configured Infrastructure</h4>
+                        <p style="color: #94a3b8; font-size: 0.85em;">
+                            Automatically provisions: Fargate service, Load Balancer with SSL/TLS, 
+                            auto scaling policies, CloudWatch monitoring, and VPC networking.
+                        </p>
+                    </div>
+                    
+                    <div class="card" style="border-color: #fbbf24;">
+                        <h4 style="color: #fbbf24; margin-bottom: 10px;">💰 Cost Optimization</h4>
+                        <p style="color: #94a3b8; font-size: 0.85em;">
+                            Shares Application Load Balancers across multiple Express Mode services 
+                            using the same networking configuration to reduce costs.
+                        </p>
+                    </div>
+                </div>
+                
+                <h4 style="margin-top: 25px; color: #cbd5e1;">ECS Express Mode Features</h4>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Deployment Complexity</strong></td>
+                                <td>Low - Only 3 required inputs (image, task role, infrastructure role)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Infrastructure Access</strong></td>
+                                <td>Full visibility & direct access to all underlying AWS resources</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Load Balancer</strong></td>
+                                <td>Application Load Balancer with SSL/TLS auto-configured</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Auto Scaling</strong></td>
+                                <td>Configurable scaling policies based on utilization or traffic</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Networking</strong></td>
+                                <td>Your VPC with public or private HTTPS applications</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Compute</strong></td>
+                                <td>Fargate-based ECS service (serverless containers)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>CI/CD Integration</strong></td>
+                                <td>AWS CLI, CloudFormation, Terraform, GitHub Actions</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <h4 style="margin-top: 25px; color: #cbd5e1;">Pipeline Integration</h4>
+                <div class="code-block">
+<pre><span class="code-comment"># ECS Express Mode Deployment Step</span>
+
+<span class="code-key">Stage:</span> <span class="code-string">Deploy_ECS_Express</span>
+
+<span class="code-key">1. Prerequisites</span>
+   ├── Container image pushed to ECR
+   ├── Task execution role configured
+   └── Infrastructure role with ECS permissions
+
+<span class="code-key">2. Create/Update Express Service</span>
+   <span class="code-comment"># Using AWS CLI</span>
+   aws ecs create-express-service \
+     --service-name <span class="code-string">&lt;+pipeline.variables.serviceName&gt;</span> \
+     --image <span class="code-string">&lt;+pipeline.variables.imageUri&gt;</span> \
+     --task-execution-role-arn <span class="code-string">&lt;+variable.taskExecutionRole&gt;</span> \
+     --infrastructure-role-arn <span class="code-string">&lt;+variable.infrastructureRole&gt;</span> \
+     --public-access true \
+     --port 8080
+
+<span class="code-key">3. Output</span>
+   ├── Unique HTTPS URL (auto-generated)
+   ├── Fargate tasks running
+   ├── ALB with SSL/TLS configured
+   └── CloudWatch logs & metrics enabled
+
+<span class="code-key">4. Health Check</span>
+   └── Verify service URL responds with HTTP 200</pre>
+                </div>
+                
+                <div class="highlight-box" style="margin-top: 20px;">
+                    <h4>📋 When to Use ECS Express Mode</h4>
+                    <div style="display: flex; gap: 30px; flex-wrap: wrap; margin-top: 15px;">
+                        <div style="flex: 1; min-width: 250px;">
+                            <p style="color: #10b981; font-weight: 600; margin-bottom: 8px;">✅ Ideal For:</p>
+                            <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px;">
+                                <li>Stateless web applications & APIs</li>
+                                <li>Rapid prototyping with production defaults</li>
+                                <li>Teams wanting more control than App Runner</li>
+                                <li>Platform teams enabling self-service deployments</li>
+                            </ul>
+                        </div>
+                        <div style="flex: 1; min-width: 250px;">
+                            <p style="color: #ef4444; font-weight: 600; margin-bottom: 8px;">❌ Consider Alternatives For:</p>
+                            <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px;">
+                                <li>Complex multi-container deployments</li>
+                                <li>Stateful applications requiring EBS</li>
+                                <li>Custom task definitions needed</li>
+                                <li>EC2 launch type requirements</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section" style="margin-top: 30px;">
+                <h3>Worker Pipeline Stages (All Clouds)</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Stage</th><th>Steps</th><th>Quality Gate</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>1. Source</strong></td>
+                                <td>Clone repository, checkout branch</td>
+                                <td>Branch exists, valid commit</td>
+                            </tr>
+                            <tr>
+                                <td><strong>2. Pre-Build Quality</strong></td>
+                                <td>Linting, code formatting, dependency check</td>
+                                <td>No critical lint errors</td>
+                            </tr>
+                            <tr>
+                                <td><strong>3. Unit Tests</strong></td>
+                                <td>Run unit test suite, generate coverage</td>
+                                <td>≥80% code coverage, all tests pass</td>
+                            </tr>
+                            <tr>
+                                <td><strong>4. SAST Scanning</strong></td>
+                                <td>Fortify, SonarQube, Semgrep analysis</td>
+                                <td>No critical/high vulnerabilities</td>
+                            </tr>
+                            <tr>
+                                <td><strong>5. Build</strong></td>
+                                <td>Docker build (backend + frontend)</td>
+                                <td>Build succeeds, valid Dockerfile</td>
+                            </tr>
+                            <tr>
+                                <td><strong>6. Container Scan</strong></td>
+                                <td>Trivy image vulnerability scan</td>
+                                <td>No HIGH/CRITICAL CVEs</td>
+                            </tr>
+                            <tr>
+                                <td><strong>7. Push Registry</strong></td>
+                                <td>Push to GAR/ACR/ECR</td>
+                                <td>Image pushed, tagged correctly</td>
+                            </tr>
+                            <tr>
+                                <td><strong>8. Deploy</strong></td>
+                                <td>Deploy to target environment</td>
+                                <td>Health check passes</td>
+                            </tr>
+                            <tr>
+                                <td><strong>9. Smoke Tests</strong></td>
+                                <td>API health, basic functionality</td>
+                                <td>All smoke tests pass</td>
+                            </tr>
+                            <tr>
+                                <td><strong>10. Integration Tests</strong></td>
+                                <td>E2E tests, API contract tests</td>
+                                <td>All integration tests pass</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 6: Security & Quality Gates -->
+        <section id="security">
+            <h2>6. Security & Quality Gates</h2>
+            
+            <div class="section">
+                <div class="highlight-box" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(139, 92, 246, 0.1)); border-color: rgba(239, 68, 68, 0.3);">
+                    <h4 style="color: #ef4444;">🔒 Security-First Pipeline</h4>
+                    <p>Every build undergoes comprehensive security scanning before deployment. Security checks run in parallel with build steps to minimize pipeline duration while ensuring thorough coverage.</p>
+                </div>
+                
+                <h3 style="margin-top: 30px;">🛡️ Security Scanning Tools (Implemented)</h3>
+                <div class="grid-3" style="margin-top: 20px;">
+                    <div class="card" style="border-color: #ef4444;">
+                        <h4 style="color: #ef4444; margin-bottom: 15px;">🛡️ Fortify on Demand (SAST)</h4>
+                        <p style="font-size: 0.9em; color: #94a3b8;">Enterprise Static Application Security Testing</p>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Source code vulnerability detection</li>
+                            <li>SQL injection, XSS, CSRF detection</li>
+                            <li>OWASP Top 10 / CWE compliance</li>
+                            <li>Auto-creates app & release per repo</li>
+                            <li>Results in FoD portal dashboard</li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(239, 68, 68, 0.1); border-radius: 8px;">
+                            <strong style="color: #ef4444;">Integration:</strong> <span style="color: #94a3b8;">API-based scan submission</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="border-color: #3b82f6;">
+                        <h4 style="color: #3b82f6; margin-bottom: 15px;">📊 SonarCloud</h4>
+                        <p style="font-size: 0.9em; color: #94a3b8;">Code Quality & Security Analysis</p>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Code smells & technical debt tracking</li>
+                            <li>Bug detection & reliability issues</li>
+                            <li>Security vulnerability scanning</li>
+                            <li>Code coverage reporting</li>
+                            <li>Duplicated code detection</li>
+                            <li>Branch-aware analysis</li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
+                            <strong style="color: #3b82f6;">Organization:</strong> <span style="color: #94a3b8;">quantnik (SonarCloud)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="border-color: #10b981;">
+                        <h4 style="color: #10b981; margin-bottom: 15px;">🔍 Semgrep SAST</h4>
+                        <p style="font-size: 0.9em; color: #94a3b8;">Lightweight Static Analysis (Active)</p>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Pattern-based code scanning</li>
+                            <li>Security audit ruleset (p/security-audit)</li>
+                            <li>JSON + SARIF report generation</li>
+                            <li>Harness STO integration</li>
+                            <li>Multi-language support (Python, JS)</li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 8px;">
+                            <strong style="color: #10b981;">Status:</strong> <span style="color: #94a3b8;">✅ Active in all builds</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="border-color: #8b5cf6;">
+                        <h4 style="color: #8b5cf6; margin-bottom: 15px;">🐳 Trivy Container Scan</h4>
+                        <p style="font-size: 0.9em; color: #94a3b8;">Container & Dependency Scanning (Active)</p>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Docker image vulnerability scan</li>
+                            <li>Backend + Frontend images</li>
+                            <li>Severity filter: HIGH, CRITICAL</li>
+                            <li>JSON + SARIF report generation</li>
+                            <li>Harness STO ingestion</li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(139, 92, 246, 0.1); border-radius: 8px;">
+                            <strong style="color: #8b5cf6;">Status:</strong> <span style="color: #94a3b8;">✅ Active post-build</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="border-color: #ec4899;">
+                        <h4 style="color: #ec4899; margin-bottom: 15px;">🔐 TruffleHog Secret Scan</h4>
+                        <p style="font-size: 0.9em; color: #94a3b8;">Credential & Secret Detection (Active)</p>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>API keys, tokens detection</li>
+                            <li>Passwords & private keys</li>
+                            <li>Excludes lock files (false positives)</li>
+                            <li>Filters high-entropy noise</li>
+                            <li>Verified secrets flagged</li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(236, 72, 153, 0.1); border-radius: 8px;">
+                            <strong style="color: #ec4899;">Status:</strong> <span style="color: #94a3b8;">✅ Active pre-build</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="border-color: #f59e0b;">
+                        <h4 style="color: #f59e0b; margin-bottom: 15px;">📜 OPA Policy Check</h4>
+                        <p style="font-size: 0.9em; color: #94a3b8;">Policy as Code Enforcement</p>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Open Policy Agent (Rego)</li>
+                            <li>Namespace validation</li>
+                            <li>Image tag policies</li>
+                            <li>Custom deployment rules</li>
+                            <li>Pre-build gate enforcement</li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(245, 158, 11, 0.1); border-radius: 8px;">
+                            <strong style="color: #f59e0b;">Status:</strong> <span style="color: #94a3b8;">✅ Active (template)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 40px;">🔮 Harness Qwiet AI (Advanced SAST/SCA)</h3>
+                <div class="highlight-box" style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(59, 130, 246, 0.15)); border-color: rgba(124, 58, 237, 0.4);">
+                    <h4 style="color: #a78bfa;">🤖 AI-Powered Application Security</h4>
+                    <p style="margin-bottom: 15px;">
+                        Harness acquired <strong>Qwiet AI</strong> (formerly ShiftLeft) to provide next-generation AI-driven application security testing. 
+                        Qwiet AI uses Code Property Graph (CPG) technology and AI agents to detect vulnerabilities that traditional SAST tools miss.
+                    </p>
+                </div>
+                
+                <div class="grid-3" style="margin-top: 20px;">
+                    <div class="card" style="border-color: #a78bfa;">
+                        <h4 style="color: #a78bfa; margin-bottom: 15px;">🧠 AI Code Analysis</h4>
+                        <p style="font-size: 0.9em; color: #94a3b8;">Semantic Code Understanding</p>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Code Property Graph (CPG) technology</li>
+                            <li>Data flow & control flow analysis</li>
+                            <li>Reachability analysis for true positives</li>
+                            <li>AI-powered vulnerability detection</li>
+                            <li>Context-aware security findings</li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(167, 139, 250, 0.1); border-radius: 8px;">
+                            <strong style="color: #a78bfa;">Type:</strong> <span style="color: #94a3b8;">SAST (Static Analysis)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="border-color: #06b6d4;">
+                        <h4 style="color: #06b6d4; margin-bottom: 15px;">📦 Dependency Analysis (SCA)</h4>
+                        <p style="font-size: 0.9em; color: #94a3b8;">Supply Chain Security</p>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Open source vulnerability scanning</li>
+                            <li>Transitive dependency analysis</li>
+                            <li>License compliance checking</li>
+                            <li>SBOM (Software Bill of Materials)</li>
+                            <li>Prioritized remediation guidance</li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(6, 182, 212, 0.1); border-radius: 8px;">
+                            <strong style="color: #06b6d4;">Type:</strong> <span style="color: #94a3b8;">SCA (Composition Analysis)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="border-color: #10b981;">
+                        <h4 style="color: #10b981; margin-bottom: 15px;">🤖 AI Auto-Remediation</h4>
+                        <p style="font-size: 0.9em; color: #94a3b8;">Agentic Security Fixes</p>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>AI-generated fix suggestions</li>
+                            <li>Automated pull request creation</li>
+                            <li>Context-aware code patches</li>
+                            <li>Secure coding pattern enforcement</li>
+                            <li>Developer-friendly explanations</li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-radius: 8px;">
+                            <strong style="color: #10b981;">Status:</strong> <span style="color: #94a3b8;">🔜 Planned Integration</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="code-block" style="margin-top: 25px;">
+<pre><span class="code-comment"># Qwiet AI Integration (Planned)</span>
+
+<span class="code-key">Pipeline Stage:</span> <span class="code-string">Pre-Build Security</span>
+
+<span class="code-key">1. Qwiet SAST Scan</span>
+   ├── Code Property Graph generation
+   ├── AI-powered vulnerability detection
+   ├── Data flow analysis (source → sink)
+   └── Reachability filtering (reduce false positives)
+
+<span class="code-key">2. Qwiet SCA Scan</span>
+   ├── Dependency tree analysis
+   ├── CVE database matching
+   ├── License compliance check
+   └── SBOM generation
+
+<span class="code-key">3. AI Auto-Remediation</span>
+   ├── Vulnerability prioritization
+   ├── AI-generated fix suggestions
+   └── Automated PR creation (optional)</pre>
+                </div>
+                
+                <h3 style="margin-top: 40px;">📋 Quality Gate Summary</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Stage</th><th>Tool</th><th>Report Output</th><th>Harness STO</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>1. Secret Scan</strong></td>
+                                <td>TruffleHog</td>
+                                <td>trufflehog-report.json</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>2. SAST Scan</strong></td>
+                                <td>Semgrep</td>
+                                <td>semgrep-report.json, semgrep-report.sarif</td>
+                                <td>✅ STO Ingestion</td>
+                            </tr>
+                            <tr>
+                                <td><strong>3. Code Quality</strong></td>
+                                <td>SonarCloud</td>
+                                <td>SonarCloud Dashboard</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>4. Enterprise SAST</strong></td>
+                                <td>Fortify on Demand</td>
+                                <td>FoD Portal</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>5. Container Scan</strong></td>
+                                <td>Trivy</td>
+                                <td>trivy-backend-report.sarif, trivy-frontend-report.sarif</td>
+                                <td>✅ STO Ingestion</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <h3 style="margin-top: 40px;">🔄 Security Scan Pipeline Flow</h3>
+                <div class="code-block">
+<pre><span class="code-comment"># Build Stage Security Steps (per repository)</span>
+
+<span class="code-key">1. Clone Repository</span>
+   └── Git clone with branch resolution
+
+<span class="code-key">2. Pre-Build Security (Parallel)</span>
+   ├── <span class="code-string">TruffleHog_Secret_Scan</span>     → Detect leaked credentials
+   ├── <span class="code-string">Semgrep_SAST_Scan</span>         → Static code analysis  
+   ├── <span class="code-string">SonarCloud_Scan</span>           → Code quality + coverage
+   └── <span class="code-string">Fortify_SAST_Scan</span>         → Enterprise SAST
+
+<span class="code-key">3. Build & Push Images</span>
+   ├── BuildAndPushGAR_Backend  → Backend Docker image
+   └── BuildAndPushGAR_Frontend → Frontend Docker image
+
+<span class="code-key">4. Post-Build Security</span>
+   ├── <span class="code-string">Trivy_Container_Scan</span>      → Image vulnerability scan
+   ├── <span class="code-string">STO_Ingest_Semgrep</span>        → Harness Security dashboard
+   ├── <span class="code-string">STO_Ingest_Trivy_Backend</span>  → Harness Security dashboard
+   └── <span class="code-string">STO_Ingest_Trivy_Frontend</span> → Harness Security dashboard
+
+<span class="code-key">5. Deploy</span> (only if security gates pass)</pre>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 7: Automated Testing -->
+        <section id="testing">
+            <h2>7. Automated Testing</h2>
+            
+            <div class="section">
+                <h3>🧪 Test Pyramid</h3>
+                <div style="display: flex; flex-direction: column; align-items: center; margin: 30px 0;">
+                    <div style="width: 200px; padding: 20px; background: linear-gradient(135deg, #ef4444, #f87171); border-radius: 8px 8px 0 0; text-align: center; color: white;">
+                        <strong>E2E Tests</strong><br>
+                        <span style="font-size: 0.8em;">UI + API Integration</span>
+                    </div>
+                    <div style="width: 300px; padding: 20px; background: linear-gradient(135deg, #f59e0b, #fbbf24); text-align: center; color: #1f2937;">
+                        <strong>Integration Tests</strong><br>
+                        <span style="font-size: 0.8em;">Service + API Contract Tests</span>
+                    </div>
+                    <div style="width: 400px; padding: 20px; background: linear-gradient(135deg, #22c55e, #4ade80); border-radius: 0 0 8px 8px; text-align: center; color: #1f2937;">
+                        <strong>Unit Tests</strong><br>
+                        <span style="font-size: 0.8em;">Component + Function Level (≥80% Coverage)</span>
+                    </div>
+                </div>
+                
+                <div class="grid-3" style="margin-top: 30px;">
+                    <div class="card">
+                        <h4 style="color: #22c55e;">✅ Unit Tests</h4>
+                        <p style="color: #94a3b8; font-size: 0.9em;">Run on every commit</p>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Pytest (Python microservices)</li>
+                            <li>Jest (React frontend)</li>
+                            <li>Component isolation tests</li>
+                            <li>Mock external dependencies</li>
+                            <li>Coverage threshold: 80%</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="card">
+                        <h4 style="color: #f59e0b;">🔗 Integration Tests</h4>
+                        <p style="color: #94a3b8; font-size: 0.9em;">Run after deployment to Dev</p>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>API contract testing</li>
+                            <li>Database integration tests</li>
+                            <li>Service-to-service communication</li>
+                            <li>Agent orchestration tests</li>
+                            <li>RAG pipeline validation</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="card">
+                        <h4 style="color: #ef4444;">🎯 E2E Tests</h4>
+                        <p style="color: #94a3b8; font-size: 0.9em;">Run on QA/Stage environments</p>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Cypress / Playwright</li>
+                            <li>Full SDLC workflow tests</li>
+                            <li>Cross-browser testing</li>
+                            <li>Visual regression tests</li>
+                            <li>Performance benchmarks</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 40px;">📊 Test Execution by Environment</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Environment</th><th>Test Types</th><th>Trigger</th><th>Duration</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="env-box dev" style="display: inline-block;">🟢 Dev</span></td>
+                                <td>Unit Tests, Smoke Tests, Basic Integration</td>
+                                <td>Every commit (develop/feature/*)</td>
+                                <td>~5 mins</td>
+                            </tr>
+                            <tr>
+                                <td><span class="env-box qa" style="display: inline-block;">🔵 QA</span></td>
+                                <td>Full Integration Suite, E2E Tests, Regression</td>
+                                <td>Weekly release deployment</td>
+                                <td>~30 mins</td>
+                            </tr>
+                            <tr>
+                                <td><span class="env-box staging" style="display: inline-block;">🟣 Stage</span></td>
+                                <td>E2E Tests, Performance Tests, Security Tests</td>
+                                <td>After QA approval</td>
+                                <td>~45 mins</td>
+                            </tr>
+                            <tr>
+                                <td><span class="env-box prod" style="display: inline-block;">🟠 Prod</span></td>
+                                <td>Smoke Tests, Health Checks, Canary Validation</td>
+                                <td>After Stage approval</td>
+                                <td>~5 mins</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 8: Environments -->
+        <section id="environments">
+            <h2>8. Environment Progression</h2>
+            
+            <div class="section">
+                <h3>Branch-to-Environment Mapping</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Branch</th><th>Target Environment</th><th>Approval</th><th>Frequency</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>develop</code></td>
+                                <td><span class="env-box dev" style="display: inline-block;">🟢 Dev</span></td>
+                                <td>None</td>
+                                <td>On every commit</td>
+                            </tr>
+                            <tr>
+                                <td><code>feature/*</code></td>
+                                <td><span class="env-box dev" style="display: inline-block;">🟢 Dev</span></td>
+                                <td>None</td>
+                                <td>On every commit</td>
+                            </tr>
+                            <tr>
+                                <td><code>release/*</code></td>
+                                <td><span class="env-box qa" style="display: inline-block;">🔵 QA</span> → <span class="env-box staging" style="display: inline-block;">🟣 Stage</span> → <span class="env-box prod" style="display: inline-block;">🟠 Prod</span></td>
+                                <td>Required (14-day)</td>
+                                <td>Weekly release</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <h3 style="margin-top: 30px;">Environment Details</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Environment</th><th>Purpose</th><th>Deployed From</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="env-box dev" style="display: inline-block;">🟢 Dev</span></td>
+                                <td>Developer testing, integration validation, feature testing</td>
+                                <td>develop, feature/*</td>
+                            </tr>
+                            <tr>
+                                <td><span class="env-box qa" style="display: inline-block;">🔵 QA</span></td>
+                                <td>QA testing, automated test suites, regression testing</td>
+                                <td>release/* (weekly)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="env-box staging" style="display: inline-block;">🟣 Stage</span></td>
+                                <td>Pre-production validation, UAT, performance testing</td>
+                                <td>release/* (after QA approval)</td>
+                            </tr>
+                            <tr>
+                                <td><span class="env-box prod" style="display: inline-block;">🟠 Prod</span></td>
+                                <td>Live customer-facing environment</td>
+                                <td>release/* (after Stage approval)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 9: Release Verification -->
+        <section id="verification">
+            <h2>9. Release Verification</h2>
+            
+            <div class="section">
+                <h3>🚀 Deployment Verification Steps</h3>
+                <p>After each environment deployment, verification steps ensure the release is healthy before proceeding.</p>
+                
+                <div class="grid-3" style="margin-top: 20px;">
+                    <div class="card">
+                        <h4 style="color: #22c55e;">✅ Health Checks</h4>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Cloud Run service health endpoint</li>
+                            <li>Container startup verification</li>
+                            <li>Port 8080 readiness check</li>
+                            <li>Memory/CPU allocation validation</li>
+                            <li>Service URL accessibility</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="card">
+                        <h4 style="color: #3b82f6;">🔍 Smoke Tests</h4>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>API endpoint availability</li>
+                            <li>Authentication flow validation</li>
+                            <li>Critical path verification</li>
+                            <li>Database connectivity</li>
+                            <li>External service integration</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="card">
+                        <h4 style="color: #f59e0b;">📊 Release Metrics</h4>
+                        <ul style="color: #cbd5e1; font-size: 0.85em; padding-left: 20px; margin-top: 10px;">
+                            <li>Deployment duration tracking</li>
+                            <li>Error rate monitoring</li>
+                            <li>Response time baseline</li>
+                            <li>Resource utilization</li>
+                            <li>Rollback readiness</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 40px;">🔄 Approval Workflow</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Transition</th><th>Approval Type</th><th>Timeout</th><th>Approver Group</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Dev → QA</td>
+                                <td>Harness Approval Step</td>
+                                <td>14 days</td>
+                                <td>wegarelease_approvers</td>
+                            </tr>
+                            <tr>
+                                <td>QA → Stage</td>
+                                <td>Harness Approval Step</td>
+                                <td>14 days</td>
+                                <td>wegarelease_approvers</td>
+                            </tr>
+                            <tr>
+                                <td>Stage → Prod</td>
+                                <td>Harness Approval Step</td>
+                                <td>14 days</td>
+                                <td>wegarelease_approvers</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="highlight-box" style="margin-top: 30px;">
+                    <h4>📋 Approval Message Contains:</h4>
+                    <ul style="color: #cbd5e1; font-size: 0.9em; padding-left: 20px; margin-top: 10px;">
+                        <li><strong>Repos:</strong> Selected repositories being deployed</li>
+                        <li><strong>Image Tag:</strong> Docker image version (execution ID)</li>
+                        <li><strong>Build ID:</strong> Pipeline sequence number for traceability</li>
+                        <li><strong>Execution History:</strong> Link to previous pipeline runs</li>
+                    </ul>
+                </div>
+                
+                <h3 style="margin-top: 40px;">🔙 Rollback Strategy</h3>
+                <div class="code-block">
+<pre><span class="code-comment"># Rollback Options</span>
+
+<span class="code-key">1. Image Tag Rollback</span>
+   - Re-run pipeline with previous imageTag
+   - executionMode: deploy_only
+   - imageTag: &lt;previous-execution-id&gt;
+
+<span class="code-key">2. Cloud Run Revision Rollback</span>
+   - Use Cloud Run console/CLI
+   - Route traffic to previous revision
+   - Instant rollback capability
+
+<span class="code-key">3. Git-based Rollback</span>
+   - Revert commit in source repo
+   - Trigger new build from reverted code
+   - Full audit trail maintained</pre>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 10: Data Flow -->
+        <section id="dataflow">
+            <h2>10. Data Flow & Variables</h2>
+            
+            <div class="section">
+                <div class="code-block">
+<pre><span class="code-comment"># Variable flow: Trigger → Orchestrator → Worker</span>
+
+<span class="code-comment"># 1. Trigger extracts branch from webhook payload</span>
+<span class="code-key">branchwegaBrd:</span> <span class="code-string">&lt;+trigger.branch&gt;</span>  <span class="code-comment"># → "develop"</span>
+
+<span class="code-comment"># 2. Orchestrator receives and stores in pipeline variables</span>
+<span class="code-key">&lt;+pipeline.variables.branchwegaBrd&gt;</span>  <span class="code-comment"># → "develop"</span>
+
+<span class="code-comment"># 3. Worker pipeline receives via stage inputs</span>
+<span class="code-key">selectedBranch:</span> <span class="code-string">&lt;+pipeline.variables.branchwegaBrd&gt;</span>
+
+<span class="code-comment"># 4. Clone step uses resolved branch</span>
+<span class="code-key">git clone -b $selectedBranch $repoUrl</span></pre>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 11: Implementation -->
+        <section id="implementation">
+            <h2>11. Implementation Checklist</h2>
+            
+            <div class="section">
+                <ol class="step-list">
+                    <li>
+                        <div class="step-title">Update Orchestrator deployTarget</div>
+                        <div class="step-desc">Add "all" to allowedValues and update stage conditions with <code>|| deployTarget == "all"</code></div>
+                    </li>
+                    <li>
+                        <div class="step-title">Create Webhook Triggers</div>
+                        <div class="step-desc">Generate one webhook trigger per repository with branch pattern filtering (main, develop, release/*)</div>
+                    </li>
+                    <li>
+                        <div class="step-title">Create Scheduled Triggers</div>
+                        <div class="step-desc">Set up cron triggers for nightly builds with selectedRepo=all and deployTarget=all</div>
+                    </li>
+                    <li>
+                        <div class="step-title">Configure Branch Variables</div>
+                        <div class="step-desc">Ensure each trigger passes branch variable using <code>&lt;+trigger.branch&gt;</code></div>
+                    </li>
+                    <li>
+                        <div class="step-title">Test Pipeline Flow</div>
+                        <div class="step-desc">Push to a test branch to verify trigger → orchestrator → all workers → 3 cloud deployments</div>
+                    </li>
+                </ol>
+            </div>
+        </section>
+    </div>
+    
+    <footer>
+        <p><strong>QUANTNIK SDLC Multi-Cloud CI/CD Architecture</strong></p>
+        <p>Harness Platform • Google Cloud • Microsoft Azure • Amazon Web Services</p>
+    </footer>
+</body>
+</html>

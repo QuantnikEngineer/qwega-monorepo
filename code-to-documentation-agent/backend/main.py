@@ -73,8 +73,8 @@ def get_effective_site_name(config: SharePointConfig, logger_instance=None) -> t
     Configuration fields:
     - site_url: Full URL to SharePoint site (e.g., https://tenant.sharepoint.com/sites/MySite)
     - sharepoint_folder (document_library): Can be in formats:
-        - "LibraryName" (e.g., "WEGA")
-        - "SiteName/LibraryName" (e.g., "aikidowega/WEGA")
+        - "LibraryName" (e.g., "QUANTNIK")
+        - "SiteName/LibraryName" (e.g., "aikidoquantnik/QUANTNIK")
     
     Returns:
         tuple: (site_name, document_library_name)

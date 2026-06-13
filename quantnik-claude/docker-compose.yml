@@ -1,0 +1,21 @@
+services:
+  quantnik2:
+    build: .
+    image: quantnik2:latest
+    container_name: quantnik2
+    restart: unless-stopped
+    # Bind to localhost only; expose publicly via nginx/ALB with TLS.
+    ports:
+      - "127.0.0.1:6060:6060"
+    environment:
+      NODE_ENV: production
+      PORT: 6060
+      # HOME is set in the image to /home/quantnik; the mounts below put your
+      # Claude credentials + config exactly where the SDK expects them.
+    volumes:
+      # SQLite + projects + uploads. Survive container rebuilds.
+      - ./data:/app/backend/data
+      # Claude OAuth credentials, skills, plugins, hooks.
+      # Run `claude /login` on the host (or scp from your Mac) before starting.
+      - ${HOME}/.claude:/home/quantnik/.claude
+      - ${HOME}/.claude.json:/home/quantnik/.claude.json

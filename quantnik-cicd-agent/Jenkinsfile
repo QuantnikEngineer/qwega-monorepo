@@ -1,0 +1,156 @@
+pipeline {
+  agent any
+
+  options {
+    timeout(time: 60, unit: 'MINUTES')
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '10'))
+  }
+
+  environment {
+    PYTHONDONTWRITEBYTECODE = '1'
+    PYTHONUNBUFFERED = '1'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Install Dependencies') {
+      steps {
+        sh '''
+          python3 -m venv .venv
+          . .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+        '''
+      }
+    }
+
+    stage('Build') {
+      steps {
+        sh '''
+          . .venv/bin/activate
+          python -m compileall .
+        '''
+      }
+    }
+
+    stage('Docker Build & Push') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'acr-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh '''
+            REGISTRY_HOST=$(echo "registry.example.com/quantnik-platform-ci" | cut -d'/' -f1)
+            echo $DOCKER_PASS | docker login $REGISTRY_HOST -u $DOCKER_USER --password-stdin
+            docker build -t registry.example.com/quantnik-platform-ci:${BUILD_NUMBER} .
+            docker tag registry.example.com/quantnik-platform-ci:${BUILD_NUMBER} registry.example.com/quantnik-platform-ci:dev
+            docker push registry.example.com/quantnik-platform-ci:dev
+            docker tag registry.example.com/quantnik-platform-ci:${BUILD_NUMBER} registry.example.com/quantnik-platform-ci:dev-20260529-1552
+            docker push registry.example.com/quantnik-platform-ci:dev-20260529-1552
+            docker push registry.example.com/quantnik-platform-ci:${BUILD_NUMBER}
+          '''
+        }
+      }
+    }
+
+    stage('Deploy to Azure') {
+      steps {
+        withCredentials([string(credentialsId: 'azure-credentials', variable: 'AZURE_CREDENTIALS'), usernamePassword(credentialsId: 'acr-credentials', usernameVariable: 'ACR_USER', passwordVariable: 'ACR_PASS')]) {
+          sh '''#!/bin/bash
+            set +x
+            echo "$AZURE_CREDENTIALS" > /tmp/azure_creds_$$.json
+            CLIENT_ID=$(jq -r .clientId /tmp/azure_creds_$$.json)
+            CLIENT_SECRET=$(jq -r .clientSecret /tmp/azure_creds_$$.json)
+            TENANT_ID=$(jq -r .tenantId /tmp/azure_creds_$$.json)
+            rm -f /tmp/azure_creds_$$.json
+            az login --service-principal -u "$CLIENT_ID" -p "$CLIENT_SECRET" --tenant "$TENANT_ID" --output none
+            set -x
+            
+            REGISTRY_HOST=$(echo "registry.example.com/quantnik-platform-ci" | cut -d'/' -f1)
+            APP_NAME="quantnik-cicd-agent"
+            RESOURCE_GROUP="quantnik-azure-rg"
+            ENV_NAME="quantnik-aca-dev"
+            IMAGE="registry.example.com/quantnik-platform-ci:${BUILD_NUMBER}"
+            
+            # Check if container app exists and its state
+            APP_STATE=$(az containerapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.provisioningState" -o tsv 2>/dev/null || echo "NotFound")
+            echo "Container App state: $APP_STATE"
+            
+            if [ "$APP_STATE" = "NotFound" ]; then
+              echo "Creating Container App: $APP_NAME"
+              az containerapp create \
+                --name "$APP_NAME" \
+                --resource-group "$RESOURCE_GROUP" \
+                --environment "$ENV_NAME" \
+                --image "$IMAGE" \
+                --registry-server "$REGISTRY_HOST" \
+                --registry-username "$ACR_USER" \
+                --registry-password "$ACR_PASS" \
+                --target-port 8000 \
+                --ingress external \
+                --cpu 0.5 \
+                --memory 1.0Gi \
+                --min-replicas 1 \
+                --max-replicas 3
+            elif [ "$APP_STATE" = "Failed" ]; then
+              echo "Container App is in Failed state, deleting and recreating..."
+              az containerapp delete --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --yes
+              
+              echo "Creating Container App: $APP_NAME"
+              az containerapp create \
+                --name "$APP_NAME" \
+                --resource-group "$RESOURCE_GROUP" \
+                --environment "$ENV_NAME" \
+                --image "$IMAGE" \
+                --registry-server "$REGISTRY_HOST" \
+                --registry-username "$ACR_USER" \
+                --registry-password "$ACR_PASS" \
+                --target-port 8000 \
+                --ingress external \
+                --cpu 0.5 \
+                --memory 1.0Gi \
+                --min-replicas 1 \
+                --max-replicas 3
+            else
+              echo "Updating Container App: $APP_NAME"
+              
+              # Set registry credentials first
+              az containerapp registry set \
+                --name "$APP_NAME" \
+                --resource-group "$RESOURCE_GROUP" \
+                --server "$REGISTRY_HOST" \
+                --username "$ACR_USER" \
+                --password "$ACR_PASS"
+              
+              # Then update the image
+              az containerapp update \
+                --name "$APP_NAME" \
+                --resource-group "$RESOURCE_GROUP" \
+                --image "$IMAGE"
+            fi
+            
+            # Get the FQDN
+            FQDN=$(az containerapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.configuration.ingress.fqdn" -o tsv)
+            echo "Deployment completed!"
+            echo "Application URL: https://$FQDN"
+          '''
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      cleanWs()
+    }
+    success {
+      echo 'Pipeline completed successfully.'
+    }
+    failure {
+      echo 'Pipeline failed.'
+    }
+  }
+}

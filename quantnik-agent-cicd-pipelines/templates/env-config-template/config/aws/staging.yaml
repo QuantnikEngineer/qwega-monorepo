@@ -1,0 +1,16 @@
+# config/aws/staging.yaml
+# AWS ECS - Staging
+
+env:
+  ENVIRONMENT: staging
+  LOG_LEVEL: INFO
+  FEATURE_DEBUG_MODE: "false"
+  FEATURE_VERBOSE_ERRORS: "false"
+  
+  API_BASE_URL: https://staging-api.quantnik.aws.example.com
+  
+  DB_HOST: staging-quantnik-db.xxxxx.us-east-1.rds.amazonaws.com
+  DB_PORT: "5432"
+  DB_NAME: quantnik_staging
+  
+  MAX_WORKERS: "4"

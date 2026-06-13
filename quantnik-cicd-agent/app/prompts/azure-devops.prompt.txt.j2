@@ -1,0 +1,117 @@
+You are generating a production-ready enterprise Azure DevOps CI pipeline YAML file for QUANTNIK.
+
+{% if azure_container_apps and azure_container_apps.enabled %}
+AZURE CONTAINER APPS DEPLOYMENT MODE
+This pipeline deploys to Azure Container Apps with ACR integration. Generate a multi-stage pipeline with:
+1. A Build stage that builds and pushes the container image to ACR using `az acr build`
+2. Separate deployment stages for each environment: {{ azure_container_apps.deployment_environments | join(', ') }}
+3. Each deployment stage should:
+   - Create the Container Apps environment if it doesn't exist
+   - Wait for the environment to be ready
+   - Create or update the Container App with the new image
+   - Output the FQDN of the deployed app
+
+AZURE CONTAINER APPS CONFIGURATION:
+- Service Connection: {{ azure_container_apps.service_connection }}
+- Resource Group: {{ azure_container_apps.resource_group }}
+- Location: {{ azure_container_apps.location }}
+- Container App Name: {{ azure_container_apps.container_app_name }}
+- Container App Environment Prefix: {{ azure_container_apps.container_app_env_prefix }}
+- ACR Name: {{ azure_container_apps.acr_name }}
+- ACR Login Server: {{ azure_container_apps.acr_login_server }}
+- Image Repository: {{ azure_container_apps.image_repository }}
+- Deployment Environments: {{ azure_container_apps.deployment_environments | join(', ') }}
+- Trigger Branches: {{ azure_container_apps.trigger_branches | join(', ') }}
+- PR Branches: {{ azure_container_apps.pr_branches | join(', ') }}
+
+CONTAINER APPS DEPLOYMENT SCRIPT TEMPLATE:
+For each deployment stage, use AzureCLI@2 task with a script that:
+1. Sets environment variables for the target environment
+2. Checks if Log Analytics workspace exists and gets credentials
+3. Creates Container Apps environment if needed (with or without Log Analytics)
+4. Waits for environment provisioning to complete
+5. Creates or updates the Container App
+6. Outputs the FQDN
+{% endif %}
+
+OUTPUT CONTRACT
+- Return only valid YAML for the file {{ expected_output_path }}.
+- Do not add markdown fences, prose, comments, TODO markers, ellipsis, or explanations.
+- Treat the supplied stage plan as authoritative for the core CI flow. Do not remove, rename, or reorder core stages.
+- You may add only the minimum extra approval or rollout stages required to implement the resolved enterprise controls.
+- Never invent secrets, service connections, variable groups, templates, repositories, or paths that were not provided.
+- Every generated stage or job must be executable Azure DevOps YAML, not pseudo-YAML.
+- If a capability needs external platform setup, emit the closest Azure-native construct with clear placeholder values while keeping the YAML valid.
+
+NON-NEGOTIABLE ENTERPRISE RULES
+- Build and publish every resolved container image tag when image publishing is enabled.
+- Use the resolved rollout regions, not only the raw user-entered region list.
+- If approvals are enabled, place a native ManualValidation@0 gate in an agentless server job before the first rollout stage.
+- If rollout is enabled, create one isolated rollout stage or deployment job per resolved region after publish.
+- Keep stage identifiers stable, deterministic, and enterprise-safe.
+- Preserve command ordering inside each script block exactly as supplied.
+- Do not collapse multiple rollout regions into one shared stage.
+- Do not omit approval, rollout, or publish behavior when the resolved enterprise controls require it.
+
+AZURE DEVOPS YAML RULES
+- Use top-level keys named trigger, pr, name, and stages. Include variables only when needed.
+- Use the pipeline name {{ pipeline_name }} exactly.
+- Honor the branch {{ branch }} and the trigger booleans push={{ push_trigger_enabled }}, pullRequest={{ pull_request_trigger_enabled }}.
+- Preserve the supplied stage order for the {{ stage_count }} core stages: {{ stage_identifiers }}.
+- Each core stage entry must contain stage, displayName, and jobs.
+- Use checkout: self for repository checkout.
+- Render shell commands inside script: | blocks with displayName.
+- Use deployment jobs and environment names for rollout stages when regional deployment is required.
+- Keep identifiers stable and derived from the supplied stage identifiers or resolved rollout regions.
+
+RESOLVED ENTERPRISE CONTROL PLAN
+- Image publishing enabled: {{ image_enabled }}
+- Image repository: {{ image_repository }}
+- Image tags: {{ image_tags }}
+- Rollout enabled: {{ rollout_enabled }}
+- Requested regions: {{ selected_regions }}
+- Resolved rollout regions: {{ resolved_rollout_regions }}
+- Approvals enabled: {{ approvals_enabled }}
+- Approval approvers: {{ approval_approvers }}
+- Approval timeout minutes: {{ approval_timeout_minutes }}
+
+REQUEST SUMMARY
+- Original user prompt: {{ user_prompt }}
+- Repository URL: {{ repository_url }}
+- Branch: {{ branch }}
+- Deployment target: {{ deployment_target }}
+- Environment: {{ target_environment }}
+- Selected tools ({{ tool_count }}): {{ selected_tools }}
+
+PYTHON BUILD SETTINGS (apply only when the language is python; ignore otherwise)
+- Python version: {{ python_version }}
+- Package manager: {{ python_package_manager }}
+- Test command: {{ python_test_command }}
+- Lint tool: {{ python_lint_tool }}
+- Coverage gate (percent): {{ python_coverage_gate }}
+
+PYTHON-SPECIFIC YAML RULES (apply only when the language is python)
+- Add `- task: UsePythonVersion@0` as the first build/test step inside every python job, configured with `versionSpec: '{{ python_version }}'` and `addToPath: true`.
+- Use `{{ python_package_manager }}` for dependency installation:
+  * pip -> `python -m pip install --upgrade pip` then `python -m pip install -r requirements.txt`.
+  * poetry -> `pipx install poetry` then `poetry install --no-interaction --no-root`.
+  * pipenv -> `python -m pip install --user pipenv` then `pipenv install --dev --deploy`.
+- Run tests with the configured test command exactly as supplied: `{{ python_test_command }}`.
+- Run lint with the configured lint tool: ruff -> `ruff check .`; flake8 -> `flake8 .`; pylint -> `pylint $(git ls-files '*.py')`; black -> `black --check .`.
+- When coverage gate > 0, append `--cov` flags to the test command (or assume pytest-cov is configured) and fail the build if `coverage report --fail-under={{ python_coverage_gate }}` returns non-zero.
+- Never invent extra package indexes, virtual env activation, or wheel uploads beyond what is configured.
+
+APPROVAL CONFIGURATION
+{{ approval_config_json }}
+
+RESOLVED ROLLOUT REGIONS JSON
+{{ resolved_rollout_regions_json }}
+
+ENTERPRISE CONTROLS JSON
+{{ enterprise_controls_json }}
+
+RESOLVED STAGE PLAN AND COMMANDS
+{{ stage_context_json }}
+
+NORMALIZED INTENT PAYLOAD
+{{ normalized_intent_json }}

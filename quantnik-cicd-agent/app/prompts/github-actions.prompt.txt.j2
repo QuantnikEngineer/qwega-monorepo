@@ -1,0 +1,64 @@
+You are generating a production-ready enterprise GitHub Actions workflow YAML file for QUANTNIK.
+
+OUTPUT CONTRACT
+- Return only valid YAML for the file {{ expected_output_path }}.
+- Do not add markdown fences, prose, comments, TODO markers, ellipsis, or explanations.
+- Treat the supplied stage plan as authoritative for the core CI jobs. Do not remove, rename, or reorder core jobs.
+- You may add only the minimum extra approval or rollout jobs required to implement the resolved enterprise controls.
+- Do not invent secrets, repository paths, unapproved third-party actions, permissions, or environments beyond what is required.
+- Every generated job must be executable GitHub Actions YAML, not pseudo-YAML.
+
+NON-NEGOTIABLE ENTERPRISE RULES
+- Build and publish every resolved container image tag when image publishing is enabled.
+- Use the resolved rollout regions, not only the raw user-entered region list.
+- If approvals are enabled, prefer environment-protected rollout jobs. Add a dedicated approval gate job only when needed to preserve deterministic ordering.
+- If rollout is enabled, create one isolated rollout job per resolved region after publish.
+- Keep job identifiers stable, deterministic, and enterprise-safe.
+- Preserve command ordering inside each run block exactly as supplied.
+- Do not collapse multiple rollout regions into one shared job unless the output remains deterministic and still exposes one region-specific execution path per region.
+- Do not omit approval, rollout, or publish behavior when the resolved enterprise controls require it.
+
+GITHUB ACTIONS YAML RULES
+- Use top-level keys named name, on, and jobs.
+- Use the workflow name {{ pipeline_name }} exactly.
+- Honor the branch {{ branch }} and the trigger booleans push={{ push_trigger_enabled }}, pullRequest={{ pull_request_trigger_enabled }}.
+- Preserve the supplied job order for the {{ stage_count }} core stages: {{ stage_identifiers }}.
+- Use runs-on: ubuntu-latest for generated jobs unless the stage plan explicitly says otherwise.
+- Use uses: actions/checkout@v4 for source checkout.
+- Render shell commands inside run: | blocks.
+- Keep job names stable and derived from the supplied stage identifiers or resolved rollout regions.
+- Use needs to keep publish, approval, and rollout ordering explicit.
+
+RESOLVED ENTERPRISE CONTROL PLAN
+- Image publishing enabled: {{ image_enabled }}
+- Image repository: {{ image_repository }}
+- Image tags: {{ image_tags }}
+- Rollout enabled: {{ rollout_enabled }}
+- Requested regions: {{ selected_regions }}
+- Resolved rollout regions: {{ resolved_rollout_regions }}
+- Approvals enabled: {{ approvals_enabled }}
+- Approval approvers: {{ approval_approvers }}
+- Approval timeout minutes: {{ approval_timeout_minutes }}
+
+REQUEST SUMMARY
+- Original user prompt: {{ user_prompt }}
+- Repository URL: {{ repository_url }}
+- Branch: {{ branch }}
+- Deployment target: {{ deployment_target }}
+- Environment: {{ target_environment }}
+- Selected tools ({{ tool_count }}): {{ selected_tools }}
+
+APPROVAL CONFIGURATION
+{{ approval_config_json }}
+
+RESOLVED ROLLOUT REGIONS JSON
+{{ resolved_rollout_regions_json }}
+
+ENTERPRISE CONTROLS JSON
+{{ enterprise_controls_json }}
+
+RESOLVED STAGE PLAN AND COMMANDS
+{{ stage_context_json }}
+
+NORMALIZED INTENT PAYLOAD
+{{ normalized_intent_json }}

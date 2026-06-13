@@ -1,1 +1,0 @@
-# wega-code-to-documentation

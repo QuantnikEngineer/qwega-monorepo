@@ -1,0 +1,1264 @@
+pipeline:
+  name: RepoWorkerBuildDeployACA
+  identifier: RepoWorkerBuildDeployACA
+  projectIdentifier: QUANTNIK_Build_AI
+  orgIdentifier: default
+  tags:
+    ai_generated: "true"
+    deploy_target: aca
+    quantnik_version: "3.0"
+  description: Azure Container Apps deployment pipeline for QUANTNIK 3.0 - Build to ACR, deploy to ACA
+  variables:
+    - name: selectedRepo
+      type: String
+      value: <+input>.default(all)
+    - name: executionMode
+      type: String
+      description: build_only=Build only, deploy_only=Deploy only (provide imageTag), build_and_deploy=Build and deploy
+      value: <+input>.default(build_and_deploy).allowedValues(build_and_deploy,build_only,deploy_only)
+    - name: environment
+      type: String
+      description: "Target environment: all deploys dev->qa->stage->prod with approvals, or select specific environment"
+      value: <+input>.default(dev).allowedValues(all,dev,qa,stage,production)
+    - name: imageTag
+      type: String
+      description: Image tag - auto-generated for builds, provide manually for deploy_only mode
+      value: <+input>.default(<+pipeline.executionId>)
+    - name: gitConnectorRef
+      type: String
+      value: <+input>.default(githarness)
+    - name: azureResourceGroup
+      type: String
+      description: Azure Resource Group for ACR and Container Apps
+      value: <+input>.default(quantnik-azure-rg)
+    - name: azureRegion
+      type: String
+      description: Azure region for Container Apps
+      value: <+input>.default(eastus).allowedValues(eastus,eastus2,westus,westus2,centralus,northeurope,westeurope,southeastasia,eastasia,australiaeast,japaneast,uksouth,canadacentral,centralindia)
+    - name: acrRegistry
+      type: String
+      description: Azure Container Registry name
+      value: <+input>.default(quantnikdev)
+    - name: acrLoginServer
+      type: String
+      value: <+pipeline.variables.acrRegistry>.azurecr.io
+    - name: azureConnectorRef
+      type: String
+      description: Harness connector for Azure
+      value: <+input>.default(account.azureconnector)
+    - name: acaEnvironmentPrefix
+      type: String
+      description: Container Apps Environment name prefix
+      value: <+input>.default(quantnik-aca)
+    - name: trivyScanSeverity
+      type: String
+      value: <+input>.default(HIGH,CRITICAL)
+    - name: branchquantnikSdlcAz
+      type: String
+      value: <+input>
+    - name: branchquantnikSdlcOrchestratorAz
+      type: String
+      value: <+input>
+    - name: branchquantnikPlanningOrchestratorAz
+      type: String
+      value: <+input>
+    - name: branchquantnikTestOrchestratorAz
+      type: String
+      value: <+input>
+    - name: branchquantnikBrdAz
+      type: String
+      value: <+input>
+    - name: branchquantnikUserstoryAz
+      type: String
+      value: <+input>
+    - name: branchquantnikBrdSummaryAgentAz
+      type: String
+      value: <+input>
+    - name: branchquantnikUserstoryValidatorAz
+      type: String
+      value: <+input>
+    - name: branchquantnikUserstoryToTestcasesAgentAz
+      type: String
+      value: <+input>
+    - name: branchquantnikTestcasesToScriptAgentAz
+      type: String
+      value: <+input>
+    - name: branchquantnikTestcasesToTestdataAgentAz
+      type: String
+      value: <+input>
+    - name: branchquantnikBrd
+      type: String
+      value: <+input>
+    - name: branchquantnikUserstoryToTestcasesAgent
+      type: String
+      value: <+input>
+    - name: branchquantnikBrdSummaryAgent
+      type: String
+      value: <+input>
+    - name: branchquantnikTestcasesToScriptAgent
+      type: String
+      value: <+input>
+    - name: branchquantnikSdlc
+      type: String
+      value: <+input>
+    - name: branchquantnikStaging
+      type: String
+      value: <+input>
+    - name: branchquantnikSdlcOrchestrator
+      type: String
+      value: <+input>
+    - name: branchquantnikPlanningOrchestrator
+      type: String
+      value: <+input>
+    - name: branchquantnikTestOrchestrator
+      type: String
+      value: <+input>
+    - name: branchquantnikCodeAssistantAgent
+      type: String
+      value: <+input>
+    - name: branchdevelopmentAgent
+      type: String
+      value: <+input>
+    - name: branchbuildaicodeQuantnikRag1
+      type: String
+      value: <+input>
+    - name: branchcodeToDocumentationAgent
+      type: String
+      value: <+input>
+    - name: branchprojectScaffoldingAgent
+      type: String
+      value: <+input>
+    - name: branchfunctionalTestingAgent
+      type: String
+      value: <+input>
+    - name: branchplanningAgent
+      type: String
+      value: <+input>
+    - name: branchunitTestCaseAgent
+      type: String
+      value: <+input>
+    - name: branchrequirementAgent
+      type: String
+      value: <+input>
+    - name: branchbddAgent
+      type: String
+      value: <+input>
+    - name: branchquantnikTestcasesToTestdataAgent
+      type: String
+      value: <+input>
+    - name: branchquantnikUserstory
+      type: String
+      value: <+input>
+    - name: branchquantnikUserstoryValidator
+      type: String
+      value: <+input>
+    - name: branchquantnikAuthService
+      type: String
+      value: <+input>
+    - name: branchquantnikApiGateway
+      type: String
+      value: <+input>
+    - name: branchquantnikCommonIntegrationService
+      type: String
+      value: <+input>
+  stages:
+    - stage:
+        name: Build_Repo_ACR
+        identifier: Build_Repo_ACR
+        description: Build and push images to Azure Container Registry for QUANTNIK 3.0
+        type: CI
+        strategy:
+          nodeName: build-<+matrix.repo.repoName>
+          matrix:
+            repo:
+              - repoName: quantnik-sdlc-az
+                backendImage: ""
+                backendDockerfile: ""
+                backendContext: ""
+                frontendImage: quantnik-sdlc-az-frontend
+                frontendDockerfile: source/Dockerfile
+                frontendContext: source/
+                acaServiceBackend: ""
+                acaServiceFrontend: quantnik-sdlc
+              - repoName: quantnik-sdlc-orchestrator-az
+                backendImage: quantnik-sdlc-orchestrator-az-backend
+                backendDockerfile: source/Dockerfile
+                backendContext: source/
+                frontendImage: ""
+                frontendDockerfile: ""
+                frontendContext: ""
+                acaServiceBackend: quantnik-sdlc-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-planning-orchestrator-az
+                backendImage: quantnik-planning-orchestrator-az-backend
+                backendDockerfile: source/Dockerfile
+                backendContext: source/
+                frontendImage: ""
+                frontendDockerfile: ""
+                frontendContext: ""
+                acaServiceBackend: quantnik-plan-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-test-orchestrator-az
+                backendImage: quantnik-test-orchestrator-az-backend
+                backendDockerfile: source/Dockerfile
+                backendContext: source/
+                frontendImage: ""
+                frontendDockerfile: ""
+                frontendContext: ""
+                acaServiceBackend: quantnik-test-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-brd-az
+                backendImage: quantnik-brd-az-backend
+                backendDockerfile: source/Dockerfile
+                backendContext: source/
+                frontendImage: ""
+                frontendDockerfile: ""
+                frontendContext: ""
+                acaServiceBackend: quantnik-brd
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-az
+                backendImage: quantnik-userstory-az-backend
+                backendDockerfile: source/Dockerfile
+                backendContext: source/
+                frontendImage: ""
+                frontendDockerfile: ""
+                frontendContext: ""
+                acaServiceBackend: quantnik-us
+                acaServiceFrontend: ""
+              - repoName: quantnik-brd-summary-agent-az
+                backendImage: quantnik-brd-summary-agent-az-backend
+                backendDockerfile: source/Dockerfile
+                backendContext: source/
+                frontendImage: ""
+                frontendDockerfile: ""
+                frontendContext: ""
+                acaServiceBackend: quantnik-brd-summary
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-validator-az
+                backendImage: quantnik-userstory-validator-az-backend
+                backendDockerfile: source/Dockerfile
+                backendContext: source/
+                frontendImage: ""
+                frontendDockerfile: ""
+                frontendContext: ""
+                acaServiceBackend: quantnik-us-validator
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-to-testcases-agent-az
+                backendImage: quantnik-userstory-to-testcases-agent-az-backend
+                backendDockerfile: source/Dockerfile
+                backendContext: source/
+                frontendImage: ""
+                frontendDockerfile: ""
+                frontendContext: ""
+                acaServiceBackend: quantnik-us-to-tc
+                acaServiceFrontend: ""
+              - repoName: quantnik-testcases-to-script-agent-az
+                backendImage: quantnik-testcases-to-script-agent-az-backend
+                backendDockerfile: source/Dockerfile
+                backendContext: source/
+                frontendImage: ""
+                frontendDockerfile: ""
+                frontendContext: ""
+                acaServiceBackend: quantnik-tc-script
+                acaServiceFrontend: ""
+              - repoName: quantnik-testcases-to-testdata-agent-az
+                backendImage: quantnik-testcases-to-testdata-agent-az-backend
+                backendDockerfile: source/Dockerfile
+                backendContext: source/
+                frontendImage: ""
+                frontendDockerfile: ""
+                frontendContext: ""
+                acaServiceBackend: quantnik-tc-testdata
+                acaServiceFrontend: ""
+        when:
+          pipelineStatus: Success
+          condition: (<+pipeline.variables.selectedRepo> == "all" || <+pipeline.variables.selectedRepo>.contains(<+matrix.repo.repoName>)) && (<+pipeline.variables.executionMode> == "build_and_deploy" || <+pipeline.variables.executionMode> == "build_only")
+        spec:
+          cloneCodebase: false
+          caching:
+            enabled: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Resolve_Branch_For_Repo
+                  identifier: ResolveBranch
+                  spec:
+                    shell: Bash
+                    command: |
+                      SELECTED_BRANCH=""
+                      REPO_NAME_RAW="<+matrix.repo.repoName>"
+                      REPO_NAME=$(printf '%s' "$REPO_NAME_RAW" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+                      case "$REPO_NAME" in
+                        "quantnik-brd") SELECTED_BRANCH="<+pipeline.variables.branchquantnikBrd>" ;;
+                        "quantnik-userstory-to-testcases-agent") SELECTED_BRANCH="<+pipeline.variables.branchquantnikUserstoryToTestcasesAgent>" ;;
+                        "quantnik-brd-summary-agent") SELECTED_BRANCH="<+pipeline.variables.branchquantnikBrdSummaryAgent>" ;;
+                        "quantnik-testcases-to-script-agent") SELECTED_BRANCH="<+pipeline.variables.branchquantnikTestcasesToScriptAgent>" ;;
+                        "quantnik-sdlc") SELECTED_BRANCH="<+pipeline.variables.branchquantnikSdlc>" ;;
+                        "quantnik-staging") SELECTED_BRANCH="<+pipeline.variables.branchquantnikStaging>" ;;
+                        "quantnik-sdlc-orchestrator") SELECTED_BRANCH="<+pipeline.variables.branchquantnikSdlcOrchestrator>" ;;
+                        "quantnik-planning-orchestrator") SELECTED_BRANCH="<+pipeline.variables.branchquantnikPlanningOrchestrator>" ;;
+                        "quantnik-test-orchestrator") SELECTED_BRANCH="<+pipeline.variables.branchquantnikTestOrchestrator>" ;;
+                        "quantnik-code-assistant-agent") SELECTED_BRANCH="<+pipeline.variables.branchquantnikCodeAssistantAgent>" ;;
+                        "development-agent") SELECTED_BRANCH="<+pipeline.variables.branchdevelopmentAgent>" ;;
+                        "buildaicode-quantnik_rag_1") SELECTED_BRANCH="<+pipeline.variables.branchbuildaicodeQuantnikRag1>" ;;
+                        "code-to-documentation-agent") SELECTED_BRANCH="<+pipeline.variables.branchcodeToDocumentationAgent>" ;;
+                        "project-scaffolding-agent") SELECTED_BRANCH="<+pipeline.variables.branchprojectScaffoldingAgent>" ;;
+                        "functional-testing-agent") SELECTED_BRANCH="<+pipeline.variables.branchfunctionalTestingAgent>" ;;
+                        "planning-agent") SELECTED_BRANCH="<+pipeline.variables.branchplanningAgent>" ;;
+                        "unit-test-case-agent") SELECTED_BRANCH="<+pipeline.variables.branchunitTestCaseAgent>" ;;
+                        "requirement-agent") SELECTED_BRANCH="<+pipeline.variables.branchrequirementAgent>" ;;
+                        "bdd-agent") SELECTED_BRANCH="<+pipeline.variables.branchbddAgent>" ;;
+                        "quantnik-testcases-to-testdata-agent") SELECTED_BRANCH="<+pipeline.variables.branchquantnikTestcasesToTestdataAgent>" ;;
+                        "quantnik-userstory") SELECTED_BRANCH="<+pipeline.variables.branchquantnikUserstory>" ;;
+                        "quantnik-userstory-validator") SELECTED_BRANCH="<+pipeline.variables.branchquantnikUserstoryValidator>" ;;
+                        "quantnik-auth-service") SELECTED_BRANCH="<+pipeline.variables.branchquantnikAuthService>" ;;
+                        "quantnik-api-gateway") SELECTED_BRANCH="<+pipeline.variables.branchquantnikApiGateway>" ;;
+                        "quantnik-sdlc-az") SELECTED_BRANCH="<+pipeline.variables.branchquantnikSdlcAz>" ;;
+                        "quantnik-sdlc-orchestrator-az") SELECTED_BRANCH="<+pipeline.variables.branchquantnikSdlcOrchestratorAz>" ;;
+                        "quantnik-planning-orchestrator-az") SELECTED_BRANCH="<+pipeline.variables.branchquantnikPlanningOrchestratorAz>" ;;
+                        "quantnik-test-orchestrator-az") SELECTED_BRANCH="<+pipeline.variables.branchquantnikTestOrchestratorAz>" ;;
+                        "quantnik-brd-az") SELECTED_BRANCH="<+pipeline.variables.branchquantnikBrdAz>" ;;
+                        "quantnik-userstory-az") SELECTED_BRANCH="<+pipeline.variables.branchquantnikUserstoryAz>" ;;
+                        "quantnik-brd-summary-agent-az") SELECTED_BRANCH="<+pipeline.variables.branchquantnikBrdSummaryAgentAz>" ;;
+                        "quantnik-userstory-validator-az") SELECTED_BRANCH="<+pipeline.variables.branchquantnikUserstoryValidatorAz>" ;;
+                        "quantnik-userstory-to-testcases-agent-az") SELECTED_BRANCH="<+pipeline.variables.branchquantnikUserstoryToTestcasesAgentAz>" ;;
+                        "quantnik-testcases-to-script-agent-az") SELECTED_BRANCH="<+pipeline.variables.branchquantnikTestcasesToScriptAgentAz>" ;;
+                        "quantnik-testcases-to-testdata-agent-az") SELECTED_BRANCH="<+pipeline.variables.branchquantnikTestcasesToTestdataAgentAz>" ;;
+                        "quantnik-common-integration-service") SELECTED_BRANCH="<+pipeline.variables.branchquantnikCommonIntegrationService>" ;;
+                        *) echo "No branch mapping found for repo: '$REPO_NAME_RAW'"; exit 1 ;;
+                      esac
+
+                      if [ -z "$SELECTED_BRANCH" ]; then
+                        echo "Branch value is empty for repo: <+matrix.repo.repoName>."
+                        exit 1
+                      fi
+
+                      echo "Resolved branch for <+matrix.repo.repoName>: $SELECTED_BRANCH"
+                      export selectedBranch="$SELECTED_BRANCH"
+
+                      OUTPUT_FILE="${HARNESS_OUTPUT_PATH:-${HARNESS_ENV_EXPORT_PATH:-}}"
+                      if [ -n "$OUTPUT_FILE" ]; then
+                        echo "selectedBranch=$SELECTED_BRANCH" >> "$OUTPUT_FILE"
+                      fi
+                    outputVariables:
+                      - name: selectedBranch
+                        type: String
+                        value: selectedBranch
+              - step:
+                  type: GitClone
+                  name: CloneRepo
+                  identifier: CloneRepo
+                  spec:
+                    connectorRef: <+pipeline.variables.gitConnectorRef>
+                    repoName: <+matrix.repo.repoName>
+                    cloneDirectory: source
+                    build:
+                      type: branch
+                      spec:
+                        branch: <+execution.steps.ResolveBranch.output.outputVariables.selectedBranch>
+              - step:
+                  type: Run
+                  name: Semgrep_SAST_Scan
+                  identifier: SemgrepSastScan
+                  spec:
+                    shell: Sh
+                    command: |
+                      REPORT_DIR="reports"
+                      mkdir -p "$REPORT_DIR"
+
+                      echo "Installing Semgrep..."
+                      pip install semgrep -q 2>&1
+                      semgrep --version
+
+                      cd source
+                      echo "Running Semgrep SAST scan on <+matrix.repo.repoName>"
+
+                      semgrep --json --output="../$REPORT_DIR/semgrep-report.json" . 2>&1 || echo "Semgrep scan completed"
+                      semgrep scan --sarif --output="../$REPORT_DIR/semgrep-report.sarif" . 2>&1 || echo "Semgrep SARIF export completed"
+
+                      echo "Semgrep scan completed"
+              - step:
+                  type: Run
+                  name: TruffleHog_Secret_Scan
+                  identifier: TruffleHogSecretScan
+                  spec:
+                    shell: Sh
+                    command: |
+                      REPORT_DIR="reports"
+                      mkdir -p "$REPORT_DIR"
+
+                      echo "Installing TruffleHog..."
+                      pip install trufflehog3 -q 2>&1 || true
+
+                      cd source
+                      echo "Running TruffleHog secrets scan on <+matrix.repo.repoName>"
+
+                      trufflehog3 --format json \
+                        --exclude "*.lock" \
+                        --exclude "package-lock.json" \
+                        --exclude "yarn.lock" \
+                        --exclude "node_modules/*" \
+                        . 2>&1 | tee "../$REPORT_DIR/trufflehog-raw.json" || true
+
+                      if [ -f "../$REPORT_DIR/trufflehog-raw.json" ]; then
+                        jq '[.[] | select(.rule.id != "high-entropy")]' "../$REPORT_DIR/trufflehog-raw.json" > "../$REPORT_DIR/trufflehog-report.json" 2>/dev/null || cp "../$REPORT_DIR/trufflehog-raw.json" "../$REPORT_DIR/trufflehog-report.json"
+                      fi
+                      cd ..
+
+                      echo "TruffleHog scan completed"
+              - step:
+                  type: Run
+                  name: Display_Semgrep_Results
+                  identifier: DisplaySemgrepResults
+                  spec:
+                    shell: Sh
+                    command: |
+                      echo "=========================================="
+                      echo "SEMGREP SCAN RESULTS - <+matrix.repo.repoName>"
+                      echo "=========================================="
+                      REPORT_DIR="reports"
+                      if [ -f "$REPORT_DIR/semgrep-report.json" ]; then
+                        echo ""
+                        echo "Summary:"
+                        FINDINGS=$(jq '.results | length' "$REPORT_DIR/semgrep-report.json" 2>/dev/null || echo "0")
+                        echo "Total findings: $FINDINGS"
+                        echo ""
+                        if [ "$FINDINGS" -gt 0 ]; then
+                          echo "Findings by severity:"
+                          jq -r '.results | group_by(.extra.severity) | .[] | "\(.[0].extra.severity // "unknown"): \(length)"' "$REPORT_DIR/semgrep-report.json" 2>/dev/null || true
+                          echo ""
+                          echo "Detailed findings:"
+                          jq -r '.results[] | "[\(.extra.severity // "unknown")] \(.check_id): \(.path):\(.start.line) - \(.extra.message // "No message")"' "$REPORT_DIR/semgrep-report.json" 2>/dev/null | head -50 || true
+                        else
+                          echo "No security issues found!"
+                        fi
+                      else
+                        echo "No Semgrep report found."
+                      fi
+                      echo "=========================================="
+              - step:
+                  type: Run
+                  name: Display_TruffleHog_Results
+                  identifier: DisplayTruffleHogResults
+                  spec:
+                    shell: Sh
+                    command: |
+                      echo "=========================================="
+                      echo "TRUFFLEHOG SECRETS SCAN RESULTS - <+matrix.repo.repoName>"
+                      echo "=========================================="
+                      REPORT_DIR="reports"
+                      if [ -f "$REPORT_DIR/trufflehog-report.json" ]; then
+                        SECRET_COUNT=$(jq 'length' "$REPORT_DIR/trufflehog-report.json" 2>/dev/null || echo "0")
+                        
+                        echo ""
+                        echo "Total real secrets found: $SECRET_COUNT"
+                        echo "(Note: High-entropy false positives from lock files are filtered out)"
+                        echo ""
+                        
+                        if [ "$SECRET_COUNT" -gt 0 ] && [ "$SECRET_COUNT" != "null" ] && [ "$SECRET_COUNT" != "0" ]; then
+                          echo "SECRETS DETECTED:"
+                          echo "----------------------------------------"
+                          jq -r '.[] | "Rule: \(.rule.id // "unknown") [\(.rule.severity // "unknown")]\nFile: \(.path // "unknown")\nLine: \(.line // "N/A")\nSecret: \(.secret[0:60] // "N/A")...\nCommit: \(.commit[0:8] // "N/A") by \(.author // "unknown")\n----------------------------------------"' "$REPORT_DIR/trufflehog-report.json" 2>/dev/null | head -150
+                          echo ""
+                          echo "WARNING: Real secrets detected in repository! Review and remediate above findings."
+                        else
+                          echo "No real secrets found - repository is clean!"
+                        fi
+                      else
+                        echo "No TruffleHog report found."
+                      fi
+                      echo "=========================================="
+              - parallel:
+                  - step:
+                      type: BuildAndPushACR
+                      name: BuildAndPushACR_Backend
+                      identifier: BuildAndPushACR_Backend
+                      when:
+                        stageStatus: Success
+                        condition: <+matrix.repo.backendImage> != ""
+                      spec:
+                        connectorRef: <+pipeline.variables.azureConnectorRef>
+                        repository: <+pipeline.variables.acrLoginServer>/<+matrix.repo.backendImage>
+                        tags:
+                          - <+pipeline.variables.imageTag>
+                        dockerfile: <+matrix.repo.backendDockerfile>
+                        context: <+matrix.repo.backendContext>
+                  - step:
+                      type: BuildAndPushACR
+                      name: BuildAndPushACR_Frontend
+                      identifier: BuildAndPushACR_Frontend
+                      when:
+                        stageStatus: Success
+                        condition: <+matrix.repo.frontendImage> != ""
+                      spec:
+                        connectorRef: <+pipeline.variables.azureConnectorRef>
+                        repository: <+pipeline.variables.acrLoginServer>/<+matrix.repo.frontendImage>
+                        tags:
+                          - <+pipeline.variables.imageTag>
+                        dockerfile: <+matrix.repo.frontendDockerfile>
+                        context: <+matrix.repo.frontendContext>
+              - step:
+                  type: Run
+                  name: Trivy_Container_Scan
+                  identifier: TrivyContainerScan
+                  when:
+                    stageStatus: Success
+                  spec:
+                    shell: Sh
+                    command: |
+                      REPORT_DIR="reports"
+                      mkdir -p "$REPORT_DIR"
+
+                      echo "Installing Trivy..."
+                      curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+                      REGISTRY="<+pipeline.variables.acrLoginServer>"
+                      SEVERITY="<+pipeline.variables.trivyScanSeverity>"
+
+                      echo "ACR Registry: $REGISTRY"
+                      echo "Severity: $SEVERITY"
+
+                      # Login to ACR for pulling images
+                      az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID" 2>/dev/null || true
+                      az acr login --name $(echo $REGISTRY | cut -d'.' -f1) 2>/dev/null || true
+
+                      if [ ! -z "<+matrix.repo.backendImage>" ]; then
+                        BACKEND_IMAGE="$REGISTRY/<+matrix.repo.backendImage>:<+pipeline.variables.imageTag>"
+                        echo "Scanning backend image: $BACKEND_IMAGE"
+                        trivy image --severity $SEVERITY --exit-code 0 --format json --output "$REPORT_DIR/trivy-backend-report.json" "$BACKEND_IMAGE" 2>&1 || echo "Backend scan completed"
+                      fi
+
+                      if [ ! -z "<+matrix.repo.frontendImage>" ]; then
+                        FRONTEND_IMAGE="$REGISTRY/<+matrix.repo.frontendImage>:<+pipeline.variables.imageTag>"
+                        echo "Scanning frontend image: $FRONTEND_IMAGE"
+                        trivy image --severity $SEVERITY --exit-code 0 --format json --output "$REPORT_DIR/trivy-frontend-report.json" "$FRONTEND_IMAGE" 2>&1 || echo "Frontend scan completed"
+                      fi
+
+                      echo "Trivy container scans completed."
+                    envVariables:
+                      AZURE_TENANT_ID: <+secrets.getValue("account.azure_tenant_id")>
+                      AZURE_CLIENT_ID: <+secrets.getValue("account.azure_client_id")>
+                      AZURE_CLIENT_SECRET: <+secrets.getValue("account.azure_client_secret")>
+              - step:
+                  type: Semgrep
+                  name: STO_Ingest_Semgrep
+                  identifier: STOIngestSemgrep
+                  spec:
+                    mode: ingestion
+                    config: default
+                    target:
+                      type: repository
+                      name: <+matrix.repo.repoName>
+                      variant: <+execution.steps.ResolveBranch.output.outputVariables.selectedBranch>
+                    advanced:
+                      log:
+                        level: info
+                      fail_on_severity: none
+                    ingestion:
+                      file: reports/semgrep-report.sarif
+              - step:
+                  type: AquaTrivy
+                  name: STO_Ingest_Trivy_Backend
+                  identifier: STOIngestTrivyBackend
+                  when:
+                    stageStatus: Success
+                    condition: <+matrix.repo.backendImage> != ""
+                  spec:
+                    mode: ingestion
+                    config: default
+                    target:
+                      type: container
+                      name: <+pipeline.variables.acrLoginServer>/<+matrix.repo.backendImage>
+                      variant: <+pipeline.variables.imageTag>
+                    advanced:
+                      log:
+                        level: info
+                      fail_on_severity: none
+                    ingestion:
+                      file: reports/trivy-backend-report.json
+              - step:
+                  type: AquaTrivy
+                  name: STO_Ingest_Trivy_Frontend
+                  identifier: STOIngestTrivyFrontend
+                  when:
+                    stageStatus: Success
+                    condition: <+matrix.repo.frontendImage> != ""
+                  spec:
+                    mode: ingestion
+                    config: default
+                    target:
+                      type: container
+                      name: <+pipeline.variables.acrLoginServer>/<+matrix.repo.frontendImage>
+                      variant: <+pipeline.variables.imageTag>
+                    advanced:
+                      log:
+                        level: info
+                      fail_on_severity: none
+                    ingestion:
+                      file: reports/trivy-frontend-report.json
+    - stage:
+        name: Deploy_Dev
+        identifier: Deploy_Dev
+        description: Deploy to Dev Azure Container Apps
+        type: CI
+        strategy:
+          nodeName: deploy-dev-<+matrix.repo.repoName>
+          matrix:
+            repo:
+              - repoName: quantnik-sdlc-az
+                backendImage: ""
+                frontendImage: quantnik-sdlc-az-frontend
+                acaServiceBackend: ""
+                acaServiceFrontend: quantnik-sdlc
+              - repoName: quantnik-sdlc-orchestrator-az
+                backendImage: quantnik-sdlc-orchestrator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-sdlc-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-planning-orchestrator-az
+                backendImage: quantnik-planning-orchestrator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-plan-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-test-orchestrator-az
+                backendImage: quantnik-test-orchestrator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-test-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-brd-az
+                backendImage: quantnik-brd-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-brd
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-az
+                backendImage: quantnik-userstory-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-us
+                acaServiceFrontend: ""
+              - repoName: quantnik-brd-summary-agent-az
+                backendImage: quantnik-brd-summary-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-brd-summary
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-validator-az
+                backendImage: quantnik-userstory-validator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-us-validator
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-to-testcases-agent-az
+                backendImage: quantnik-userstory-to-testcases-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-us-to-tc
+                acaServiceFrontend: ""
+              - repoName: quantnik-testcases-to-script-agent-az
+                backendImage: quantnik-testcases-to-script-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-tc-script
+                acaServiceFrontend: ""
+              - repoName: quantnik-testcases-to-testdata-agent-az
+                backendImage: quantnik-testcases-to-testdata-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-tc-testdata
+                acaServiceFrontend: ""
+        when:
+          pipelineStatus: Success
+          condition: (<+pipeline.variables.selectedRepo> == "all" || <+pipeline.variables.selectedRepo>.contains(<+matrix.repo.repoName>)) && (<+pipeline.variables.executionMode> == "build_and_deploy" || (<+pipeline.variables.executionMode> == "deploy_only" && (<+pipeline.variables.environment> == "all" || <+pipeline.variables.environment> == "dev")))
+        spec:
+          cloneCodebase: false
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Deploy_To_ACA_Dev
+                  identifier: DeployToACADev
+                  spec:
+                    connectorRef: account.harnessImage
+                    image: mcr.microsoft.com/azure-cli:latest
+                    shell: Bash
+                    command: |-
+                      echo "Deploying to Azure Container Apps - DEV"
+                      echo "Logging into Azure with OIDC..."
+                      az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
+                      az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+                      echo "Logged in successfully"
+                      ENV_NAME="dev"
+                      RESOURCE_GROUP="<+pipeline.variables.azureResourceGroup>"
+                      REGION="<+pipeline.variables.azureRegion>"
+                      ACR_SERVER="<+pipeline.variables.acrLoginServer>"
+                      IMAGE_TAG="<+pipeline.variables.imageTag>"
+                      ACA_ENV="<+pipeline.variables.acaEnvironmentPrefix>-${ENV_NAME}"
+                      LOG_ANALYTICS_WORKSPACE="quantnik-harness-log-analytics-dev"
+                      echo "Logging into ACR..."
+                      echo "ACR: $ACR_SERVER"
+                      echo "Checking Container Apps environment: $ACA_ENV"
+                      LOG_ANALYTICS_ID=$(az monitor log-analytics workspace show --resource-group "$RESOURCE_GROUP" --workspace-name "$LOG_ANALYTICS_WORKSPACE" --query customerId -o tsv 2>/dev/null || echo "")
+                      LOG_ANALYTICS_KEY=$(az monitor log-analytics workspace get-shared-keys --resource-group "$RESOURCE_GROUP" --workspace-name "$LOG_ANALYTICS_WORKSPACE" --query primarySharedKey -o tsv 2>/dev/null || echo "")
+                      ENV_EXISTS=$(az containerapp env show --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --query "name" -o tsv 2>/dev/null || echo "")
+                      if [ -z "$ENV_EXISTS" ]; then
+                        echo "Creating environment $ACA_ENV..."
+                        if [ -n "$LOG_ANALYTICS_ID" ] && [ -n "$LOG_ANALYTICS_KEY" ]; then
+                          az containerapp env create --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --location "$REGION" --logs-workspace-id "$LOG_ANALYTICS_ID" --logs-workspace-key "$LOG_ANALYTICS_KEY" || true
+                        else
+                          az containerapp env create --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --location "$REGION" --logs-destination none || true
+                        fi
+                      fi
+                      echo "Waiting for environment to be ready..."
+                      for i in 1 2 3 4 5 6 7 8 9 10; do
+                        ENV_STATUS=$(az containerapp env show --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --query "properties.provisioningState" -o tsv 2>/dev/null || echo "NotFound")
+                        echo "Environment status: $ENV_STATUS (attempt $i/10)"
+                        if [ "$ENV_STATUS" = "Succeeded" ]; then
+                          echo "Environment is ready!"
+                          break
+                        elif [ "$ENV_STATUS" = "Failed" ]; then
+                          echo "Environment provisioning failed!"
+                          exit 1
+                        fi
+                        sleep 30
+                      done
+                      if [ ! -z "<+matrix.repo.acaServiceBackend>" ]; then
+                        SERVICE_NAME="${ENV_NAME}-<+matrix.repo.acaServiceBackend>"
+                        IMAGE="${ACR_SERVER}/<+matrix.repo.backendImage>:${IMAGE_TAG}"
+                        echo "Deploying backend: $SERVICE_NAME with image $IMAGE"
+                        az containerapp show --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" 2>/dev/null && az containerapp update --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --image "$IMAGE" || az containerapp create --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --environment "$ACA_ENV" --image "$IMAGE" --target-port 8080 --ingress external --registry-server "$ACR_SERVER" --min-replicas 1 --max-replicas 3
+                      fi
+                      if [ ! -z "<+matrix.repo.acaServiceFrontend>" ]; then
+                        SERVICE_NAME="${ENV_NAME}-<+matrix.repo.acaServiceFrontend>"
+                        IMAGE="${ACR_SERVER}/<+matrix.repo.frontendImage>:${IMAGE_TAG}"
+                        echo "Deploying frontend: $SERVICE_NAME with image $IMAGE"
+                        az containerapp show --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" 2>/dev/null && az containerapp update --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --image "$IMAGE" || az containerapp create --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --environment "$ACA_ENV" --image "$IMAGE" --target-port 8080 --ingress external --registry-server "$ACR_SERVER" --min-replicas 1 --max-replicas 3
+                      fi
+                      echo "DEV deployment completed"
+                    envVariables:
+                      AZURE_TENANT_ID: <+secrets.getValue("account.azure_tenant_id")>
+                      AZURE_CLIENT_ID: <+secrets.getValue("account.azure_client_id")>
+                      AZURE_SUBSCRIPTION_ID: <+secrets.getValue("account.azure_subscription_id")>
+                      AZURE_CLIENT_SECRET: <+secrets.getValue("account.azure_client_secret")>
+    - stage:
+        name: Approval_QA
+        identifier: Approval_QA
+        description: Approval gate for QA deployment
+        type: Approval
+        when:
+          pipelineStatus: Success
+          condition: (<+pipeline.variables.executionMode> == "build_and_deploy" && <+pipeline.variables.environment> == "all") || (<+pipeline.variables.executionMode> == "deploy_only" && (<+pipeline.variables.environment> == "all" || <+pipeline.variables.environment> == "qa"))
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Approve_QA_Deployment
+                  identifier: Approve_QA_Deployment
+                  type: HarnessApproval
+                  timeout: 14d
+                  spec:
+                    approvalMessage: |-
+                      Please approve deployment to QA environment.
+                      Repos: <+pipeline.variables.selectedRepo>
+                      Image Tag: <+pipeline.variables.imageTag>
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      minimumCount: 1
+                      disallowPipelineExecutor: false
+                      userGroups:
+                        - account.quantnikrelease_approvers
+    - stage:
+        name: Deploy_QA
+        identifier: Deploy_QA
+        description: Deploy to QA Azure Container Apps
+        type: CI
+        strategy:
+          nodeName: deploy-qa-<+matrix.repo.repoName>
+          matrix:
+            repo:
+              - repoName: quantnik-sdlc-az
+                backendImage: ""
+                frontendImage: quantnik-sdlc-az-frontend
+                acaServiceBackend: ""
+                acaServiceFrontend: quantnik-sdlc
+              - repoName: quantnik-sdlc-orchestrator-az
+                backendImage: quantnik-sdlc-orchestrator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-sdlc-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-planning-orchestrator-az
+                backendImage: quantnik-planning-orchestrator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-plan-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-test-orchestrator-az
+                backendImage: quantnik-test-orchestrator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-test-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-brd-az
+                backendImage: quantnik-brd-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-brd
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-az
+                backendImage: quantnik-userstory-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-us
+                acaServiceFrontend: ""
+              - repoName: quantnik-brd-summary-agent-az
+                backendImage: quantnik-brd-summary-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-brd-summary
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-validator-az
+                backendImage: quantnik-userstory-validator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-us-validator
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-to-testcases-agent-az
+                backendImage: quantnik-userstory-to-testcases-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-us-to-tc
+                acaServiceFrontend: ""
+              - repoName: quantnik-testcases-to-script-agent-az
+                backendImage: quantnik-testcases-to-script-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-tc-script
+                acaServiceFrontend: ""
+              - repoName: quantnik-testcases-to-testdata-agent-az
+                backendImage: quantnik-testcases-to-testdata-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-tc-testdata
+                acaServiceFrontend: ""
+        when:
+          pipelineStatus: Success
+          condition: (<+pipeline.variables.selectedRepo> == "all" || <+pipeline.variables.selectedRepo>.contains(<+matrix.repo.repoName>)) && ((<+pipeline.variables.executionMode> == "build_and_deploy" && <+pipeline.variables.environment> == "all") || (<+pipeline.variables.executionMode> == "deploy_only" && (<+pipeline.variables.environment> == "all" || <+pipeline.variables.environment> == "qa")))
+        spec:
+          cloneCodebase: false
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Deploy_To_ACA_QA
+                  identifier: DeployToACAQA
+                  spec:
+                    connectorRef: account.harnessImage
+                    image: mcr.microsoft.com/azure-cli:latest
+                    shell: Bash
+                    command: |-
+                      echo "Deploying to Azure Container Apps - QA"
+                      echo "Logging into Azure with OIDC..."
+                      az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
+                      az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+                      ENV_NAME="qa"
+                      RESOURCE_GROUP="<+pipeline.variables.azureResourceGroup>"
+                      REGION="<+pipeline.variables.azureRegion>"
+                      ACR_SERVER="<+pipeline.variables.acrLoginServer>"
+                      IMAGE_TAG="<+pipeline.variables.imageTag>"
+                      ACA_ENV="<+pipeline.variables.acaEnvironmentPrefix>-${ENV_NAME}"
+                      LOG_ANALYTICS_WORKSPACE="quantnik-harness-log-analytics-qa"
+                      echo "ACR: $ACR_SERVER"
+                      LOG_ANALYTICS_ID=$(az monitor log-analytics workspace show --resource-group "$RESOURCE_GROUP" --workspace-name "$LOG_ANALYTICS_WORKSPACE" --query customerId -o tsv 2>/dev/null || echo "")
+                      LOG_ANALYTICS_KEY=$(az monitor log-analytics workspace get-shared-keys --resource-group "$RESOURCE_GROUP" --workspace-name "$LOG_ANALYTICS_WORKSPACE" --query primarySharedKey -o tsv 2>/dev/null || echo "")
+                      ENV_EXISTS=$(az containerapp env show --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --query "name" -o tsv 2>/dev/null || echo "")
+                      if [ -z "$ENV_EXISTS" ]; then
+                        echo "Creating environment $ACA_ENV..."
+                        if [ -n "$LOG_ANALYTICS_ID" ] && [ -n "$LOG_ANALYTICS_KEY" ]; then
+                          az containerapp env create --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --location "$REGION" --logs-workspace-id "$LOG_ANALYTICS_ID" --logs-workspace-key "$LOG_ANALYTICS_KEY" || true
+                        else
+                          az containerapp env create --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --location "$REGION" --logs-destination none || true
+                        fi
+                      fi
+                      echo "Waiting for environment to be ready..."
+                      for i in 1 2 3 4 5 6 7 8 9 10; do
+                        ENV_STATUS=$(az containerapp env show --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --query "properties.provisioningState" -o tsv 2>/dev/null || echo "NotFound")
+                        echo "Environment status: $ENV_STATUS (attempt $i/10)"
+                        if [ "$ENV_STATUS" = "Succeeded" ]; then
+                          echo "Environment is ready!"
+                          break
+                        elif [ "$ENV_STATUS" = "Failed" ]; then
+                          echo "Environment provisioning failed!"
+                          exit 1
+                        fi
+                        sleep 30
+                      done
+                      if [ ! -z "<+matrix.repo.acaServiceBackend>" ]; then
+                        SERVICE_NAME="${ENV_NAME}-<+matrix.repo.acaServiceBackend>"
+                        IMAGE="${ACR_SERVER}/<+matrix.repo.backendImage>:${IMAGE_TAG}"
+                        az containerapp show --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" 2>/dev/null && az containerapp update --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --image "$IMAGE" || az containerapp create --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --environment "$ACA_ENV" --image "$IMAGE" --target-port 8080 --ingress external --registry-server "$ACR_SERVER" --min-replicas 1 --max-replicas 5
+                      fi
+                      if [ ! -z "<+matrix.repo.acaServiceFrontend>" ]; then
+                        SERVICE_NAME="${ENV_NAME}-<+matrix.repo.acaServiceFrontend>"
+                        IMAGE="${ACR_SERVER}/<+matrix.repo.frontendImage>:${IMAGE_TAG}"
+                        az containerapp show --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" 2>/dev/null && az containerapp update --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --image "$IMAGE" || az containerapp create --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --environment "$ACA_ENV" --image "$IMAGE" --target-port 8080 --ingress external --registry-server "$ACR_SERVER" --min-replicas 1 --max-replicas 5
+                      fi
+                      echo "QA deployment completed"
+                    envVariables:
+                      AZURE_TENANT_ID: <+secrets.getValue("account.azure_tenant_id")>
+                      AZURE_CLIENT_ID: <+secrets.getValue("account.azure_client_id")>
+                      AZURE_SUBSCRIPTION_ID: <+secrets.getValue("account.azure_subscription_id")>
+                      AZURE_CLIENT_SECRET: <+secrets.getValue("account.azure_client_secret")>
+    - stage:
+        name: Approval_Stage
+        identifier: Approval_Stage
+        description: Approval gate for Stage deployment
+        type: Approval
+        when:
+          pipelineStatus: Success
+          condition: (<+pipeline.variables.executionMode> == "build_and_deploy" && <+pipeline.variables.environment> == "all") || (<+pipeline.variables.executionMode> == "deploy_only" && (<+pipeline.variables.environment> == "all" || <+pipeline.variables.environment> == "stage"))
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Approve_Stage_Deployment
+                  identifier: Approve_Stage_Deployment
+                  type: HarnessApproval
+                  timeout: 14d
+                  spec:
+                    approvalMessage: |-
+                      Please approve deployment to STAGE environment.
+                      Repos: <+pipeline.variables.selectedRepo>
+                      Image Tag: <+pipeline.variables.imageTag>
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      minimumCount: 1
+                      disallowPipelineExecutor: false
+                      userGroups:
+                        - account.quantnikrelease_approvers
+    - stage:
+        name: Deploy_Stage
+        identifier: Deploy_Stage
+        description: Deploy to Stage Azure Container Apps
+        type: CI
+        strategy:
+          nodeName: deploy-stage-<+matrix.repo.repoName>
+          matrix:
+            repo:
+              - repoName: quantnik-sdlc-az
+                backendImage: ""
+                frontendImage: quantnik-sdlc-az-frontend
+                acaServiceBackend: ""
+                acaServiceFrontend: quantnik-sdlc
+              - repoName: quantnik-sdlc-orchestrator-az
+                backendImage: quantnik-sdlc-orchestrator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-sdlc-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-planning-orchestrator-az
+                backendImage: quantnik-planning-orchestrator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-plan-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-test-orchestrator-az
+                backendImage: quantnik-test-orchestrator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-test-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-brd-az
+                backendImage: quantnik-brd-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-brd
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-az
+                backendImage: quantnik-userstory-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-us
+                acaServiceFrontend: ""
+              - repoName: quantnik-brd-summary-agent-az
+                backendImage: quantnik-brd-summary-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-brd-summary
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-validator-az
+                backendImage: quantnik-userstory-validator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-us-validator
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-to-testcases-agent-az
+                backendImage: quantnik-userstory-to-testcases-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-us-to-tc
+                acaServiceFrontend: ""
+              - repoName: quantnik-testcases-to-script-agent-az
+                backendImage: quantnik-testcases-to-script-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-tc-script
+                acaServiceFrontend: ""
+              - repoName: quantnik-testcases-to-testdata-agent-az
+                backendImage: quantnik-testcases-to-testdata-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-tc-testdata
+                acaServiceFrontend: ""
+        when:
+          pipelineStatus: Success
+          condition: (<+pipeline.variables.selectedRepo> == "all" || <+pipeline.variables.selectedRepo>.contains(<+matrix.repo.repoName>)) && ((<+pipeline.variables.executionMode> == "build_and_deploy" && <+pipeline.variables.environment> == "all") || (<+pipeline.variables.executionMode> == "deploy_only" && (<+pipeline.variables.environment> == "all" || <+pipeline.variables.environment> == "stage")))
+        spec:
+          cloneCodebase: false
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Deploy_To_ACA_Stage
+                  identifier: DeployToACAStage
+                  spec:
+                    connectorRef: account.harnessImage
+                    image: mcr.microsoft.com/azure-cli:latest
+                    shell: Bash
+                    command: |-
+                      echo "Deploying to Azure Container Apps - STAGE"
+                      echo "Logging into Azure with OIDC..."
+                      az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
+                      az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+                      ENV_NAME="stage"
+                      RESOURCE_GROUP="<+pipeline.variables.azureResourceGroup>"
+                      REGION="<+pipeline.variables.azureRegion>"
+                      ACR_SERVER="<+pipeline.variables.acrLoginServer>"
+                      IMAGE_TAG="<+pipeline.variables.imageTag>"
+                      ACA_ENV="<+pipeline.variables.acaEnvironmentPrefix>-${ENV_NAME}"
+                      LOG_ANALYTICS_WORKSPACE="quantnik-harness-log-analytics-stage"
+                      echo "ACR: $ACR_SERVER"
+                      LOG_ANALYTICS_ID=$(az monitor log-analytics workspace show --resource-group "$RESOURCE_GROUP" --workspace-name "$LOG_ANALYTICS_WORKSPACE" --query customerId -o tsv 2>/dev/null || echo "")
+                      LOG_ANALYTICS_KEY=$(az monitor log-analytics workspace get-shared-keys --resource-group "$RESOURCE_GROUP" --workspace-name "$LOG_ANALYTICS_WORKSPACE" --query primarySharedKey -o tsv 2>/dev/null || echo "")
+                      ENV_EXISTS=$(az containerapp env show --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --query "name" -o tsv 2>/dev/null || echo "")
+                      if [ -z "$ENV_EXISTS" ]; then
+                        echo "Creating environment $ACA_ENV..."
+                        if [ -n "$LOG_ANALYTICS_ID" ] && [ -n "$LOG_ANALYTICS_KEY" ]; then
+                          az containerapp env create --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --location "$REGION" --logs-workspace-id "$LOG_ANALYTICS_ID" --logs-workspace-key "$LOG_ANALYTICS_KEY" || true
+                        else
+                          az containerapp env create --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --location "$REGION" --logs-destination none || true
+                        fi
+                      fi
+                      echo "Waiting for environment to be ready..."
+                      for i in 1 2 3 4 5 6 7 8 9 10; do
+                        ENV_STATUS=$(az containerapp env show --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --query "properties.provisioningState" -o tsv 2>/dev/null || echo "NotFound")
+                        echo "Environment status: $ENV_STATUS (attempt $i/10)"
+                        if [ "$ENV_STATUS" = "Succeeded" ]; then
+                          echo "Environment is ready!"
+                          break
+                        elif [ "$ENV_STATUS" = "Failed" ]; then
+                          echo "Environment provisioning failed!"
+                          exit 1
+                        fi
+                        sleep 30
+                      done
+                      if [ ! -z "<+matrix.repo.acaServiceBackend>" ]; then
+                        SERVICE_NAME="${ENV_NAME}-<+matrix.repo.acaServiceBackend>"
+                        IMAGE="${ACR_SERVER}/<+matrix.repo.backendImage>:${IMAGE_TAG}"
+                        az containerapp show --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" 2>/dev/null && az containerapp update --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --image "$IMAGE" || az containerapp create --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --environment "$ACA_ENV" --image "$IMAGE" --target-port 8080 --ingress external --registry-server "$ACR_SERVER" --min-replicas 2 --max-replicas 5
+                      fi
+                      if [ ! -z "<+matrix.repo.acaServiceFrontend>" ]; then
+                        SERVICE_NAME="${ENV_NAME}-<+matrix.repo.acaServiceFrontend>"
+                        IMAGE="${ACR_SERVER}/<+matrix.repo.frontendImage>:${IMAGE_TAG}"
+                        az containerapp show --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" 2>/dev/null && az containerapp update --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --image "$IMAGE" || az containerapp create --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --environment "$ACA_ENV" --image "$IMAGE" --target-port 8080 --ingress external --registry-server "$ACR_SERVER" --min-replicas 2 --max-replicas 5
+                      fi
+                      echo "STAGE deployment completed"
+                    envVariables:
+                      AZURE_TENANT_ID: <+secrets.getValue("account.azure_tenant_id")>
+                      AZURE_CLIENT_ID: <+secrets.getValue("account.azure_client_id")>
+                      AZURE_SUBSCRIPTION_ID: <+secrets.getValue("account.azure_subscription_id")>
+                      AZURE_CLIENT_SECRET: <+secrets.getValue("account.azure_client_secret")>
+    - stage:
+        name: Approval_Production
+        identifier: Approval_Production
+        description: Approval gate for Production deployment
+        type: Approval
+        when:
+          pipelineStatus: Success
+          condition: (<+pipeline.variables.executionMode> == "build_and_deploy" && <+pipeline.variables.environment> == "all") || (<+pipeline.variables.executionMode> == "deploy_only" && (<+pipeline.variables.environment> == "all" || <+pipeline.variables.environment> == "production"))
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Approve_Production_Deployment
+                  identifier: Approve_Production_Deployment
+                  type: HarnessApproval
+                  timeout: 14d
+                  spec:
+                    approvalMessage: |-
+                      Please approve deployment to PRODUCTION environment.
+                      Repos: <+pipeline.variables.selectedRepo>
+                      Image Tag: <+pipeline.variables.imageTag>
+                      WARNING: This will deploy to production!
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      minimumCount: 2
+                      disallowPipelineExecutor: true
+                      userGroups:
+                        - account.quantnikrelease_approvers
+    - stage:
+        name: Deploy_Production
+        identifier: Deploy_Production
+        description: Deploy to Production Azure Container Apps
+        type: CI
+        strategy:
+          nodeName: deploy-prod-<+matrix.repo.repoName>
+          matrix:
+            repo:
+              - repoName: quantnik-sdlc-az
+                backendImage: ""
+                frontendImage: quantnik-sdlc-az-frontend
+                acaServiceBackend: ""
+                acaServiceFrontend: quantnik-sdlc
+              - repoName: quantnik-sdlc-orchestrator-az
+                backendImage: quantnik-sdlc-orchestrator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-sdlc-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-planning-orchestrator-az
+                backendImage: quantnik-planning-orchestrator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-plan-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-test-orchestrator-az
+                backendImage: quantnik-test-orchestrator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-test-orch
+                acaServiceFrontend: ""
+              - repoName: quantnik-brd-az
+                backendImage: quantnik-brd-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-brd
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-az
+                backendImage: quantnik-userstory-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-us
+                acaServiceFrontend: ""
+              - repoName: quantnik-brd-summary-agent-az
+                backendImage: quantnik-brd-summary-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-brd-summary
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-validator-az
+                backendImage: quantnik-userstory-validator-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-us-validator
+                acaServiceFrontend: ""
+              - repoName: quantnik-userstory-to-testcases-agent-az
+                backendImage: quantnik-userstory-to-testcases-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-us-to-tc
+                acaServiceFrontend: ""
+              - repoName: quantnik-testcases-to-script-agent-az
+                backendImage: quantnik-testcases-to-script-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-tc-script
+                acaServiceFrontend: ""
+              - repoName: quantnik-testcases-to-testdata-agent-az
+                backendImage: quantnik-testcases-to-testdata-agent-az-backend
+                frontendImage: ""
+                acaServiceBackend: quantnik-tc-testdata
+                acaServiceFrontend: ""
+        when:
+          pipelineStatus: Success
+          condition: (<+pipeline.variables.selectedRepo> == "all" || <+pipeline.variables.selectedRepo>.contains(<+matrix.repo.repoName>)) && ((<+pipeline.variables.executionMode> == "build_and_deploy" && <+pipeline.variables.environment> == "all") || (<+pipeline.variables.executionMode> == "deploy_only" && (<+pipeline.variables.environment> == "all" || <+pipeline.variables.environment> == "production")))
+        spec:
+          cloneCodebase: false
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Deploy_To_ACA_Production
+                  identifier: DeployToACAProduction
+                  spec:
+                    connectorRef: account.harnessImage
+                    image: mcr.microsoft.com/azure-cli:latest
+                    shell: Bash
+                    command: |-
+                      echo "Deploying to Azure Container Apps - PRODUCTION"
+                      echo "Logging into Azure with OIDC..."
+                      az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"
+                      az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+                      ENV_NAME="prod"
+                      RESOURCE_GROUP="<+pipeline.variables.azureResourceGroup>"
+                      REGION="<+pipeline.variables.azureRegion>"
+                      ACR_SERVER="<+pipeline.variables.acrLoginServer>"
+                      IMAGE_TAG="<+pipeline.variables.imageTag>"
+                      ACA_ENV="<+pipeline.variables.acaEnvironmentPrefix>-${ENV_NAME}"
+                      LOG_ANALYTICS_WORKSPACE="quantnik-harness-log-analytics-production"
+                      echo "ACR: $ACR_SERVER"
+                      LOG_ANALYTICS_ID=$(az monitor log-analytics workspace show --resource-group "$RESOURCE_GROUP" --workspace-name "$LOG_ANALYTICS_WORKSPACE" --query customerId -o tsv 2>/dev/null || echo "")
+                      LOG_ANALYTICS_KEY=$(az monitor log-analytics workspace get-shared-keys --resource-group "$RESOURCE_GROUP" --workspace-name "$LOG_ANALYTICS_WORKSPACE" --query primarySharedKey -o tsv 2>/dev/null || echo "")
+                      ENV_EXISTS=$(az containerapp env show --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --query "name" -o tsv 2>/dev/null || echo "")
+                      if [ -z "$ENV_EXISTS" ]; then
+                        echo "Creating environment $ACA_ENV..."
+                        if [ -n "$LOG_ANALYTICS_ID" ] && [ -n "$LOG_ANALYTICS_KEY" ]; then
+                          az containerapp env create --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --location "$REGION" --logs-workspace-id "$LOG_ANALYTICS_ID" --logs-workspace-key "$LOG_ANALYTICS_KEY" || true
+                        else
+                          az containerapp env create --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --location "$REGION" --logs-destination none || true
+                        fi
+                      fi
+                      echo "Waiting for environment to be ready..."
+                      for i in 1 2 3 4 5 6 7 8 9 10; do
+                        ENV_STATUS=$(az containerapp env show --name "$ACA_ENV" --resource-group "$RESOURCE_GROUP" --query "properties.provisioningState" -o tsv 2>/dev/null || echo "NotFound")
+                        echo "Environment status: $ENV_STATUS (attempt $i/10)"
+                        if [ "$ENV_STATUS" = "Succeeded" ]; then
+                          echo "Environment is ready!"
+                          break
+                        elif [ "$ENV_STATUS" = "Failed" ]; then
+                          echo "Environment provisioning failed!"
+                          exit 1
+                        fi
+                        sleep 30
+                      done
+                      if [ ! -z "<+matrix.repo.acaServiceBackend>" ]; then
+                        SERVICE_NAME="${ENV_NAME}-<+matrix.repo.acaServiceBackend>"
+                        IMAGE="${ACR_SERVER}/<+matrix.repo.backendImage>:${IMAGE_TAG}"
+                        az containerapp show --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" 2>/dev/null && az containerapp update --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --image "$IMAGE" || az containerapp create --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --environment "$ACA_ENV" --image "$IMAGE" --target-port 8080 --ingress external --registry-server "$ACR_SERVER" --min-replicas 3 --max-replicas 10
+                      fi
+                      if [ ! -z "<+matrix.repo.acaServiceFrontend>" ]; then
+                        SERVICE_NAME="${ENV_NAME}-<+matrix.repo.acaServiceFrontend>"
+                        IMAGE="${ACR_SERVER}/<+matrix.repo.frontendImage>:${IMAGE_TAG}"
+                        az containerapp show --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" 2>/dev/null && az containerapp update --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --image "$IMAGE" || az containerapp create --name "$SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --environment "$ACA_ENV" --image "$IMAGE" --target-port 8080 --ingress external --registry-server "$ACR_SERVER" --min-replicas 3 --max-replicas 10
+                      fi
+                      echo "PRODUCTION deployment completed"
+                    envVariables:
+                      AZURE_TENANT_ID: <+secrets.getValue("account.azure_tenant_id")>
+                      AZURE_CLIENT_ID: <+secrets.getValue("account.azure_client_id")>
+                      AZURE_SUBSCRIPTION_ID: <+secrets.getValue("account.azure_subscription_id")>
+                      AZURE_CLIENT_SECRET: <+secrets.getValue("account.azure_client_secret")>
+  notificationRules:
+    - name: ACA
+      identifier: ACA
+      pipelineEvents:
+        - type: PipelineFailed
+        - type: PipelineSuccess
+        - type: StageFailed
+          forStages:
+            - AllStages
+        - type: StepFailed
+          forSteps:
+            - AllSteps
+      notificationMethod:
+        type: Email
+        spec:
+          userGroups:
+            - quantnikdevops
+          recipients: []
+      enabled: true

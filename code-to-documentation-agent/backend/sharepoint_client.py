@@ -173,7 +173,7 @@ class SharePointClient:
         
         Args:
             drives_response: Response from get_site_drives()
-            library_name: Name of the document library to find (e.g., 'WEGA', 'Documents')
+            library_name: Name of the document library to find (e.g., 'QUANTNIK', 'Documents')
         
         Returns:
             The drive ID if found, None otherwise

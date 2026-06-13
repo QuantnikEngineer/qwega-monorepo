@@ -1,0 +1,110 @@
+{
+  "modal": {
+    "title": "Project Configuration Settings",
+    "subtitle": "Access and manage configurations for your project",
+    "closeButtonText": "Close",
+    "availableToolsLabel": "Available Tools",
+    "saveConfigButtonText": "Save Configuration",
+    "reconfigureButtonText": "Reconfigure"
+  },
+  "fields": {
+    "url": {
+      "label": "Instance URL *",
+      "placeholderPrefix": "https://",
+      "placeholderSuffix": ".example.com"
+    },
+    "patToken": {
+      "label": "Personal Access Token (PAT) *",
+      "placeholder": "Enter your PAT token",
+      "maskedDisplay": "••••••••••••"
+    }
+  },
+  "devopsTools": [
+    { "id": "jira", "name": "Jira", "icon": "📋", "color": "from-blue-500 to-blue-600", "description": "Project Management" },
+    { "id": "github", "name": "GitHub", "icon": "🐙", "color": "from-gray-700 to-gray-900", "description": "Code Repository" },
+    { "id": "sharepoint", "name": "SharePoint", "icon": "📁", "color": "from-cyan-500 to-blue-600", "description": "Document Management" },
+    { "id": "confluence", "name": "Confluence", "icon": "📝", "color": "from-blue-600 to-indigo-600", "description": "Documentation" },
+    { "id": "harness-repo", "name": "Harness Repo", "icon": "🔗", "color": "from-purple-500 to-pink-500", "description": "Artifact Repository" },
+    { "id": "harness-pipelines", "name": "Harness Pipelines", "icon": "⚡", "color": "from-orange-500 to-red-500", "description": "CI/CD Pipelines" },
+    { "id": "qtest", "name": "QTest", "icon": "🧪", "color": "from-emerald-500 to-green-600", "description": "Test Management" },
+    { "id": "sonarqube", "name": "SonarQube", "icon": "🔍", "color": "from-green-500 to-teal-500", "description": "Code Quality" },
+    { "id": "snyk", "name": "Snyk SCA", "icon": "🛡️", "color": "from-purple-600 to-blue-600", "description": "Security Scanning" },
+    { "id": "trivy", "name": "Trivy Scan", "icon": "🔒", "color": "from-red-500 to-pink-500", "description": "Vulnerability Scanner" }
+  ],
+  "codeAssistant": {
+    "sectionTitle": "Code Assistant Configuration",
+    "description": "Configure Git, repository, and AI settings for the Code Assistant",
+    "gitConnection": {
+      "title": "Git Connection",
+      "badge": "From Harness Repo",
+      "fields": {
+        "repoUrl": {
+          "label": "Remote Repository URL",
+          "placeholder": "https://github.com/org/repo.git"
+        },
+        "gitToken": {
+          "label": "Git PAT / Token",
+          "placeholder": "Enter PAT token"
+        },
+        "gitUsername": {
+          "label": "Git Username",
+          "placeholder": "git",
+          "defaultValue": "git"
+        }
+      }
+    },
+    "repoConfig": {
+      "title": "Repository Configuration",
+      "fields": {
+        "folderName": {
+          "label": "Workspace Folder Name",
+          "placeholder": "e.g. my-feature-workspace",
+          "required": true,
+          "defaultValue": "quantnik-workspace"
+        },
+        "folderMode": {
+          "label": "Folder Mode",
+          "options": ["new", "existing"],
+          "defaultValue": "existing"
+        },
+        "branchName": {
+          "label": "Branch Name",
+          "placeholder": "e.g. feature/my-feature",
+          "required": true,
+          "defaultValue": "feature/quantnik-dev"
+        },
+        "branchMode": {
+          "label": "Branch Mode",
+          "options": ["new", "existing"],
+          "defaultValue": "existing"
+        }
+      }
+    },
+    "aiSettings": {
+      "title": "AI Settings",
+      "fields": {
+        "model": {
+          "label": "Language Model",
+          "defaultValue": "glm-5",
+          "options": [
+            { "label": "GPT-5.2 Codex", "value": "gpt-5.2-codex" },
+            { "label": "Sonnet 4.5", "value": "claude-sonnet-4-5-20250929" },
+            { "label": "Opus 4.6", "value": "claude-opus-4-6" },
+            { "label": "GLM-5", "value": "glm-5" }
+          ]
+        },
+        "autonomy": {
+          "label": "Autonomy Level",
+          "defaultValue": "high",
+          "options": ["high", "medium", "low"]
+        },
+        "reasoning": {
+          "label": "Reasoning Level",
+          "defaultValue": "high",
+          "options": ["high", "medium", "low"]
+        }
+      }
+    },
+    "saveButtonText": "Save Configuration"
+  }
+}

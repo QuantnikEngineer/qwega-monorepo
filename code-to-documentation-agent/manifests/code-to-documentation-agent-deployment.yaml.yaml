@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: agent-documentation-deployment
-  namespace: wega-wipro-buildai
+  namespace: quantnik-wipro-buildai
   labels:
     app: agent-documentation-app
 spec:
@@ -31,7 +31,7 @@ spec:
           name: http
         env:
         - name: BUILD_AI_FRONTEND_URL
-          value: "https://app.wega.wipro.com"
+          value: "https://app.quantnik.wipro.com"
         - name: CLOUD_PROVIDER
           value: "aws"
         # Comma-separated list of project IDs that have full access to all repositories
@@ -60,7 +60,7 @@ spec:
         - name: PYTHONDONTWRITEBYTECODE
           value: "1"
         - name: BUILDAI_BACKEND_API_URL
-          value: "https://app.wega.wipro.com"
+          value: "https://app.quantnik.wipro.com"
         - name: CLOUD_PROVIDER
           value: "aws"
         - name: ENVIRONMENT
@@ -81,7 +81,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: agent-documentation-service
-  namespace: wega-wipro-buildai
+  namespace: quantnik-wipro-buildai
   labels:
     app: agent-documentation-app
 spec:

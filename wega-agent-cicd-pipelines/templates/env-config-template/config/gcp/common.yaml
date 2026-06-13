@@ -1,9 +1,0 @@
-# config/gcp/common.yaml
-# GCP Cloud Run - ALL environments
-
-env:
-  CLOUD_PROVIDER: gcp
-  GCP_PROJECT_ID: wega-gcp-project
-  CLOUD_RUN_REGION: us-central1
-  GOOGLE_CLOUD_LOGGING: "true"
-  HEALTH_CHECK_PATH: /health

@@ -10,3 +10,12 @@ __pycache__/
 
 vertexai.json
 *service-account*.json
+
+# SQLite runtime databases — never commit user data or session state
+*.db
+*.db-shm
+*.db-wal
+
+# Runtime data directories — persist via Docker volumes or scp, not git
+backend/data/
+data/

@@ -1,4 +1,4 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: wega-wipro-buildai
+  name: quantnik-wipro-buildai

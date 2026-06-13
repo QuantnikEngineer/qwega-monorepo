@@ -1,6 +1,0 @@
-{
-  "default_branch": "main",
-  "description": "WEGA Evals - Reusable LLM Agent Evaluation Framework",
-  "identifier": "wega-evals",
-  "readme": false
-}

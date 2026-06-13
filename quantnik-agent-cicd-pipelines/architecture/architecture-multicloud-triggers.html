@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUANTNIK SDLC Multi-Cloud CI/CD Architecture</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #fff;
+        }
+        
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            background: linear-gradient(90deg, #00d4ff, #7c3aed, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        /* Main Flow Container */
+        .main-flow {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 20px;
+            padding: 40px 30px;
+            border: 1px solid #334155;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .main-flow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #4285f4, #7c3aed, #ff9900);
+        }
+        
+        /* Flow Layers */
+        .flow-layer {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            position: relative;
+            padding: 20px 0;
+        }
+        
+        .layer-label {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(124, 58, 237, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            color: #a78bfa;
+            border: 1px solid #7c3aed;
+            white-space: nowrap;
+        }
+        
+        /* Flow Boxes */
+        .flow-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 25px;
+            min-width: 200px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .flow-box::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.03), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s;
+        }
+        
+        .flow-box:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 212, 255, 0.2);
+        }
+        
+        .flow-box:hover::before {
+            left: 100%;
+        }
+        
+        .flow-box-icon { font-size: 2.5em; margin-bottom: 12px; }
+        .flow-box-title { font-weight: 600; margin-bottom: 5px; font-size: 1.15em; }
+        .flow-box-subtitle { font-size: 0.85em; color: #94a3b8; }
+        
+        /* Box Types */
+        .flow-box.repo { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+        .flow-box.repo:hover { box-shadow: 0 20px 40px rgba(59, 130, 246, 0.3); }
+        
+        .flow-box.trigger { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+        .flow-box.trigger:hover { box-shadow: 0 20px 40px rgba(245, 158, 11, 0.3); }
+        
+        .flow-box.orchestrator {
+            border-color: #7c3aed;
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(139, 92, 246, 0.1));
+            min-width: 320px;
+            padding: 30px;
+        }
+        .flow-box.orchestrator:hover { box-shadow: 0 20px 40px rgba(124, 58, 237, 0.3); }
+        
+        .flow-box.gcp { border-color: #4285f4; background: rgba(66, 133, 244, 0.1); }
+        .flow-box.gcp:hover { box-shadow: 0 20px 40px rgba(66, 133, 244, 0.3); }
+        
+        .flow-box.azure { border-color: #0078d4; background: rgba(0, 120, 212, 0.1); }
+        .flow-box.azure:hover { box-shadow: 0 20px 40px rgba(0, 120, 212, 0.3); }
+        
+        .flow-box.aws { border-color: #ff9900; background: rgba(255, 153, 0, 0.1); }
+        .flow-box.aws:hover { box-shadow: 0 20px 40px rgba(255, 153, 0, 0.3); }
+        
+        .flow-box.cloud-gcp { border-color: #34a853; background: rgba(52, 168, 83, 0.1); }
+        .flow-box.cloud-azure { border-color: #00bcf2; background: rgba(0, 188, 242, 0.1); }
+        .flow-box.cloud-aws { border-color: #ff6600; background: rgba(255, 102, 0, 0.1); }
+        
+        /* Animated Arrows */
+        .arrow-container {
+            display: flex;
+            justify-content: center;
+            padding: 15px 0;
+            position: relative;
+        }
+        
+        .animated-arrow {
+            width: 4px;
+            height: 50px;
+            background: linear-gradient(180deg, #7c3aed, #38bdf8);
+            position: relative;
+            border-radius: 2px;
+        }
+        
+        .animated-arrow::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 15px solid #38bdf8;
+        }
+        
+        /* Flowing dot animation */
+        .animated-arrow::before {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #00d4ff;
+            border-radius: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: flowDot 1.5s infinite;
+            box-shadow: 0 0 15px #00d4ff;
+        }
+        
+        @keyframes flowDot {
+            0% { top: -5px; opacity: 1; }
+            100% { top: 45px; opacity: 0; }
+        }
+        
+        /* Parallel Split Section */
+        .parallel-section {
+            position: relative;
+            margin: 30px 0;
+        }
+        
+        .parallel-label {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .parallel-badge {
+            display: inline-block;
+            background: linear-gradient(90deg, #7c3aed, #a855f7);
+            padding: 8px 25px;
+            border-radius: 25px;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 2px;
+            animation: glow 2s infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(124, 58, 237, 0.8); }
+        }
+        
+        /* Split Connector */
+        .split-lines {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            position: relative;
+            height: 80px;
+            margin: 20px 0;
+        }
+        
+        .split-lines::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 30px;
+            background: #7c3aed;
+        }
+        
+        .split-lines::after {
+            content: '';
+            position: absolute;
+            top: 30px;
+            left: 20%;
+            right: 20%;
+            height: 4px;
+            background: linear-gradient(90deg, #4285f4, #7c3aed, #ff9900);
+            border-radius: 2px;
+        }
+        
+        .branch-drops {
+            display: flex;
+            justify-content: space-between;
+            position: absolute;
+            top: 34px;
+            left: 20%;
+            right: 20%;
+        }
+        
+        .branch-drop {
+            width: 4px;
+            height: 40px;
+            position: relative;
+        }
+        
+        .branch-drop.gcp { background: linear-gradient(180deg, #4285f4, #34a853); }
+        .branch-drop.azure { background: linear-gradient(180deg, #0078d4, #00bcf2); }
+        .branch-drop.aws { background: linear-gradient(180deg, #ff9900, #ff6600); }
+        
+        .branch-drop::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+        }
+        
+        .branch-drop.gcp::after { border-top: 10px solid #34a853; }
+        .branch-drop.azure::after { border-top: 10px solid #00bcf2; }
+        .branch-drop.aws::after { border-top: 10px solid #ff6600; }
+        
+        /* Animated dots on branches */
+        .branch-drop::before {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: branchFlow 1.2s infinite;
+        }
+        
+        .branch-drop.gcp::before { background: #34a853; box-shadow: 0 0 10px #34a853; animation-delay: 0s; }
+        .branch-drop.azure::before { background: #00bcf2; box-shadow: 0 0 10px #00bcf2; animation-delay: 0.2s; }
+        .branch-drop.aws::before { background: #ff6600; box-shadow: 0 0 10px #ff6600; animation-delay: 0.4s; }
+        
+        @keyframes branchFlow {
+            0% { top: 0; opacity: 1; }
+            100% { top: 35px; opacity: 0; }
+        }
+        
+        /* Workers Grid */
+        .workers-grid {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .worker-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .mini-arrow {
+            width: 3px;
+            height: 30px;
+            position: relative;
+        }
+        
+        .mini-arrow.gcp { background: linear-gradient(180deg, #4285f4, #34a853); }
+        .mini-arrow.azure { background: linear-gradient(180deg, #0078d4, #00bcf2); }
+        .mini-arrow.aws { background: linear-gradient(180deg, #ff9900, #ff6600); }
+        
+        .mini-arrow::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+        }
+        
+        .mini-arrow.gcp::after { border-top: 8px solid #34a853; }
+        .mini-arrow.azure::after { border-top: 8px solid #00bcf2; }
+        .mini-arrow.aws::after { border-top: 8px solid #ff6600; }
+        
+        /* Branch Tags */
+        .branch-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 12px;
+        }
+        
+        .branch-tag {
+            background: rgba(0, 212, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.75em;
+            color: #00d4ff;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+        
+        /* Environment Flow */
+        .env-flow {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .env-badge {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        
+        .env-badge.dev { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid #22c55e; }
+        .env-badge.qa { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; }
+        .env-badge.staging { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; border: 1px solid #8b5cf6; }
+        .env-badge.prod { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid #f59e0b; }
+        
+        .env-arrow { color: #64748b; font-size: 1.2em; }
+        
+        /* Features Section */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(56, 189, 248, 0.3);
+            transform: translateY(-5px);
+        }
+        
+        .feature-card h3 {
+            color: #38bdf8;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
+        }
+        
+        .feature-card ul {
+            list-style: none;
+            color: #94a3b8;
+        }
+        
+        .feature-card li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            font-size: 0.95em;
+        }
+        
+        .feature-card li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+        }
+        
+        /* Repos Section */
+        .repos-section {
+            margin-top: 40px;
+            text-align: center;
+        }
+        
+        .repos-section h2 {
+            color: #94a3b8;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+        
+        .repos-grid {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .repo-chip {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+        
+        .repo-chip:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: scale(1.05);
+        }
+        
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #94a3b8;
+        }
+        
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+        }
+        
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            margin: 40px 0;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #334155;
+            color: #64748b;
+        }
+        
+        @media (max-width: 768px) {
+            .branch-drops { left: 10%; right: 10%; }
+            .split-lines::after { left: 10%; right: 10%; }
+            .layer-label { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 QUANTNIK SDLC Multi-Cloud CI/CD</h1>
+        <p class="subtitle">Automated Build & Deploy to GCP, Azure, and AWS from Branch-Level Triggers</p>
+        
+        <div class="main-flow">
+            <!-- Layer 1: Git Repositories -->
+            <div class="flow-layer">
+                <span class="layer-label">SOURCE</span>
+                <div class="flow-box repo">
+                    <div class="flow-box-icon">📦</div>
+                    <div class="flow-box-title">QUANTNIK SDLC Repositories</div>
+                    <div class="flow-box-subtitle">18 Microservices</div>
+                    <div class="branch-tags">
+                        <span class="branch-tag">develop → Dev</span>
+                        <span class="branch-tag">feature/* → Dev</span>
+                        <span class="branch-tag">release/* → QA/Stage/Prod</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Arrow 1 -->
+            <div class="arrow-container">
+                <div class="animated-arrow"></div>
+            </div>
+            
+            <!-- Layer 2: Triggers -->
+            <div class="flow-layer">
+                <span class="layer-label">TRIGGERS</span>
+                <div class="flow-box trigger">
+                    <div class="flow-box-icon">⚡</div>
+                    <div class="flow-box-title">Webhook Triggers</div>
+                    <div class="flow-box-subtitle">On Push to Branch</div>
+                    <div style="margin-top: 10px;">
+                        <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 4px 12px; border-radius: 12px; font-size: 0.8em;">
+                            <span style="display: inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite;"></span>
+                            Real-time
+                        </span>
+                    </div>
+                </div>
+                <div class="flow-box trigger">
+                    <div class="flow-box-icon">⏰</div>
+                    <div class="flow-box-title">Scheduled Triggers</div>
+                    <div class="flow-box-subtitle">Cron: 0 2 * * *</div>
+                    <div style="margin-top: 10px;">
+                        <span style="background: rgba(139, 92, 246, 0.2); color: #a78bfa; padding: 4px 12px; border-radius: 12px; font-size: 0.8em;">
+                            Nightly Builds
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Arrow 2 -->
+            <div class="arrow-container">
+                <div class="animated-arrow"></div>
+            </div>
+            
+            <!-- Layer 3: Orchestrator -->
+            <div class="flow-layer">
+                <span class="layer-label">ORCHESTRATOR</span>
+                <div class="flow-box orchestrator">
+                    <div class="flow-box-icon">🎯</div>
+                    <div class="flow-box-title">QUANTNIK SDLC Orchestrator</div>
+                    <div class="flow-box-subtitle">deployTarget = "all"</div>
+                    <div style="margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 10px;">
+                        <div style="font-size: 0.8em; color: #c4b5fd; margin-bottom: 8px;">Pipeline Inputs:</div>
+                        <div style="font-size: 0.75em; color: #94a3b8; text-align: left;">
+                            • selectedRepo: &lt;triggered repo&gt;<br>
+                            • branch: &lt;+trigger.branch&gt;<br>
+                            • deployTarget: <span style="color: #10b981;">all</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Parallel Split -->
+            <div class="parallel-section">
+                <div class="parallel-label">
+                    <span class="parallel-badge">⚡ PARALLEL EXECUTION</span>
+                </div>
+                
+                <div class="split-lines">
+                    <div class="branch-drops">
+                        <div class="branch-drop gcp"></div>
+                        <div class="branch-drop azure"></div>
+                        <div class="branch-drop aws"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Layer 4: Workers -->
+            <div class="workers-grid">
+                <!-- GCP Column -->
+                <div class="worker-column">
+                    <div class="flow-box gcp">
+                        <div class="flow-box-icon">☁️</div>
+                        <div class="flow-box-title">CloudRun Worker</div>
+                        <div class="flow-box-subtitle">Build → Push GAR → Scan</div>
+                    </div>
+                    <div class="mini-arrow gcp"></div>
+                    <div class="flow-box cloud-gcp">
+                        <div class="flow-box-icon">🚀</div>
+                        <div class="flow-box-title">GCP Cloud Run</div>
+                        <div class="flow-box-subtitle">Serverless Containers</div>
+                    </div>
+                </div>
+                
+                <!-- Azure Column -->
+                <div class="worker-column">
+                    <div class="flow-box azure">
+                        <div class="flow-box-icon">☁️</div>
+                        <div class="flow-box-title">ACA Worker</div>
+                        <div class="flow-box-subtitle">Build → Push ACR → Scan</div>
+                    </div>
+                    <div class="mini-arrow azure"></div>
+                    <div class="flow-box cloud-azure">
+                        <div class="flow-box-icon">🚀</div>
+                        <div class="flow-box-title">Azure Container Apps</div>
+                        <div class="flow-box-subtitle">Managed Kubernetes</div>
+                    </div>
+                </div>
+                
+                <!-- AWS Column -->
+                <div class="worker-column">
+                    <div class="flow-box aws">
+                        <div class="flow-box-icon">⚡</div>
+                        <div class="flow-box-title">ECS Express Worker</div>
+                        <div class="flow-box-subtitle">Build → Push ECR → Deploy</div>
+                    </div>
+                    <div class="mini-arrow aws"></div>
+                    <div class="flow-box cloud-aws">
+                        <div class="flow-box-icon">🚀</div>
+                        <div class="flow-box-title">ECS Express Mode</div>
+                        <div class="flow-box-subtitle">Fargate + ALB + Auto Scaling</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Environment Progression -->
+            <div style="text-align: center; margin-top: 30px;">
+                <div style="color: #94a3b8; margin-bottom: 15px; font-size: 0.9em;">Release & Branching Strategy (All Clouds)</div>
+                <div style="display: flex; flex-direction: column; gap: 15px; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                        <span style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 6px 14px; border-radius: 8px; font-size: 0.85em; border: 1px solid #3b82f6;">develop / feature/*</span>
+                        <span class="env-arrow">→</span>
+                        <span class="env-badge dev">🟢 Dev</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                        <span style="background: rgba(139, 92, 246, 0.2); color: #a78bfa; padding: 6px 14px; border-radius: 8px; font-size: 0.85em; border: 1px solid #8b5cf6;">release/* (weekly)</span>
+                        <span class="env-arrow">→</span>
+                        <span class="env-badge qa">🔵 QA</span>
+                        <span class="env-arrow">→</span>
+                        <span class="env-badge staging">🟣 Stage</span>
+                        <span class="env-arrow">→</span>
+                        <span class="env-badge prod">🟠 Prod</span>
+                    </div>
+                </div>
+                <div style="color: #64748b; font-size: 0.8em; margin-top: 15px;">
+                    Weekly release cut from develop → Approval gates between QA/Stage/Prod (14-day windows)
+                </div>
+            </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <!-- Repositories -->
+        <div class="repos-section">
+            <h2>📦 QUANTNIK SDLC Repositories (Auto-Triggered)</h2>
+            <div class="repos-grid">
+                <div class="repo-chip">quantnik-brd</div>
+                <div class="repo-chip">quantnik-sdlc</div>
+                <div class="repo-chip">quantnik-userstory</div>
+                <div class="repo-chip">quantnik-auth-service</div>
+                <div class="repo-chip">quantnik-api-gateway</div>
+                <div class="repo-chip">quantnik-rag</div>
+                <div class="repo-chip">quantnik-code-assistant-agent</div>
+                <div class="repo-chip">quantnik-planning-orchestrator</div>
+                <div class="repo-chip">quantnik-test-orchestrator</div>
+                <div class="repo-chip">quantnik-sdlc-orchestrator</div>
+                <div class="repo-chip">quantnik-userstory-validator</div>
+                <div class="repo-chip">quantnik-common-integration</div>
+                <div class="repo-chip">+ 6 more</div>
+            </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <!-- Features -->
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3>⚡ Trigger Configuration</h3>
+                <ul>
+                    <li>Webhook triggers per repository</li>
+                    <li>develop & feature/* → Dev only</li>
+                    <li>release/* (weekly) → QA → Stage → Prod</li>
+                    <li>Scheduled nightly builds (2 AM)</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>🎯 Orchestrator Features</h3>
+                <ul>
+                    <li>deployTarget=all for multi-cloud</li>
+                    <li>CloudRun + ACA + ECS Express in parallel</li>
+                    <li>Branch variables auto-populated</li>
+                    <li>Weekly release cycle to QA/Stage/Prod</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>🔒 Security & Quality</h3>
+                <ul>
+                    <li>STO scans (Semgrep, Trivy)</li>
+                    <li>Image vulnerability scanning</li>
+                    <li>Approval gates for Production</li>
+                    <li>Audit trail for all deployments</li>
+                </ul>
+            </div>
+            <div class="feature-card" style="border-color: #a78bfa;">
+                <h3 style="color: #a78bfa;">🤖 Harness Qwiet AI</h3>
+                <ul>
+                    <li>AI-powered SAST code analysis</li>
+                    <li>SCA dependency scanning</li>
+                    <li>Code Property Graph technology</li>
+                    <li>AI auto-remediation suggestions</li>
+                </ul>
+            </div>
+            <div class="feature-card" style="border-color: #ff6600;">
+                <h3 style="color: #ff6600;">⚡ AWS ECS Express Mode</h3>
+                <ul>
+                    <li>Simplified 3-input deployment</li>
+                    <li>Auto-configured ALB + SSL</li>
+                    <li>Fargate with auto scaling</li>
+                    <li>Full infrastructure visibility</li>
+                </ul>
+            </div>
+            <div class="feature-card">
+                <h3>📊 Key Benefits</h3>
+                <ul>
+                    <li>Single commit → All 3 clouds</li>
+                    <li>Consistent deployments</li>
+                    <li>Parallel execution (3x faster)</li>
+                    <li>Centralized pipeline management</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #3b82f6;"></div>
+                <span>Git Repositories</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f59e0b;"></div>
+                <span>Triggers</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #7c3aed;"></div>
+                <span>Orchestrator</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4285f4;"></div>
+                <span>GCP</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #0078d4;"></div>
+                <span>Azure</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff9900;"></div>
+                <span>AWS ECS Express</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #a78bfa;"></div>
+                <span>Qwiet AI</span>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>QUANTNIK SDLC CI/CD Architecture</strong></p>
+            <p>Harness Platform • Google Cloud • Microsoft Azure • Amazon Web Services</p>
+        </div>
+    </div>
+</body>
+</html>

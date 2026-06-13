@@ -1,0 +1,144 @@
+You are generating a production-ready enterprise Harness CI pipeline YAML file for QUANTNIK.
+
+OUTPUT CONTRACT
+- Return only valid YAML for the file {{ expected_output_path }}.
+- Do not add markdown fences, prose, comments, TODO markers, ellipsis, or explanations.
+- Treat the supplied stage plan as authoritative for the core CI stages. Do not remove, rename, or reorder core stages.
+- You may add only the minimum extra approval or rollout stages required to implement the resolved enterprise controls.
+- Do not invent connectors, secrets, infrastructures, services, templates, or file paths that were not provided.
+- Every generated stage must be executable Harness YAML, not pseudo-YAML.
+- Use 2-space indentation. Never emit tabs. Always include a single space after every colon (e.g., `name: foo`).
+
+NON-NEGOTIABLE ENTERPRISE RULES
+- Build and publish every resolved container image tag when image publishing is enabled.
+- Use the resolved rollout regions, not only the raw user-entered region list.
+- If approvals are enabled, add a native Approval stage with a HarnessApproval step before the first rollout stage.
+- If rollout is enabled, create one isolated rollout stage per resolved region after publish.
+- Keep identifiers stable, deterministic, and enterprise-safe.
+- Preserve command ordering inside each run step exactly as supplied.
+- Do not collapse multiple rollout regions into one shared stage.
+- Do not omit approval, rollout, or publish behavior when the resolved enterprise controls require it.
+
+HARNESS YAML RULES
+HARNESS PIPELINE SCHEMA RULES (MANDATORY)
+- Top-level structure must be:
+    pipeline:
+      name: <pipeline_name>
+      identifier: <pipeline_identifier>
+      projectIdentifier: {{ harness_project_identifier }}
+      orgIdentifier: {{ harness_org_identifier }}
+      tags: {}
+      properties:
+        ci:
+          codebase:
+            connectorRef: {{ code_connector_ref }}
+            repoName: {{ harness_repo_name }}
+            build: <+input>
+      stages:
+        - stage: ...
+- The `pipeline.tags` field is REQUIRED, even when empty. Always emit `tags: {}`.
+- The `pipeline.properties.ci.codebase` block is REQUIRED whenever any CI stage clones code.
+- Identifiers must match the regex `[A-Za-z_][A-Za-z0-9_]{0,127}`. Replace any space, dash, dot, or other separator with `_` when generating identifiers.
+- Use the pipeline name {{ pipeline_name }} verbatim for `pipeline.name`. Derive `pipeline.identifier` from it by replacing every non-alphanumeric character with `_`.
+
+HARNESS CI STAGE SCHEMA RULES (MANDATORY)
+- Each CI stage MUST have:
+    - stage:
+        name: <Stage Name>
+        identifier: <stage_identifier>
+        type: CI
+        spec:
+          cloneCodebase: true            # NEVER use `cloneCodeRepo` - that field does not exist.
+          {% if harness_runtime == 'kubernetes-direct' -%}
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: {{ connector_ref }}
+              namespace: {{ harness_namespace }}
+              automountServiceAccountToken: true
+              os: Linux
+          {% else -%}
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          {% endif -%}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: <Step Name>
+                  identifier: <step_identifier>
+                  spec:
+                    shell: Sh
+                    command: |
+                      <multi-line command block>
+- For non-CI stages (e.g., Approval), do NOT include `spec.cloneCodebase`, `spec.platform`, `spec.runtime`, or `spec.infrastructure`.
+- For Run steps, ALWAYS include both `name` and `identifier`. Step `identifier` must be unique within its stage.
+- For all `connectorRef` fields (codebase, infrastructure, image registries), always use the explicit value `{{ connector_ref }}` (or `{{ code_connector_ref }}` for the codebase).
+- Never emit `<+input>` for `connectorRef`, `repoName`, `namespace`, `projectIdentifier`, or `orgIdentifier`. The only place `<+input>` is allowed is inside `properties.ci.codebase.build`.
+- The first CI stage may set `cloneCodebase: true`; subsequent CI stages should also set `cloneCodebase: true` if they need source code; otherwise use `cloneCodebase: false`.
+
+HARNESS RUNTIME SELECTION
+- Selected runtime: {{ harness_runtime }}
+- If `cloud`, every CI stage MUST include both `platform` (`os: Linux`, `arch: Amd64`) and `runtime` (`type: Cloud`, `spec: {}`). Do NOT include an `infrastructure` block.
+- If `kubernetes-direct`, every CI stage MUST include an `infrastructure` block with `type: KubernetesDirect`, `spec.connectorRef: {{ connector_ref }}`, and `spec.namespace: {{ harness_namespace }}`. Do NOT include `platform` or `runtime` blocks.
+- Be consistent: all CI stages must use the same runtime style.
+
+APPROVAL STAGE RULES
+- Approval stages have `type: Approval` and a single HarnessApproval step. They do not include `cloneCodebase`, `platform`, `runtime`, or `infrastructure`.
+- The HarnessApproval step requires `timeout`, `spec.approvalMessage`, `spec.includePipelineExecutionHistory`, `spec.approvers.minimumCount`, and `spec.approvers.userGroups` (a list of strings).
+
+RESOLVED HARNESS CONTEXT
+- Account identifier: {{ harness_account_identifier }}
+- Org identifier: {{ harness_org_identifier }}
+- Project identifier: {{ harness_project_identifier }}
+- Codebase connector: {{ code_connector_ref }}
+- Default infra/image connector: {{ connector_ref }}
+- Kubernetes namespace (when runtime is kubernetes-direct): {{ harness_namespace }}
+- Code repository name: {{ harness_repo_name }}
+
+RESOLVED ENTERPRISE CONTROL PLAN
+- Image publishing enabled: {{ image_enabled }}
+- Image repository: {{ image_repository }}
+- Image tags: {{ image_tags }}
+- Rollout enabled: {{ rollout_enabled }}
+- Requested regions: {{ selected_regions }}
+- Resolved rollout regions: {{ resolved_rollout_regions }}
+- Approvals enabled: {{ approvals_enabled }}
+- Approval approvers: {{ approval_approvers }}
+- Approval timeout minutes: {{ approval_timeout_minutes }}
+
+REQUEST SUMMARY
+- Original user prompt: {{ user_prompt }}
+- Repository URL: {{ repository_url }}
+- Branch: {{ branch }}
+- Deployment target: {{ deployment_target }}
+- Environment: {{ target_environment }}
+- Selected tools ({{ tool_count }}): {{ selected_tools }}
+- Resolved core stage order ({{ stage_count }}): {{ stage_identifiers }}
+
+APPROVAL CONFIGURATION
+{{ approval_config_json }}
+
+RESOLVED ROLLOUT REGIONS JSON
+{{ resolved_rollout_regions_json }}
+
+ENTERPRISE CONTROLS JSON
+{{ enterprise_controls_json }}
+
+RESOLVED STAGE PLAN AND COMMANDS
+{{ stage_context_json }}
+
+NORMALIZED INTENT PAYLOAD
+{{ normalized_intent_json }}
+
+FINAL CHECKLIST BEFORE EMITTING YAML
+1. `pipeline.name`, `pipeline.identifier`, `pipeline.projectIdentifier`, `pipeline.orgIdentifier`, `pipeline.tags` are all present.
+2. `pipeline.properties.ci.codebase` is present with concrete `connectorRef`, `repoName`, and `build: <+input>`.
+3. Every CI stage has the runtime block dictated by the selected runtime ({{ harness_runtime }}) and never mixes `runtime`/`platform` with `infrastructure`.
+4. No `<+input>` appears anywhere except `properties.ci.codebase.build`.
+5. Identifiers are valid (`^[A-Za-z_][A-Za-z0-9_]*$`).
+6. The YAML parses cleanly with a YAML 1.2 loader.

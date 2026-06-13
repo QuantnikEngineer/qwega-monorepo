@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-assist
+  labels:
+    app: code-assist
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code-assist
+  template:
+    metadata:
+      labels:
+        app: code-assist
+    spec:
+      containers:
+        - name: code-assist
+          image: {{ .Values.image }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4300
+              name: http
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: HOST
+              value: 0.0.0.0
+            - name: PORT
+              value: "4300"
+            - name: DROID_MODEL_ID
+              value: glm-4.6
+            - name: DROID_REASONING
+              value: low
+            - name: FACTORY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: code-assist-secrets
+                  key: factory-api-key
+            - name: REPO_LOC_PATK_GIT
+              valueFrom:
+                secretKeyRef:
+                  name: code-assist-secrets
+                  key: harness-pat
+            - name: REPO_LOCK_REMOTE_URL
+              value: https://git.harness.io/2KolbecvR0aAcgQ5uXBObA/QUANTNIK/QUANTNIK/QUANTNIK.git
+            - name: REPO_LOCK_ROOT_DIR
+              value: /app
+            - name: REPO_LOCK_GIT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: repo-lock-git-auth
+                  key: username
+                  optional: true
+            - name: REPO_LOCK_GIT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: repo-lock-git-auth
+                  key: token
+                  optional: true
+          # Optional: mount your Droid auth config from a secret named droid-config.
+          # Create with: kubectl create secret generic droid-config --from-file=config.json=/path/to/config.json
+          volumeMounts:
+            - name: droid-config
+              mountPath: /root/.config/factory/config.json
+              subPath: config.json
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+      volumes:
+        - name: droid-config
+          secret:
+            secretName: droid-config
+            optional: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-assist
+  labels:
+    app: code-assist
+spec:
+  selector:
+    app: code-assist
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http
+  type: LoadBalancer

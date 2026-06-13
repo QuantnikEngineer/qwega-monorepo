@@ -1,0 +1,16 @@
+# config/gcp/qa.yaml
+# GCP Cloud Run - QA
+
+env:
+  ENVIRONMENT: qa
+  LOG_LEVEL: INFO
+  FEATURE_DEBUG_MODE: "false"
+  FEATURE_VERBOSE_ERRORS: "true"
+  
+  API_BASE_URL: https://qa-api.quantnik.example.com
+  
+  DB_HOST: qa-postgres.quantnik.internal
+  DB_PORT: "5432"
+  DB_NAME: quantnik_qa
+  
+  MAX_WORKERS: "4"
