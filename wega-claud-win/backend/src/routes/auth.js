@@ -44,7 +44,7 @@ function claimOrphanedProjects(userId) {
 }
 
 // ---- POST /api/auth/register ----------------------------------------------
-auth.post('/register', async (req, res) => {
+auth.post('/register', (req, res) => {
   const email = normaliseEmail(req.body?.email);
   const password = String(req.body?.password || '');
   const name = String(req.body?.name || '').trim() || null;
@@ -61,7 +61,11 @@ auth.post('/register', async (req, res) => {
     return res.status(409).json({ error: 'email already registered — try logging in' });
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  // bcryptjs' async helpers can stall under the long-running local dev
+  // server on newer Node builds. The sync variant completes in ~100ms for
+  // cost 10 and keeps login/register deterministic for this single-user
+  // desktop app.
+  const passwordHash = bcrypt.hashSync(password, 10);
   const now = Math.floor(Date.now() / 1000);
   const result = db.prepare(`
     INSERT INTO users (email, password_hash, name, created_at, last_login_at)
@@ -86,7 +90,7 @@ auth.post('/register', async (req, res) => {
 });
 
 // ---- POST /api/auth/login -------------------------------------------------
-auth.post('/login', async (req, res) => {
+auth.post('/login', (req, res) => {
   const email = normaliseEmail(req.body?.email);
   const password = String(req.body?.password || '');
 
@@ -100,7 +104,7 @@ auth.post('/login', async (req, res) => {
   if (!user) {
     return res.status(401).json({ error: 'invalid email or password' });
   }
-  const ok = await bcrypt.compare(password, user.password_hash);
+  const ok = bcrypt.compareSync(password, user.password_hash);
   if (!ok) {
     return res.status(401).json({ error: 'invalid email or password' });
   }

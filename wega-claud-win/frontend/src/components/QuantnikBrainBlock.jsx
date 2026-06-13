@@ -27,12 +27,12 @@ function renderAnswer(text) {
   if (!text) return null;
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   let html = esc(text);
-  html = html.replace(/`([^`]+)`/g, '<code style="color:var(--w-amber);background:var(--w-bg-1);padding:1px 5px;border-radius:2px">$1</code>');
+  html = html.replace(/`([^`]+)`/g, '<code style="color:var(--w-phosphor);background:#eef4ff;padding:2px 6px;border-radius:6px">$1</code>');
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
   html = html.replace(/\[(\d+)\]/g, '<span style="color:var(--w-phosphor);font-weight:600">[$1]</span>');
   html = html.replace(/\n/g, '<br/>');
-  return <div style={{ color: 'var(--w-text-0)', font: '13px/1.65 var(--w-mono)' }} dangerouslySetInnerHTML={{ __html: html }} />;
+  return <div style={{ color: 'var(--w-text-0)', font: '500 13px/1.65 var(--w-display)' }} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 // Static greeter — varies a tiny bit so reopening doesn't feel canned.
@@ -101,23 +101,23 @@ function Bubble({ msg, firstName }) {
         flex: '0 0 28px',
         height: 28,
         borderRadius: 14,
-        background: isUser ? 'var(--w-bg-1)' : 'var(--w-phosphor-veil)',
+        background: isUser ? '#eef2f7' : 'linear-gradient(135deg, #2563eb, #14b8a6)',
         border: `1px solid var(--w-${isUser ? 'line' : 'phosphor'})`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: isUser ? 'var(--w-text-1)' : 'var(--w-phosphor)',
-        font: '12px/1 var(--w-mono)',
+        color: isUser ? 'var(--w-text-1)' : '#fff',
+        font: '700 12px/1 var(--w-display)',
       }}>
-        {isUser ? (firstName?.[0]?.toUpperCase() || 'u') : '🧠'}
+        {isUser ? (firstName?.[0]?.toUpperCase() || 'U') : 'Q'}
       </div>
       <div style={{
         maxWidth: '78%',
-        background: isUser ? 'var(--w-bg-1)' : 'transparent',
+        background: isUser ? '#eef4ff' : 'transparent',
         border: isUser ? '1px solid var(--w-line)' : 'none',
-        borderRadius: 6,
+        borderRadius: 14,
         padding: isUser ? '8px 12px' : '4px 0 0',
       }}>
         {isUser
-          ? <div style={{ color: 'var(--w-text-0)', font: '13px/1.55 var(--w-mono)', whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+          ? <div style={{ color: 'var(--w-text-0)', font: '500 13px/1.55 var(--w-display)', whiteSpace: 'pre-wrap' }}>{msg.content}</div>
           : renderAnswer(msg.content)}
 
         {/* Citations + metadata for assistant turns */}
@@ -296,12 +296,12 @@ export function QuantnikBrainBlock({ project }) {
       <div
         onClick={() => setCollapsed(false)}
         style={{
-          margin: '10px 22px 14px',
-          padding: '10px 16px',
-          border: '1px solid var(--w-phosphor)',
-          borderLeft: '4px solid var(--w-phosphor)',
-          background: 'linear-gradient(90deg, var(--w-phosphor-veil), transparent 60%)',
-          borderRadius: 4,
+          margin: '14px 24px',
+          padding: '12px 16px',
+          border: '1px solid var(--w-line)',
+          background: '#fff',
+          borderRadius: 16,
+          boxShadow: '0 10px 35px rgba(31,41,55,0.06)',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -310,13 +310,13 @@ export function QuantnikBrainBlock({ project }) {
         }}
         title="open Quantnik Brain"
       >
-        <span style={{ color: 'var(--w-phosphor)', font: '16px/1 var(--w-mono)' }}>🧠</span>
-        <span style={{ color: 'var(--w-phosphor)', font: '700 13px/1 var(--w-mono)', letterSpacing: '0.06em' }}>Quantnik Brain</span>
-        <span style={{ color: 'var(--w-text-2)', font: '11.5px/1.4 var(--w-mono)' }}>
+        <span style={{ width: 28, height: 28, borderRadius: 10, background: 'linear-gradient(135deg, #2563eb, #14b8a6)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', font: '800 13px/1 var(--w-display)' }}>Q</span>
+        <span style={{ color: 'var(--w-text-0)', font: '800 14px/1 var(--w-display)' }}>Quantnik Brain</span>
+        <span style={{ color: 'var(--w-text-2)', font: '500 12.5px/1.4 var(--w-display)' }}>
           {firstName ? `${firstName}, click to chat — ` : 'click to chat — '}
           ask anything about this project
         </span>
-        <span style={{ marginLeft: 'auto', color: 'var(--w-phosphor)', font: '14px/1 var(--w-mono)' }}>▸</span>
+        <span style={{ marginLeft: 'auto', color: 'var(--w-phosphor)', font: '700 14px/1 var(--w-display)' }}>Open</span>
       </div>
     );
   }
@@ -324,11 +324,11 @@ export function QuantnikBrainBlock({ project }) {
   // ───────────────── Expanded chatbot ─────────────────
   return (
     <div style={{
-      margin: '10px 22px 14px',
-      border: '1px solid var(--w-phosphor)',
-      borderLeft: '4px solid var(--w-phosphor)',
-      background: 'var(--w-bg-2)',
-      borderRadius: 4,
+      margin: '14px 24px',
+      border: '1px solid var(--w-line)',
+      background: '#fff',
+      borderRadius: 20,
+      boxShadow: '0 18px 50px rgba(31,41,55,0.08)',
       display: 'flex',
       flexDirection: 'column',
       // Reserve a generous chunk of vertical space so the chatbot is
@@ -344,39 +344,38 @@ export function QuantnikBrainBlock({ project }) {
         display: 'flex',
         alignItems: 'center',
         gap: 14,
-        background: 'linear-gradient(90deg, var(--w-phosphor-veil), transparent 80%)',
+        background: 'linear-gradient(135deg, #eff6ff, #f0fdfa)',
       }}>
         <div style={{
           flex: '0 0 36px',
           height: 36,
-          borderRadius: 18,
-          background: 'var(--w-phosphor-veil)',
-          border: '1.5px solid var(--w-phosphor)',
+          borderRadius: 12,
+          background: 'linear-gradient(135deg, #2563eb, #14b8a6)',
+          border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--w-phosphor)',
-          font: '18px/1 var(--w-mono)',
-          textShadow: '0 0 12px var(--w-phosphor-glow)',
-        }}>🧠</div>
+          color: '#fff',
+          font: '800 16px/1 var(--w-display)',
+        }}>Q</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ color: 'var(--w-phosphor)', font: '700 14px/1 var(--w-mono)', letterSpacing: '0.06em', textShadow: '0 0 10px var(--w-phosphor-glow)' }}>
+            <span style={{ color: 'var(--w-text-0)', font: '800 15px/1 var(--w-display)' }}>
               Quantnik Brain
             </span>
             <Pill tone="phosphor" dot>online</Pill>
             <span style={{ color: 'var(--w-text-3)', font: '11px/1.4 var(--w-mono)' }}>
-              · grounded in <a href={`/projects/${projectId}/context`} style={{ color: 'var(--w-cyan)', textDecoration: 'none' }}>Context Fabric</a>
+              · grounded in <a href={`/projects/${projectId}/context`} style={{ color: 'var(--w-phosphor)', textDecoration: 'none', fontWeight: 700 }}>Context Fabric</a>
             </span>
           </div>
-          <div style={{ color: 'var(--w-text-2)', font: '11px/1.4 var(--w-mono)', marginTop: 4 }}>
+          <div style={{ color: 'var(--w-text-2)', font: '500 12px/1.4 var(--w-display)', marginTop: 4 }}>
             {firstName ? `Hey ${firstName} — ` : ''}ask anything about this project. I'll dig through the code, the docs, the agent history.
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flex: '0 0 auto' }}>
-          <Btn tone="ghost" onClick={clearHistory} style={{ padding: '4px 10px', fontSize: 10 }}>
-            [ ⌫ ] clear
+          <Btn tone="ghost" onClick={clearHistory} style={{ padding: '7px 10px', borderRadius: 999 }}>
+            Clear
           </Btn>
-          <Btn tone="ghost" onClick={() => setCollapsed(true)} style={{ padding: '4px 10px', fontSize: 10 }}>
-            [ − ] minimise
+          <Btn tone="ghost" onClick={() => setCollapsed(true)} style={{ padding: '7px 10px', borderRadius: 999 }}>
+            Minimize
           </Btn>
         </div>
       </div>
@@ -391,21 +390,21 @@ export function QuantnikBrainBlock({ project }) {
       }}>
         {history.map((m, i) => <Bubble key={m.at || i} msg={m} firstName={firstName} />)}
         {busy && (
-          <div style={{ padding: '8px 18px', color: 'var(--w-text-3)', font: '11px/1.4 var(--w-mono)', fontStyle: 'italic' }}>
-            🧠 thinking<span className="w-caret" />
+          <div style={{ padding: '8px 18px', color: 'var(--w-text-3)', font: '600 12px/1.4 var(--w-display)', fontStyle: 'italic' }}>
+            Thinking<span className="w-caret" />
           </div>
         )}
       </div>
 
       {/* Error banner */}
       {error && (
-        <div style={{ margin: '0 14px 8px', padding: '6px 10px', border: '1px solid var(--w-red)', color: 'var(--w-red)', font: '11px/1.5 var(--w-mono)', borderRadius: 3 }}>
+        <div style={{ margin: '0 14px 8px', padding: '8px 10px', border: '1px solid var(--w-red)', color: 'var(--w-red)', font: '600 12px/1.5 var(--w-display)', borderRadius: 10 }}>
           {error}
         </div>
       )}
 
       {/* Composer */}
-      <form onSubmit={submit} style={{ display: 'flex', gap: 8, padding: '8px 14px 12px', borderTop: '1px dashed var(--w-line)' }}>
+      <form onSubmit={submit} style={{ display: 'flex', gap: 10, padding: '12px 14px 14px', borderTop: '1px solid var(--w-line)' }}>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -414,19 +413,19 @@ export function QuantnikBrainBlock({ project }) {
           rows={2}
           style={{
             flex: 1,
-            font: '12.5px/1.55 var(--w-mono)',
+            font: '500 13px/1.55 var(--w-display)',
             resize: 'vertical',
             minHeight: 40,
             maxHeight: 160,
             background: 'var(--w-bg-1)',
             color: 'var(--w-text-0)',
             border: '1px solid var(--w-line)',
-            borderRadius: 3,
+            borderRadius: 12,
             padding: '8px 10px',
           }}
         />
-        <Btn tone="primary" type="submit" disabled={busy || !input.trim()} style={{ alignSelf: 'flex-end' }}>
-          {busy ? 'thinking…' : '[ → ] ask'}
+        <Btn tone="primary" type="submit" disabled={busy || !input.trim()} style={{ alignSelf: 'flex-end', borderRadius: 999, padding: '9px 16px' }}>
+          {busy ? 'Thinking...' : 'Ask'}
         </Btn>
       </form>
     </div>

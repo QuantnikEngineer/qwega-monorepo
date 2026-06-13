@@ -73,10 +73,10 @@ export default function App() {
   });
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem('wega-theme');
-    // migrate legacy values to the sunset family (the new default)
-    if (stored === 'dark' || stored === 'cyber-dark') return 'sunset-dark';
+    // migrate legacy/dark values to the current Quantnik light surface.
+    if (stored === 'dark' || stored === 'cyber-dark' || stored === 'sunset-dark') return 'sunset-light';
     if (stored === 'light' || stored === 'cyber-light') return 'sunset-light';
-    return stored || 'sunset-dark';
+    return stored || 'sunset-light';
   });
   const [sessionInfo, setSessionInfo] = useState({ tools: [], mcpServers: [], usage: null });
 
@@ -228,7 +228,7 @@ export default function App() {
                   <>mcp <span style={{ color: 'var(--w-text-1)' }}>{(sessionInfo.mcpServers || []).length}</span></>,
                 ]}
                 right={[
-                  <>{theme} · CRT</>,
+                  <>Quantnik light</>,
                   <>v0.4.2-α</>,
                 ]}
               />

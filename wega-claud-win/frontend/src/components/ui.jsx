@@ -136,7 +136,7 @@ export const Btn = ({ tone = 'ghost', children, style = {}, icon = null, sub = n
   );
 };
 
-export const WindowFrame = ({ title = 'Quantnik', theme = 'dark', children, cpu = 4, mem = 312, headerExtras = null }) => {
+export const WindowFrame = ({ title = 'Quantnik', theme = 'light', children, cpu = 4, mem = 312, headerExtras = null }) => {
   const [time, setTime] = React.useState(() => new Date());
   React.useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 30_000);
@@ -151,29 +151,25 @@ export const WindowFrame = ({ title = 'Quantnik', theme = 'dark', children, cpu 
       font: '13px/1.5 var(--w-mono)',
       overflow: 'hidden',
       display: 'flex', flexDirection: 'column',
-    }} className="w-scan">
+    }}>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '8px 12px',
+        padding: '0 20px 0 18px',
+        height: 56,
         borderBottom: '1px solid var(--w-line)',
         background: 'var(--w-bg-1)',
         flex: '0 0 auto',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <span style={{ width: 11, height: 11, borderRadius: '50%', border: '1px solid var(--w-line)' }} />
-            <span style={{ width: 11, height: 11, borderRadius: '50%', border: '1px solid var(--w-line)' }} />
-            <span style={{ width: 11, height: 11, borderRadius: '50%', border: '1px solid var(--w-line-strong)', background: 'var(--w-phosphor-veil)' }} />
-          </div>
-          <span style={{ color: 'var(--w-text-2)', marginLeft: 6 }}>
+          <span style={{ color: '#aeb6c2' }}>
             <span style={{ color: 'var(--w-phosphor)' }}>~</span>
             <span> / </span>
             {title}
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--w-text-2)', font: '11px/1 var(--w-mono)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, color: 'var(--w-text-2)', font: '12.5px/1 var(--w-mono)' }}>
           {headerExtras}
-          <span><span style={{ color: 'var(--w-phosphor)' }}>●</span> {theme}</span>
+          <span><span style={{ color: 'var(--w-phosphor)' }}>●</span> {theme || 'light'}</span>
           <span>cpu <span style={{ color: 'var(--w-text-1)' }}>{cpu}%</span></span>
           <span>mem <span style={{ color: 'var(--w-text-1)' }}>{mem}<span style={{ color: 'var(--w-text-3)' }}>mb</span></span></span>
           <span>{time.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })}</span>
@@ -192,7 +188,7 @@ export const TabBar = ({ tabs, active, onSelect, model, permissionMode }) => (
     borderBottom: '1px solid var(--w-line)',
     background: 'var(--w-bg-1)',
     flex: '0 0 auto',
-    paddingLeft: 8,
+    paddingLeft: 18,
   }}>
     {tabs.map((t) => {
       const isActive = t.id === active;
@@ -201,31 +197,31 @@ export const TabBar = ({ tabs, active, onSelect, model, permissionMode }) => (
           key={t.id}
           onClick={() => onSelect && onSelect(t.id)}
           style={{
-            padding: '10px 16px',
+            padding: '16px 14px 14px',
             cursor: 'pointer',
             position: 'relative',
-            color: isActive ? 'var(--w-phosphor)' : 'var(--w-text-2)',
-            font: '500 12.5px/1 var(--w-mono)',
-            letterSpacing: '0.04em',
+            color: isActive ? 'var(--w-phosphor)' : '#7b8494',
+            font: `${isActive ? 700 : 500} 14px/1 var(--w-mono)`,
+            letterSpacing: 0,
             display: 'flex', alignItems: 'center', gap: 6,
-            borderRight: '1px solid var(--w-line)',
-            background: isActive ? 'var(--w-bg-2)' : 'transparent',
+            borderRight: 0,
+            background: 'transparent',
           }}
         >
           <span style={{ color: isActive ? 'var(--w-phosphor)' : 'var(--w-text-3)', marginRight: 2 }}>{t.glyph}</span>
           <span>{t.id}</span>
           {t.badge && <Pill tone={t.badgeTone || 'phosphor'} style={{ marginLeft: 4, padding: '1px 5px', fontSize: 9.5 }}>{t.badge}</Pill>}
           {isActive && (
-            <span style={{ position: 'absolute', left: 0, right: 0, bottom: -1, height: 2, background: 'var(--w-phosphor)', boxShadow: '0 0 12px var(--w-phosphor-glow)' }} />
+            <span style={{ position: 'absolute', left: 8, right: 8, bottom: -1, height: 2, background: 'var(--w-phosphor)' }} />
           )}
         </div>
       );
     })}
     <div style={{ flex: 1, borderBottom: '1px solid transparent' }} />
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '0 16px', color: 'var(--w-text-2)', font: '11px/1 var(--w-mono)', borderLeft: '1px solid var(--w-line)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '0 18px', color: 'var(--w-text-2)', font: '12px/1 var(--w-mono)', borderLeft: '1px solid var(--w-line)' }}>
       {model && (
         <span>
-          <span style={{ color: 'var(--w-phosphor)' }}>claude</span>
+          <span style={{ color: 'var(--w-phosphor)' }}>agent</span>
           <span style={{ color: 'var(--w-text-3)' }}>@</span>
           {formatModel(model)}
         </span>

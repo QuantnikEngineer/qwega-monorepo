@@ -13,6 +13,8 @@ export function AuthGate({ children }) {
   const [form, setForm] = useState({ email: '', password: '', name: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [remember, setRemember] = useState(true);
 
   // Initial probe: if a token exists, ask /auth/me. On success → render
   // the app. On 401 → clear and show the login screen.
@@ -60,27 +62,85 @@ export function AuthGate({ children }) {
   if (user) return children;
 
   return (
-    <div style={{
+    <div className="q-auth-shell" style={{
       position: 'fixed', inset: 0,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--w-bg-0)',
-      padding: 24,
+      display: 'flex',
+      background: '#f5f7fa',
+      fontFamily: 'var(--w-mono)',
+      color: '#1b2330',
     }}>
-      <div style={{
-        width: 420,
-        background: 'var(--w-bg-1)',
-        border: '1px solid var(--w-line)',
-        borderLeft: '3px solid var(--w-phosphor)',
-        borderRadius: 6,
-        padding: '28px 28px 22px',
+      <div className="q-auth-brand" style={{
+        flex: '1 1 0',
+        minWidth: 0,
+        position: 'relative',
+        overflow: 'hidden',
+        background: 'linear-gradient(160deg,#eef4ff 0%,#e9effb 45%,#f3eefe 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        padding: '52px 56px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-          <img src={quantnikLogo} alt="Quantnik" style={{ height: 34, width: 'auto', objectFit: 'contain' }} />
-          <span style={{ color: 'var(--w-text-3)', font: '11px/1 var(--w-mono)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Quantnik · Sign in</span>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#c9d6f5 1.2px, transparent 1.2px)', backgroundSize: '26px 26px', opacity: 0.4 }} />
+        <div style={{ position: 'absolute', top: -120, left: -80, width: 380, height: 380, borderRadius: '50%', background: 'radial-gradient(circle,rgba(91,155,255,.32),transparent 68%)' }} />
+        <div style={{ position: 'absolute', bottom: -140, right: -60, width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle,rgba(124,92,255,.22),transparent 68%)' }} />
+
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 13 }}>
+          <img src={quantnikLogo} alt="Quantnik" style={{ width: 46, height: 46, borderRadius: 13, boxShadow: '0 6px 18px rgba(37,99,235,.28)' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+            <span style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-.01em' }}>Quantnik</span>
+            <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.2em', textTransform: 'uppercase', color: '#8a94a3' }}>Workbench</span>
+          </div>
         </div>
 
-        {/* Mode tabs */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 18, borderBottom: '1px solid var(--w-line)' }}>
+        <div style={{ position: 'relative', maxWidth: 440 }}>
+          <h1 style={{ fontSize: 38, lineHeight: 1.12, fontWeight: 800, letterSpacing: '-.025em', margin: '0 0 18px' }}>Intelligence,<br />automated.</h1>
+          <p style={{ fontSize: 15.5, lineHeight: 1.65, color: '#5a6678', margin: '0 0 30px' }}>
+            A project-scoped agent workbench — your repos, docs, Jira & Confluence, wired into one conversation that ships software end to end.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+            {['Project-scoped agents & skills', 'Atlassian-native — Jira & Confluence', 'Private by default — your data stays yours'].map((item, i) => (
+              <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+                <span style={{ width: 30, height: 30, borderRadius: 9, background: '#fff', border: '1px solid #dfe7f5', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 3px rgba(16,24,40,.05)' }}>
+                  <span style={{ width: 11, height: 11, borderRadius: 3, background: i === 0 ? 'linear-gradient(135deg,#2563eb,#5b9bff)' : i === 1 ? 'linear-gradient(135deg,#0d9488,#34d399)' : 'linear-gradient(135deg,#7c5cff,#a78bfa)', transform: 'rotate(45deg)' }} />
+                </span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: '#3a4456' }}>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, color: '#8a94a3' }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a' }} />
+          <span>All systems operational</span>
+          <span style={{ color: '#c3cbd8' }}>·</span>
+          <span>v0.4.2-α</span>
+        </div>
+      </div>
+
+      <div className="q-auth-panel" style={{
+        flex: '0 0 540px',
+        width: 540,
+        background: '#fff',
+        borderLeft: '1px solid #e8ebf1',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '48px 56px',
+      }}>
+        <div style={{ width: '100%', maxWidth: 392 }}>
+          <div style={{ marginBottom: 30 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: '#aab2bf', marginBottom: 8 }}>
+              {mode === 'login' ? 'Quantnik · Sign in' : 'Quantnik · Get started'}
+            </div>
+            <h2 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.02em', margin: 0, color: '#1b2330' }}>
+              {mode === 'login' ? 'Welcome back' : 'Create your account'}
+            </h2>
+            <p style={{ fontSize: 14, color: '#7b8494', margin: '8px 0 0', lineHeight: 1.55 }}>
+              {mode === 'login' ? 'Sign in to pick up where your agents left off.' : 'Spin up your first project-scoped workbench in seconds.'}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: 4, background: '#f1f3f7', borderRadius: 12, padding: 4, marginBottom: 26 }}>
           {['login', 'register'].map((m) => (
             <button
               key={m}
@@ -88,23 +148,23 @@ export function AuthGate({ children }) {
               onClick={() => { setMode(m); setError(''); }}
               style={{
                 flex: 1,
-                background: 'transparent', border: 0,
-                padding: '8px 0',
-                color: mode === m ? 'var(--w-phosphor)' : 'var(--w-text-3)',
-                font: `${mode === m ? 600 : 400} 12px/1 var(--w-mono)`,
-                letterSpacing: '0.12em', textTransform: 'uppercase',
+                background: mode === m ? '#fff' : 'transparent',
+                border: 0,
+                padding: '10px 0',
+                color: mode === m ? '#1b2330' : '#8a94a3',
+                font: `${mode === m ? 700 : 600} 13.5px/1 var(--w-mono)`,
                 cursor: 'pointer',
-                borderBottom: mode === m ? '2px solid var(--w-phosphor)' : '2px solid transparent',
-                marginBottom: -1,
+                borderRadius: 9,
+                boxShadow: mode === m ? '0 1px 2px rgba(16,24,40,.1)' : 'none',
               }}
             >{m === 'login' ? 'sign in' : 'create account'}</button>
           ))}
-        </div>
+          </div>
 
-        <form onSubmit={submit}>
+          <form onSubmit={submit}>
           {mode === 'register' && (
             <>
-              <label style={labelStyle}>name <span style={{ color: 'var(--w-text-3)' }}>(optional)</span></label>
+              <label style={labelStyle}>Full name</label>
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -115,30 +175,50 @@ export function AuthGate({ children }) {
             </>
           )}
 
-          <label style={labelStyle}>email</label>
+          <label style={labelStyle}>Email</label>
           <input
             type="email"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            placeholder="you@example.com"
+            placeholder="you@company.com"
             required
             autoFocus={mode === 'login'}
             style={inputStyle}
           />
 
-          <label style={labelStyle}>password {mode === 'register' && <span style={{ color: 'var(--w-text-3)' }}>· 8+ characters</span>}</label>
-          <input
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            placeholder={mode === 'register' ? 'min 8 characters' : ''}
-            required
-            minLength={mode === 'register' ? 8 : undefined}
-            style={inputStyle}
-          />
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <label style={labelStyle}>Password {mode === 'register' && <span style={{ color: '#9aa4b2' }}>· 8+ characters</span>}</label>
+            {mode === 'login' && <span style={{ fontSize: 12, fontWeight: 600, color: '#2563eb' }}>Forgot?</span>}
+          </div>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showPw ? 'text' : 'password'}
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              placeholder="••••••••"
+              required
+              minLength={mode === 'register' ? 8 : undefined}
+              style={{ ...inputStyle, paddingRight: 56 }}
+            />
+            <button type="button" onClick={() => setShowPw((v) => !v)} style={{
+              position: 'absolute', top: '50%', right: 8, transform: 'translateY(-50%)',
+              border: 0, background: 'transparent', color: '#9aa4b2', fontSize: 12, fontWeight: 700,
+              padding: '6px 9px', borderRadius: 8, cursor: 'pointer',
+            }}>{showPw ? 'HIDE' : 'SHOW'}</button>
+          </div>
+
+          {mode === 'login' && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 9, margin: '18px 0 22px', cursor: 'pointer', userSelect: 'none' }}>
+              <button type="button" onClick={() => setRemember((v) => !v)} style={{
+                width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${remember ? '#2563eb' : '#cdd4e0'}`,
+                background: remember ? '#2563eb' : '#fff', color: '#fff', fontSize: 11, fontWeight: 800, padding: 0,
+              }}>{remember ? '✓' : ''}</button>
+              <span style={{ fontSize: 13, color: '#5a6678' }}>Keep me signed in</span>
+            </label>
+          )}
 
           {error && (
-            <p style={{ color: 'var(--w-red)', font: '11.5px/1.4 var(--w-mono)', margin: '4px 0 12px' }}>
+            <p style={{ color: '#dc2626', font: '13px/1.4 var(--w-mono)', margin: '4px 0 12px' }}>
               {error}
             </p>
           )}
@@ -148,25 +228,26 @@ export function AuthGate({ children }) {
             disabled={busy}
             style={{
               width: '100%',
-              background: 'var(--w-phosphor)',
-              color: 'var(--w-bg-0)',
+              background: 'linear-gradient(135deg,#2563eb,#2f6ef0)',
+              color: '#fff',
               border: 0,
-              padding: '10px 0',
-              font: '600 12px/1 var(--w-mono)',
-              letterSpacing: '0.12em', textTransform: 'uppercase',
-              borderRadius: 3,
+              padding: '14px 0',
+              font: '700 14.5px/1 var(--w-mono)',
+              borderRadius: 12,
               cursor: busy ? 'not-allowed' : 'pointer',
               opacity: busy ? 0.6 : 1,
               marginTop: 6,
+              boxShadow: '0 4px 12px rgba(37,99,235,.3)',
             }}
           >
-            {busy ? '…' : (mode === 'login' ? '[ ↵ ] sign in' : '[ + ] create account')}
+            {busy ? (mode === 'login' ? 'Signing in…' : 'Creating…') : (mode === 'login' ? 'Sign in →' : 'Create account →')}
           </button>
         </form>
 
-        <p style={{ color: 'var(--w-text-3)', font: '10.5px/1.5 var(--w-mono)', marginTop: 14 }}>
+          <p style={{ color: '#9aa4b2', font: '12.5px/1.6 var(--w-mono)', margin: '26px 0 0', textAlign: 'center' }}>
           Your projects are private — every user sees only their own.
-        </p>
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -174,20 +255,20 @@ export function AuthGate({ children }) {
 
 const labelStyle = {
   display: 'block',
-  font: '10.5px/1 var(--w-mono)',
-  color: 'var(--w-text-2)',
-  letterSpacing: '0.1em',
-  textTransform: 'uppercase',
-  margin: '14px 0 6px',
+  font: '700 12px/1 var(--w-mono)',
+  color: '#5a6678',
+  letterSpacing: '.04em',
+  margin: '0 0 8px',
+  paddingTop: 14,
 };
 const inputStyle = {
   width: '100%',
-  background: 'var(--w-bg-0)',
-  border: '1px solid var(--w-line)',
-  borderRadius: 3,
-  padding: '8px 10px',
-  color: 'var(--w-text-0)',
-  font: '13px/1.4 var(--w-mono)',
+  background: '#fafbfd',
+  border: '1px solid #d8dde6',
+  borderRadius: 11,
+  padding: '13px 15px',
+  color: '#1b2330',
+  font: '14.5px/1.4 var(--w-mono)',
   outline: 'none',
 };
 
@@ -205,19 +286,26 @@ export function AuthHeader() {
     window.dispatchEvent(new CustomEvent('wega:auth-expired'));
   };
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, font: '11px/1 var(--w-mono)' }}>
-      <span style={{ color: 'var(--w-text-3)' }}>signed in as</span>
-      <span style={{ color: 'var(--w-text-0)' }}>{user.email}</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, font: '12.5px/1 var(--w-mono)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.25 }}>
+        <span style={{ color: '#2b3442', fontWeight: 600 }}>{user.email}</span>
+        <span style={{ color: '#9aa4b2', fontSize: 11.5 }}>Signed in</span>
+      </div>
+      <span style={{
+        width: 32, height: 32, borderRadius: '50%',
+        background: 'linear-gradient(135deg,#e7ecf5,#d6deeb)',
+        color: '#56627a', fontSize: 12.5, fontWeight: 700,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      }}>{(user.name || user.email || 'Q').split(/[\\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join('').toUpperCase()}</span>
       <button
         type="button"
         onClick={signOut}
         style={{
-          background: 'transparent', border: '1px solid var(--w-line)',
-          color: 'var(--w-text-2)', font: '10.5px/1 var(--w-mono)',
-          padding: '4px 10px', borderRadius: 3, cursor: 'pointer',
-          letterSpacing: '0.1em', textTransform: 'uppercase',
+          background: '#fff', border: '1px solid #e2e6ee',
+          color: '#5a6678', font: '600 12.5px/1 var(--w-mono)',
+          padding: '7px 12px', borderRadius: 9, cursor: 'pointer',
         }}
-      >sign out</button>
+      >Sign out</button>
     </div>
   );
 }

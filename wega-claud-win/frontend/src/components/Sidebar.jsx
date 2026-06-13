@@ -46,49 +46,48 @@ export function Sidebar({
 
   return (
     <aside style={{
-      width: 240, flex: '0 0 240px',
+      width: 266, flex: '0 0 266px',
       borderRight: '1px solid var(--w-line)',
       background: 'var(--w-bg-1)',
       display: 'flex', flexDirection: 'column',
-      padding: '16px 0',
+      padding: '18px 0 0',
       overflow: 'hidden',
     }}>
       <div
         onClick={() => navigate('/')}
         title="back to home"
         style={{
-          padding: '0 16px 16px',
+          padding: '0 18px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          borderBottom: '1px dashed var(--w-line)',
+          borderBottom: 0,
           cursor: 'pointer',
           userSelect: 'none',
         }}
       >
-        <QuantnikLockup mark={24} type={16} />
-        <span style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>workbench</span>
+        <QuantnikLockup mark={38} type={16.5} />
+        <span style={{ color: '#aab2bf', font: '700 10.5px/1 var(--w-mono)', letterSpacing: '0.16em', textTransform: 'uppercase' }}>Workbench</span>
       </div>
 
-      <div style={{ padding: '14px 12px 8px' }}>
+      <div style={{ padding: '0 16px 16px' }}>
         <button onClick={openNew} style={{
           width: '100%',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '8px 10px',
-          background: 'transparent',
-          border: '1px dashed var(--w-line-strong)',
+          padding: '11px 13px',
+          background: '#f5f8ff',
+          border: '1px dashed #c7d3ec',
           color: 'var(--w-phosphor)',
-          font: '500 12px/1 var(--w-mono)',
+          font: '600 13.5px/1 var(--w-mono)',
           cursor: 'pointer',
-          borderRadius: 3,
-          letterSpacing: '0.04em',
+          borderRadius: 11,
         }}>
-          <span>[ + ] new project</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><span style={{ fontSize: 15, fontWeight: 700 }}>+</span> New project</span>
           <KeyCap>⌘N</KeyCap>
         </button>
       </div>
 
-      <div style={{ padding: '12px 16px 6px', color: 'var(--w-text-2)', font: '10.5px/1 var(--w-mono)', letterSpacing: '0.12em', textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between' }}>
-        <span>// projects</span>
-        <span style={{ color: 'var(--w-text-3)' }}>{projects.length}</span>
+      <div style={{ padding: '0 18px 10px', color: '#9aa4b2', font: '700 11px/1 var(--w-mono)', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between' }}>
+        <span>Projects</span>
+        <span style={{ color: '#8a94a3', background: '#f1f3f7', borderRadius: 6, padding: '1px 7px' }}>{projects.length}</span>
       </div>
 
       {/* Admin-only scope toggle. The default is 'mine'; admins can flip
@@ -97,13 +96,13 @@ export function Sidebar({
           purely a UI convenience. */}
       {isAdmin && (
         <div style={{
-          padding: '0 16px 6px',
+          padding: '0 18px 10px',
           display: 'flex', alignItems: 'center', gap: 6,
           font: '10px/1 var(--w-mono)',
           letterSpacing: '0.1em', textTransform: 'uppercase',
-          color: 'var(--w-text-3)',
+          color: '#9aa4b2',
         }}>
-          <span style={{ color: 'var(--w-amber)' }}>· admin scope:</span>
+          <span style={{ color: '#f59e0b' }}>Admin scope:</span>
           <button
             type="button"
             onClick={() => onChangeProjectScope('own')}
@@ -119,7 +118,7 @@ export function Sidebar({
         </div>
       )}
 
-      <div style={{ padding: '0 8px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', flex: 1 }}>
+      <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', flex: 1 }}>
         {projects.length === 0 && (
           <div style={{ padding: '20px 12px', color: 'var(--w-text-3)', font: '11.5px/1.4 var(--w-mono)', textAlign: 'center' }}>
             no projects yet.<br />click [+] above.
@@ -132,16 +131,19 @@ export function Sidebar({
               key={p.id}
               onClick={() => onSelect(p.id)}
               style={{
-                padding: '8px 10px',
-                background: isActive ? 'var(--w-phosphor-veil)' : 'transparent',
-                borderLeft: `2px solid ${isActive ? 'var(--w-phosphor)' : 'transparent'}`,
+                padding: '13px 14px',
+                background: isActive ? 'linear-gradient(180deg,#f5f9ff,#eff5ff)' : '#fff',
+                border: `1px solid ${isActive ? '#d3e0ff' : 'transparent'}`,
+                borderLeft: `3px solid ${isActive ? 'var(--w-phosphor)' : 'transparent'}`,
+                borderRadius: 13,
+                boxShadow: isActive ? '0 1px 2px rgba(37,99,235,.06)' : 'none',
                 cursor: 'pointer',
                 position: 'relative',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                <span style={{ color: isActive ? 'var(--w-phosphor)' : 'var(--w-text-0)', font: '600 12.5px/1.2 var(--w-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                  {isActive && <span style={{ marginRight: 4 }}>▸</span>}
+                <span style={{ color: isActive ? '#1b2330' : 'var(--w-text-0)', font: '700 14.5px/1.2 var(--w-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                  {isActive && <span style={{ marginRight: 4, color: 'var(--w-phosphor)' }}>▸</span>}
                   {p.name}
                 </span>
                 <span
@@ -150,7 +152,7 @@ export function Sidebar({
                   style={{ color: 'var(--w-text-3)', cursor: 'pointer', padding: '0 4px', fontSize: 14, lineHeight: 1 }}
                 >×</span>
               </div>
-              <div style={{ font: '10.5px/1.3 var(--w-mono)', color: 'var(--w-text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.path}>
+              <div style={{ font: '11.5px/1.3 var(--w-mono)', color: '#94a0b4', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 3 }} title={p.path}>
                 {p.path}
               </div>
               {isActive && (
@@ -164,12 +166,12 @@ export function Sidebar({
         })}
       </div>
 
-      <div style={{ padding: '12px 16px', borderTop: '1px dashed var(--w-line)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ padding: '14px 18px 16px', borderTop: '1px solid #eef1f6', display: 'flex', flexDirection: 'column', gap: 11 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--w-text-2)', font: '10.5px/1.4 var(--w-mono)' }}>
           <span>build</span>
           <span>v0.4.2-α</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'none' }}>
           <span style={{ color: 'var(--w-text-2)', font: '10.5px/1 var(--w-mono)' }}>theme</span>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
             {THEMES.map((t) => {
@@ -209,7 +211,7 @@ export function Sidebar({
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--w-text-2)', font: '10.5px/1.4 var(--w-mono)' }}>
           <span><span style={{ color: 'var(--w-phosphor)' }}>●</span> agent online</span>
-          <span>{user?.name || user?.email || 'wega'}</span>
+          <span>{user?.name || user?.email || 'Quantnik'}</span>
         </div>
       </div>
 

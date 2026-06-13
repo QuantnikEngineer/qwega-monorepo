@@ -138,11 +138,16 @@ function ToolResultBlock({ content, isError, idx }) {
 
 function UserLine({ text, when }) {
   return (
-    <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px dashed var(--w-line)' }}>
-      <span style={{ color: 'var(--w-phosphor)', font: '600 13px/1.5 var(--w-mono)' }}>❯</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', marginBottom: 4, letterSpacing: '0.12em', textTransform: 'uppercase' }}>USER{when ? ` · ${when}` : ''}</div>
-        <div style={{ color: 'var(--w-text-0)', font: '13px/1.55 var(--w-mono)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{text}</div>
+    <div style={{ display: 'flex', gap: 13, flexDirection: 'row-reverse', padding: '6px 0' }}>
+      <div style={{ width: 32, height: 32, flex: '0 0 auto', borderRadius: '50%', background: 'linear-gradient(135deg,#e7ecf5,#d2dbeb)', color: '#56627a', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>AK</div>
+      <div style={{ minWidth: 0, maxWidth: '78%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, marginBottom: 6 }}>
+          {when && <span style={{ fontSize: 11.5, color: '#aab2bf' }}>{when}</span>}
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#2b3442' }}>You</span>
+        </div>
+        <div style={{ background: 'linear-gradient(135deg,#2563eb,#2f6ef0)', color: '#fff', borderRadius: '15px 5px 15px 15px', padding: '12px 16px', fontSize: 14.5, lineHeight: 1.6, boxShadow: '0 2px 6px rgba(37,99,235,.22)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+          {text}
+        </div>
       </div>
     </div>
   );
@@ -280,13 +285,16 @@ function ClaudeThinking({ text, streaming }) {
 
 function ClaudeText({ text, model, streaming }) {
   return (
-    <div style={{ display: 'flex', gap: 12, padding: '12px 0' }}>
-      <span style={{ color: 'var(--w-cyan)', font: '600 12px/1.5 var(--w-mono)', width: 14, flex: '0 0 14px' }}>◊</span>
+    <div style={{ display: 'flex', gap: 13, padding: '6px 0' }}>
+      <div style={{ width: 32, height: 32, flex: '0 0 auto', borderRadius: 9, background: 'linear-gradient(135deg,#2563eb,#4f86f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(37,99,235,.28)' }}>
+        <span style={{ width: 9, height: 9, borderRadius: 2, background: '#fff', transform: 'rotate(45deg)', display: 'block' }} />
+      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', marginBottom: 6, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-          CLAUDE{model ? ` · ${formatModel(model)}` : ''}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 9, marginBottom: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#2b3442' }}>Claude</span>
+          {model && <span style={{ fontSize: 11.5, color: '#aab2bf' }}>{formatModel(model)}</span>}
         </div>
-        <div style={{ color: 'var(--w-text-0)', font: '13px/1.6 var(--w-mono)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+        <div style={{ background: '#fff', border: '1px solid #e6e9ef', borderRadius: '5px 15px 15px 15px', padding: '13px 16px', color: '#283040', fontSize: 14.5, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word', boxShadow: '0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.04)' }}>
           {text}
           {streaming && <span className="w-caret" style={{ marginLeft: 2 }} />}
         </div>
@@ -301,9 +309,9 @@ function ResultLine({ subtype, durationMs, totalCostUsd, usage }) {
       display: 'flex', alignItems: 'center', gap: 10,
       padding: '8px 12px',
       margin: '8px 0',
-      background: 'var(--w-bg-1)',
+      background: '#fff',
       border: '1px solid var(--w-line)',
-      borderRadius: 3,
+      borderRadius: 12,
       color: 'var(--w-text-2)',
       font: '11px/1 var(--w-mono)',
     }}>
@@ -1403,7 +1411,7 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
   };
 
   return (
-    <div style={{ display: 'flex', flex: 1, minHeight: 0, background: 'var(--w-bg-0)', position: 'relative' }}>
+    <div style={{ display: 'flex', flex: 1, minHeight: 0, background: '#f5f7fa', position: 'relative' }}>
       {/* Floating SDLC orchestrator status — hoisted to the chat row so the
           user can drag it anywhere in the chat view, including over the
           right rail. It's no longer confined to the center stream column. */}
@@ -1419,21 +1427,21 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {/* Top stat bar */}
         <div style={{
-          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-          padding: '14px 22px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 24px',
           borderBottom: '1px solid var(--w-line)',
-          background: 'var(--w-bg-1)',
+          background: '#fff',
           gap: 20,
           flex: '0 0 auto',
         }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ color: 'var(--w-text-3)', font: '10.5px/1 var(--w-mono)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 6 }}>
-              session · {(sessionMeta.sessionId || project.last_session_id || '—').slice(0, 7)}
+            <div style={{ color: 'var(--w-text-3)', font: '600 11px/1 var(--w-display)', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 6 }}>
+              Session {(sessionMeta.sessionId || project.last_session_id || '-').slice(0, 7)}
             </div>
-            <div style={{ font: '15px/1.3 var(--w-mono)', color: 'var(--w-text-0)' }}>
-              <span style={{ color: 'var(--w-phosphor)' }}>{project.name}</span>
-              <span style={{ color: 'var(--w-text-3)' }}> ━ </span>
-              <span style={{ color: 'var(--w-text-1)' }} title={project.path}>
+            <div style={{ font: '700 20px/1.25 var(--w-display)', color: 'var(--w-text-0)' }}>
+              <span>{project.name}</span>
+              <span style={{ color: 'var(--w-text-3)', fontWeight: 500 }}> / </span>
+              <span style={{ color: 'var(--w-text-1)', fontWeight: 600 }} title={project.path}>
                 {project.path.split(/[/\\]/).slice(-2).join('/')}
               </span>
             </div>
@@ -1461,10 +1469,20 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
         <QuantnikBrainBlock project={project} />
 
         {/* Stream */}
-        <div ref={logRef} style={{ flex: 1, overflowY: 'auto', padding: '0 22px' }}>
+        <div ref={logRef} style={{ flex: 1, overflowY: 'auto', padding: '0 24px' }}>
           {messages.length === 0 && (
-            <div style={{ padding: '40px 0', color: 'var(--w-text-3)', font: '12px/1.6 var(--w-mono)', textAlign: 'center' }}>
-              no messages yet. ask claude anything to begin.<span className="w-caret" />
+            <div style={{
+              maxWidth: 760,
+              margin: '42px auto',
+              padding: '34px 28px',
+              color: 'var(--w-text-2)',
+              font: '500 14px/1.6 var(--w-display)',
+              textAlign: 'center',
+              border: '1px dashed var(--w-line-strong)',
+              borderRadius: 18,
+              background: '#fff',
+            }}>
+              Start a conversation with Quantnik, or choose a skill below to begin.
             </div>
           )}
           {messages.map(renderMessage)}
@@ -1555,18 +1573,18 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
         </div>
 
         {/* Input */}
-        <div style={{ flex: '0 0 auto', padding: '14px 22px', borderTop: '1px solid var(--w-line)', background: 'var(--w-bg-1)', position: 'relative' }}>
+        <div style={{ flex: '0 0 auto', padding: '16px 24px 20px', borderTop: '1px solid var(--w-line)', background: '#f5f7fa', position: 'relative' }}>
           {popupOpen && (
             <div style={{
               position: 'absolute',
-              bottom: 'calc(100% + 4px)',
-              left: 22, right: 22,
+              bottom: 'calc(100% + 8px)',
+              left: 24, right: 24,
               maxHeight: 260,
               overflowY: 'auto',
-              background: 'var(--w-bg-2)',
+              background: '#fff',
               border: '1px solid var(--w-line-strong)',
-              borderRadius: 3,
-              boxShadow: '0 6px 20px rgba(0,0,0,0.5)',
+              borderRadius: 14,
+              boxShadow: '0 20px 50px rgba(15,23,42,0.14)',
               zIndex: 10,
             }}>
               {filteredSkills.map((s, i) => (
@@ -1592,34 +1610,36 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
           )}
 
           <div style={{
-            border: '1px solid var(--w-line-strong)',
-            background: 'var(--w-bg-2)',
-            borderRadius: 3,
-            padding: '12px 14px',
-            boxShadow: '0 0 16px var(--w-phosphor-veil)',
+            border: '1px solid var(--w-line)',
+            background: '#fff',
+            borderRadius: 20,
+            padding: '14px',
+            boxShadow: '0 20px 55px rgba(31,41,55,0.10)',
+            maxWidth: 920,
+            margin: '0 auto',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              <span>compose · markdown · /skill</span>
-              <span style={{ flex: 1, borderBottom: '1px dashed var(--w-line)' }} />
-              <span>shift+enter for newline</span>
-              <KeyCap>↵</KeyCap>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, color: 'var(--w-text-3)', font: '600 11px/1 var(--w-display)' }}>
+              <span>Compose</span>
+              <span style={{ flex: 1, height: 1, background: 'var(--w-line)' }} />
+              <span>Shift + Enter</span>
+              <KeyCap>Enter</KeyCap>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <span style={{ color: 'var(--w-phosphor)', font: '600 14px/1 var(--w-mono)', paddingTop: 6 }}>$</span>
               <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKey}
-                placeholder='ask claude — type / to pick a skill'
+                placeholder="Ask Quantnik anything, or type / to pick a skill"
                 rows={2}
                 style={{
                   flex: 1,
                   background: 'transparent',
                   border: 'none', outline: 'none',
                   color: 'var(--w-text-0)',
-                  font: '13px/1.5 var(--w-mono)',
+                  font: '500 14px/1.55 var(--w-display)',
                   resize: 'none',
+                  minHeight: 48,
                 }}
               />
             </div>
@@ -1632,15 +1652,15 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
               style={{ display: 'none' }}
               onChange={(e) => { handleAttach(e.target.files?.[0]); e.target.value = ''; }}
             />
-            <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <Btn
                 tone="line"
                 onClick={() => attachFileRef.current?.click()}
                 disabled={streaming || uploadingFor !== null}
-                style={{ padding: '4px 10px' }}
+                style={{ padding: '7px 12px', borderRadius: 999 }}
                 title="attach a file (image, pdf, doc, etc.) — appends @uploads/... to your message"
               >
-                {uploadingFor === 'attach' ? 'uploading…' : '📎 attach file'}
+                {uploadingFor === 'attach' ? 'Uploading...' : 'Attach file'}
               </Btn>
               {allSkills.slice(0, 4).map((s) => (
                 <Pill key={s.name} tone={s.source === 'project' ? 'phosphor' : 'default'} onClick={() => pickSkill(s)}>
@@ -1655,24 +1675,24 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
                     ref.current?.click();
                   }}
                   disabled={streaming || uploadingFor !== null}
-                  style={{ padding: '4px 10px' }}
+                  style={{ padding: '7px 12px', borderRadius: 999 }}
                 >
-                  {uploadingFor === activeUploadSkill ? 'uploading…' : `→ ${activeUploadSkill}`}
+                  {uploadingFor === activeUploadSkill ? 'Uploading...' : activeUploadSkill}
                 </Btn>
               )}
               <div style={{ flex: 1 }} />
-              <Btn tone="ghost" style={{ padding: '4px 10px' }} onClick={resetSession} disabled={streaming}>[ ↺ ] reset</Btn>
-              <Btn tone="primary" onClick={() => send()} disabled={streaming || !input.trim()}>[ ↵ ] send</Btn>
+              <Btn tone="ghost" style={{ padding: '7px 12px', borderRadius: 999 }} onClick={resetSession} disabled={streaming}>Reset</Btn>
+              <Btn tone="primary" style={{ padding: '8px 18px', borderRadius: 999 }} onClick={() => send()} disabled={streaming || !input.trim()}>Send</Btn>
             </div>
           </div>
         </div>
       </div>
 
       {/* Right rail */}
-      <div style={{ width: 300, flex: '0 0 300px', borderLeft: '1px solid var(--w-line)', background: 'var(--w-bg-1)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 16px 10px' }}>
-          <div style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>// session</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, font: '11.5px/1.5 var(--w-mono)' }}>
+      <div style={{ width: 312, flex: '0 0 312px', borderLeft: '1px solid var(--w-line)', background: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ padding: '18px 18px 12px' }}>
+          <div style={{ color: 'var(--w-text-3)', font: '700 11px/1 var(--w-display)', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 12 }}>Session</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, font: '500 12px/1.5 var(--w-display)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--w-text-2)' }}>model</span>
               <span style={{ color: 'var(--w-text-0)' }}>{formatModel(sessionMeta.model || project.model) || '—'}</span>
@@ -1692,16 +1712,16 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
           </div>
         </div>
 
-        <div style={{ padding: '16px 16px 6px', borderTop: '1px dashed var(--w-line)', minHeight: 0, flex: '1 1 0', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '16px 18px 8px', borderTop: '1px solid var(--w-line)', minHeight: 0, flex: '1 1 0', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flex: '0 0 auto' }}>
-            <span style={{ color: 'var(--w-cyan)', font: '10px/1 var(--w-mono)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-              // confluence <span style={{ color: 'var(--w-text-3)' }}>· {project.name}</span>
+            <span style={{ color: 'var(--w-text-1)', font: '700 11px/1 var(--w-display)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              Confluence <span style={{ color: 'var(--w-text-3)' }}>· {project.name}</span>
             </span>
-            <span style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)' }}>{atlassianRefs.confluence.length}</span>
+            <span style={{ color: 'var(--w-text-3)', font: '700 11px/1 var(--w-display)' }}>{atlassianRefs.confluence.length}</span>
           </div>
           <div style={{ overflowY: 'auto', maxHeight: 200, flex: '1 1 auto' }}>
             {atlassianRefs.confluence.length === 0 ? (
-              <div style={{ color: 'var(--w-text-3)', font: '10.5px/1.4 var(--w-mono)', padding: '6px 0' }}>no pages yet.</div>
+              <div style={{ color: 'var(--w-text-3)', font: '500 12px/1.4 var(--w-display)', padding: '8px 0' }}>No pages yet.</div>
             ) : (
               atlassianRefs.confluence.map((p) => (
                 <a
@@ -1712,15 +1732,18 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
                   title={p.url}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '6px 4px',
-                    borderBottom: '1px dashed var(--w-line)',
+                    padding: '8px 10px',
+                    border: '1px solid var(--w-line)',
+                    borderRadius: 10,
+                    marginBottom: 6,
                     textDecoration: 'none',
                     color: 'var(--w-text-1)',
+                    background: '#f8fafc',
                   }}
                 >
                   <span style={{ color: 'var(--w-cyan)', font: '11px/1 var(--w-mono)', flex: '0 0 auto' }}>▤</span>
                   <span style={{
-                    font: '11px/1.3 var(--w-mono)',
+                    font: '600 12px/1.3 var(--w-display)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
                   }}>
                     {p.title}
@@ -1732,16 +1755,16 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
           </div>
         </div>
 
-        <div style={{ padding: '12px 16px 6px', borderTop: '1px dashed var(--w-line)', minHeight: 0, flex: '1 1 0', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '16px 18px 8px', borderTop: '1px solid var(--w-line)', minHeight: 0, flex: '1 1 0', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flex: '0 0 auto' }}>
-            <span style={{ color: 'var(--w-amber)', font: '10px/1 var(--w-mono)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-              // jira · epics <span style={{ color: 'var(--w-text-3)' }}>· {project.name}</span>
+            <span style={{ color: 'var(--w-text-1)', font: '700 11px/1 var(--w-display)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              Jira Epics <span style={{ color: 'var(--w-text-3)' }}>· {project.name}</span>
             </span>
-            <span style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)' }}>{atlassianRefs.jira.length}</span>
+            <span style={{ color: 'var(--w-text-3)', font: '700 11px/1 var(--w-display)' }}>{atlassianRefs.jira.length}</span>
           </div>
           <div style={{ overflowY: 'auto', maxHeight: 200, flex: '1 1 auto' }}>
             {atlassianRefs.jira.length === 0 ? (
-              <div style={{ color: 'var(--w-text-3)', font: '10.5px/1.4 var(--w-mono)', padding: '6px 0' }}>no epics yet.</div>
+              <div style={{ color: 'var(--w-text-3)', font: '500 12px/1.4 var(--w-display)', padding: '8px 0' }}>No epics yet.</div>
             ) : (
               atlassianRefs.jira.map((j) => (
                 <a
@@ -1752,10 +1775,13 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
                   title={j.url}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '6px 4px',
-                    borderBottom: '1px dashed var(--w-line)',
+                    padding: '8px 10px',
+                    border: '1px solid var(--w-line)',
+                    borderRadius: 10,
+                    marginBottom: 6,
                     textDecoration: 'none',
                     color: 'var(--w-text-1)',
+                    background: '#f8fafc',
                   }}
                 >
                   <span style={{
@@ -1765,7 +1791,7 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
                     minWidth: 56,
                   }}>{j.key}</span>
                   <span style={{
-                    font: '11px/1.3 var(--w-mono)',
+                    font: '600 12px/1.3 var(--w-display)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
                   }}>
                     {j.summary || j.key}
@@ -1777,8 +1803,8 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
           </div>
         </div>
 
-        <div style={{ padding: '12px 16px', borderTop: '1px dashed var(--w-line)', flex: '0 0 auto' }}>
-          <div style={{ color: 'var(--w-text-3)', font: '10px/1 var(--w-mono)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 6 }}>// signal · turn latency</div>
+        <div style={{ padding: '16px 18px', borderTop: '1px solid var(--w-line)', flex: '0 0 auto' }}>
+          <div style={{ color: 'var(--w-text-3)', font: '700 11px/1 var(--w-display)', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 8 }}>Turn latency</div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 24 }}>
             {sparkSamples.length === 0 && (
               <span style={{ color: 'var(--w-text-3)', font: '10.5px/1 var(--w-mono)' }}>—</span>
@@ -1790,7 +1816,7 @@ export function Chat({ project, onProjectUpdated, pendingSend, onPendingSent, on
                 <div key={i} style={{
                   width: 6, height: h,
                   background: 'var(--w-phosphor)',
-                  boxShadow: '0 0 6px var(--w-phosphor-glow)',
+                  borderRadius: 999,
                   opacity: 0.4 + (i / sparkSamples.length) * 0.6,
                 }} />
               );

@@ -113,7 +113,9 @@ export function McpPanel({ project, sessionInfo }) {
 
   const localEntries = Object.entries(data.local || {});
   const envEntries = Object.entries(data.env || {});
-  const runtime = sessionInfo?.mcpServers || data.runtime || [];
+  const sessionRuntime = Array.isArray(sessionInfo?.mcpServers) ? sessionInfo.mcpServers : [];
+  const backendRuntime = Array.isArray(data.runtime) ? data.runtime : [];
+  const runtime = sessionRuntime.length > 0 ? sessionRuntime : backendRuntime;
   const activeCount = runtime.filter((s) => s.status === 'connected').length;
 
   return (
