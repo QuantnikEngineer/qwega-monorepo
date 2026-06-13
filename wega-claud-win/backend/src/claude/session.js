@@ -213,6 +213,12 @@ export async function runTurn({ project, userMessage, onEvent, requestPermission
     onEvent({ type: 'result', subtype: 'provider_not_wired', durationMs: 0, totalCostUsd: 0, usage: {} });
     return { sessionId: resumeId };
   }
+  if (providerResult.warning) {
+    onEvent({
+      type: 'assistant_text',
+      text: `⚠ ${providerResult.warning}`,
+    });
+  }
   let llmModel = providerResult.model;
 
   // Track whether Bedrock fallback has been engaged this turn — protects

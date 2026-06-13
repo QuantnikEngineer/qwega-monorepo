@@ -58,19 +58,24 @@ projects.post('/', (req, res) => {
     // claimOrphanedProjects). Skills that scaffold projects from the agent
     // process therefore don't have to invent a fake owner.
     const ownerId = req.user?.id ?? null;
-    // Default LLM for newly-created projects: Bedrock + Sonnet 4.6. The
-    // operator can change this from the Settings panel any time. Sonnet 4.6
-    // via Bedrock is quantnik's house default per the org's LLM standard;
-    // Anthropic direct is still selectable but no longer the new-project
-    // landing path.
-    const defaultModel = process.env.QUANTNIK_CHAT_BEDROCK_MODEL || 'us.anthropic.claude-sonnet-4-6-20251001-v1:0';
+    // Default LLM for newly-created projects should match credentials that
+    // are actually present on this backend. Prefer Bedrock when AWS creds are
+    // wired; otherwise use Anthropic direct when that key/token is available.
+    const hasBedrock = !!(
+      process.env.AWS_BEARER_TOKEN_BEDROCK ||
+      (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY)
+    );
+    const defaultProvider = hasBedrock ? 'bedrock' : 'anthropic';
+    const defaultModel = hasBedrock
+      ? (process.env.QUANTNIK_CHAT_BEDROCK_MODEL || 'us.anthropic.claude-sonnet-4-6-20251001-v1:0')
+      : 'claude-sonnet-4-6';
     const result = db
       .prepare(`INSERT INTO projects
         (name, path, permission_mode, jira_project_key, confluence_space_key, atlassian_labels, owner_user_id,
          llm_provider, llm_model, model)
-        VALUES (?, ?, 'acceptEdits', ?, ?, ?, ?, 'bedrock', ?, ?)`)
+        VALUES (?, ?, 'acceptEdits', ?, ?, ?, ?, ?, ?, ?)`)
       .run(name, projectPath, defaultJira, defaultConfluence, JSON.stringify([projectLabel]), ownerId,
-           defaultModel, defaultModel);
+           defaultProvider, defaultModel, defaultModel);
     const created = db.prepare('SELECT * FROM projects WHERE id = ?').get(result.lastInsertRowid);
     writeQuantnikProjectFile(created);
     res.json(created);

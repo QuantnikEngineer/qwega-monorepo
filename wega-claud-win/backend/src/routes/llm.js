@@ -47,6 +47,19 @@ export const PROVIDERS = {
   },
 };
 
+function hasAnthropicCreds(env = process.env) {
+  return !!(env.ANTHROPIC_API_KEY || env.CLAUDE_CODE_OAUTH_TOKEN);
+}
+
+function hasBedrockCreds(env = process.env, cfg = {}) {
+  return !!(
+    cfg.awsBearerToken ||
+    cfg.awsAccessKeyId ||
+    env.AWS_BEARER_TOKEN_BEDROCK ||
+    (env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY)
+  );
+}
+
 // Strip secrets for the GET path. Stored values stay in DB; the response
 // only signals whether each secret is set, not the value.
 function maskSecrets(cfg) {
@@ -137,6 +150,8 @@ export function applyProviderEnv(project, targetEnv) {
   // Bedrock is the default for new projects).
   const envAwsBearer = targetEnv.AWS_BEARER_TOKEN_BEDROCK || null;
   const envAwsRegion = targetEnv.AWS_REGION || null;
+  const envAnthropicApiKey = targetEnv.ANTHROPIC_API_KEY || null;
+  const envClaudeOauth = targetEnv.CLAUDE_CODE_OAUTH_TOKEN || null;
   // Always strip prior provider envs so a stale earlier-call state can't leak.
   delete targetEnv.CLAUDE_CODE_USE_BEDROCK;
   delete targetEnv.CLAUDE_CODE_USE_VERTEX;
@@ -157,6 +172,22 @@ export function applyProviderEnv(project, targetEnv) {
       }
       return { wired: true, model: project.llm_model || PROVIDERS.anthropic.defaultModel };
     case 'bedrock':
+      if (!hasBedrockCreds(targetEnv, cfg)) {
+        if (envAnthropicApiKey || envClaudeOauth) {
+          targetEnv.ANTHROPIC_API_KEY = envAnthropicApiKey || targetEnv.ANTHROPIC_API_KEY;
+          targetEnv.CLAUDE_CODE_OAUTH_TOKEN = envClaudeOauth || targetEnv.CLAUDE_CODE_OAUTH_TOKEN;
+          return {
+            wired: true,
+            model: 'claude-sonnet-4-6',
+            fallbackProvider: 'anthropic',
+            warning: 'Bedrock selected but no AWS credentials are configured; using Anthropic credentials instead.',
+          };
+        }
+        return {
+          wired: false,
+          error: 'Bedrock is selected but no AWS credentials are configured. Set AWS_BEARER_TOKEN_BEDROCK or AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY in backend/.env, or switch the project LLM provider to Anthropic.',
+        };
+      }
       // Strip direct-Anthropic creds so the SDK can't fall back to them.
       delete targetEnv.ANTHROPIC_API_KEY;
       delete targetEnv.CLAUDE_CODE_OAUTH_TOKEN;
