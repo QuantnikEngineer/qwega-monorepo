@@ -20,6 +20,22 @@ const LS_HISTORY_PREFIX   = 'quantnik.brain.history.';
 // retention budget.
 const MAX_LOCAL_TURNS = 40;
 
+function migrateBranding(text) {
+  return String(text || '')
+    .replaceAll('Quantnik Brain', 'Ms. Q')
+    .replaceAll('Quantnik BRAIN', 'Ms. Q')
+    .replaceAll('Context Fabric', 'Context Engine');
+}
+
+function migrateHistoryBranding(items) {
+  if (!Array.isArray(items)) return [];
+  return items.map((msg) => (
+    msg && typeof msg === 'object'
+      ? { ...msg, content: migrateBranding(msg.content) }
+      : msg
+  ));
+}
+
 // Lightweight inline-markdown for chatbot answers. No external lib —
 // matches the style we used in the prior single-shot version. Escapes
 // HTML first; then bold / inline-code / citations / line breaks.
@@ -170,7 +186,7 @@ export function MsQBlock({ project }) {
       const raw = localStorage.getItem(historyKey);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
+      return migrateHistoryBranding(parsed);
     } catch { return []; }
   });
 
@@ -189,7 +205,7 @@ export function MsQBlock({ project }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(historyKey);
-      setHistory(raw ? (JSON.parse(raw) || []) : []);
+      setHistory(raw ? migrateHistoryBranding(JSON.parse(raw) || []) : []);
     } catch { setHistory([]); }
     setInput('');
     setError('');
