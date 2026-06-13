@@ -24,7 +24,10 @@ export function AuthGate({ children }) {
       if (!authToken.get()) { setChecked(true); return; }
       const me = await api.me();
       if (cancelled) return;
-      if (me?.user) setUser(me.user);
+      if (me?.user) {
+        setUser(me.user);
+        window.dispatchEvent(new CustomEvent('quantnik:auth-changed'));
+      }
       else authToken.clear();
       setChecked(true);
     })();
@@ -43,7 +46,10 @@ export function AuthGate({ children }) {
         : { email: form.email.trim(), password: form.password, name: form.name.trim() };
       const result = await fn(payload);
       if (result?.token) authToken.set(result.token);
-      if (result?.user) setUser(result.user);
+      if (result?.user) {
+        setUser(result.user);
+        window.dispatchEvent(new CustomEvent('quantnik:auth-changed'));
+      }
       if (mode === 'register' && result?.claimedProjects > 0) {
         // First-ever user inherited the legacy projects. Surface a friendly
         // one-shot toast via the chat (rendered in-flow below).
@@ -283,6 +289,7 @@ export function AuthHeader() {
   const signOut = async () => {
     await api.logout();
     authToken.clear();
+    window.dispatchEvent(new CustomEvent('quantnik:auth-logout'));
     window.dispatchEvent(new CustomEvent('quantnik:auth-expired'));
   };
   return (

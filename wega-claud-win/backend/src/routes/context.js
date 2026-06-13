@@ -1,4 +1,4 @@
-// Context Fabric routes — backs the Context Fabric tab. CRUD on sources +
+// Context Engine routes — backs the Context Engine tab. CRUD on sources +
 // ingest trigger + retrieval query.
 //
 // Auth posture matches the rest of /api/* — requireAuthOrLocal is applied at
@@ -13,7 +13,7 @@ import { db } from '../db.js';
 import { ingestSource } from '../services/ingest.js';
 import { retrieve } from '../services/retrieval.js';
 import { isConfigured, authMode, getEmbeddingModel, getEmbeddingDim } from '../services/embedding.js';
-import { ask as quantnikBrainAsk } from '../services/quantnik-brain.js';
+import { ask as msQAsk } from '../services/ms-q.js';
 import { projectForRead, projectForWrite } from './projectAccess.js';
 
 export const context = Router();
@@ -259,7 +259,7 @@ context.post('/sources/bulk', async (req, res) => {
 //   - one `repo` context source per registered project_repos row
 //   - one `agent_output` context source
 // Both auto-ingest in the background. Existing sources are left untouched.
-// Useful as the first call when a Context Fabric panel mounts for a project
+// Useful as the first call when a Context Engine panel mounts for a project
 // the user hasn't touched yet — they should never have to manually wire up
 // repos or agent output to get the RAG agent working.
 context.post('/auto-init', (req, res) => {
@@ -318,7 +318,7 @@ context.post('/auto-init', (req, res) => {
   });
 });
 
-// POST /api/quantnik-brain/ask  (mounted under /api/context for tidiness — keeps
+// POST /api/ms-q/ask  (mounted under /api/context for tidiness — keeps
 // auth posture + db imports consistent with the other RAG endpoints).
 //
 // body:
@@ -348,7 +348,7 @@ context.post('/ask', async (req, res) => {
   }
 
   try {
-    const out = await quantnikBrainAsk({
+    const out = await msQAsk({
       question:   String(question),
       scope,
       topK:       Math.min(20, Math.max(1, Number(topK) || 6)),

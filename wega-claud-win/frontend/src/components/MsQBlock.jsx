@@ -1,10 +1,10 @@
-// Quantnik Brain — chatbot. Lives at the top of the Chat panel as a real
+// Ms. Q — chatbot. Lives at the top of the Chat panel as a real
 // conversational surface (not a Q&A widget). Default-expanded, multi-turn,
 // addresses the user by name, persists history per project to localStorage.
 //
 // Doesn't touch the main chat thread — independent input + answer area,
 // no WebSocket use. Project-scoped retrieval: the backend pulls top-K
-// chunks from the project's Context Fabric (plus inherited org sources)
+// chunks from the project's Context Engine (plus inherited org sources)
 // and bundles Project Facts (LOC, files, repos, sources) into every turn,
 // so metadata questions get conversational answers without citations.
 
@@ -43,9 +43,9 @@ function renderAnswer(text) {
 function greeting(firstName) {
   const name = firstName || 'friend';
   const variants = [
-    `Hey ${name} — I'm Quantnik Brain, your project's autobiographer.\n\nI've read everything you've ingested into the Context Fabric: the code, the BRDs, the orchestrator's chat history, anything you've thrown at me. Ask me anything about this project and I'll dig.`,
-    `Hi ${name} — Quantnik Brain reporting in.\n\nI know what's been ingested, what the repos look like, how many lines of code, what the orchestrator said three Tuesdays ago. Want a guided tour, or do you have something specific in mind?`,
-    `${name}! What do you want to find out today?\n\nI've got the project's code metrics, every doc you've ingested, the BRD, the chat history. If it's in the Context Fabric, I can pull it. If it's not, I'll point you at how to add it.`,
+    `Hey ${name} — I'm Ms. Q, your project's autobiographer.\n\nI've read everything you've ingested into the Context Engine: the code, the BRDs, the orchestrator's chat history, anything you've thrown at me. Ask me anything about this project and I'll dig.`,
+    `Hi ${name} — Ms. Q reporting in.\n\nI know what's been ingested, what the repos look like, how many lines of code, what the orchestrator said three Tuesdays ago. Want a guided tour, or do you have something specific in mind?`,
+    `${name}! What do you want to find out today?\n\nI've got the project's code metrics, every doc you've ingested, the BRD, the chat history. If it's in the Context Engine, I can pull it. If it's not, I'll point you at how to add it.`,
     `Hey ${name} ☕ Coffee or work first?\n\nReady when you are. I can answer questions about this project's code, docs, BRDs, prior agent runs — anything you've ingested. Or just ask "what do you know about this project" and I'll lay it out.`,
   ];
   return variants[Math.floor(Math.random() * variants.length)];
@@ -148,12 +148,12 @@ function Bubble({ msg, firstName }) {
   );
 }
 
-export function QuantnikBrainBlock({ project }) {
+export function MsQBlock({ project }) {
   const projectId = project?.id || 'noproj';
   const historyKey = LS_HISTORY_PREFIX + projectId;
   const collapsedKey = LS_COLLAPSED_PREFIX + '.' + projectId;
 
-  // Collapsed state — default EXPANDED on first visit to make Quantnik Brain
+  // Collapsed state — default EXPANDED on first visit to make Ms. Q
   // visible by default. Once the user collapses it, the choice persists
   // per-project.
   const [collapsed, setCollapsed] = useState(() => {
@@ -243,7 +243,7 @@ export function QuantnikBrainBlock({ project }) {
     setHistory((h) => [...h, newUserMsg]);
     setBusy(true);
     try {
-      const r = await api.askQuantnikBrain({
+      const r = await api.askMsQ({
         scope: 'project',
         projectId,
         question: q,
@@ -284,7 +284,7 @@ export function QuantnikBrainBlock({ project }) {
   };
 
   const clearHistory = () => {
-    if (!confirm('Clear this conversation with Quantnik Brain? The retrieval index is unaffected.')) return;
+    if (!confirm('Clear this conversation with Ms. Q? The retrieval index is unaffected.')) return;
     setHistory([]);
     greetingShownRef.current = false;
     try { localStorage.removeItem(historyKey); } catch {}
@@ -308,10 +308,10 @@ export function QuantnikBrainBlock({ project }) {
           gap: 12,
           userSelect: 'none',
         }}
-        title="open Quantnik Brain"
+        title="open Ms. Q"
       >
         <span style={{ width: 28, height: 28, borderRadius: 10, background: 'linear-gradient(135deg, #2563eb, #14b8a6)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', font: '800 13px/1 var(--w-display)' }}>Q</span>
-        <span style={{ color: 'var(--w-text-0)', font: '800 14px/1 var(--w-display)' }}>Quantnik Brain</span>
+        <span style={{ color: 'var(--w-text-0)', font: '800 14px/1 var(--w-display)' }}>Ms. Q</span>
         <span style={{ color: 'var(--w-text-2)', font: '500 12.5px/1.4 var(--w-display)' }}>
           {firstName ? `${firstName}, click to chat — ` : 'click to chat — '}
           ask anything about this project
@@ -359,11 +359,11 @@ export function QuantnikBrainBlock({ project }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ color: 'var(--w-text-0)', font: '800 15px/1 var(--w-display)' }}>
-              Quantnik Brain
+              Ms. Q
             </span>
             <Pill tone="phosphor" dot>online</Pill>
             <span style={{ color: 'var(--w-text-3)', font: '11px/1.4 var(--w-mono)' }}>
-              · grounded in <a href={`/projects/${projectId}/context`} style={{ color: 'var(--w-phosphor)', textDecoration: 'none', fontWeight: 700 }}>Context Fabric</a>
+              · grounded in <a href={`/projects/${projectId}/context`} style={{ color: 'var(--w-phosphor)', textDecoration: 'none', fontWeight: 700 }}>Context Engine</a>
             </span>
           </div>
           <div style={{ color: 'var(--w-text-2)', font: '500 12px/1.4 var(--w-display)', marginTop: 4 }}>

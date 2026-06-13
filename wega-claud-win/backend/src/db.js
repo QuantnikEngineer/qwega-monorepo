@@ -316,9 +316,9 @@ db.exec(`
 `);
 
 // ───────────────────────────────────────────────────────────────────────────
-// Context Fabric — the RAG knowledge layer
+// Context Engine — the RAG knowledge layer
 // ───────────────────────────────────────────────────────────────────────────
-// Three tables back the Context Fabric tab:
+// Three tables back the Context Engine tab:
 //
 //   context_sources    one row per registered input (a repo, a website, an
 //                      uploaded document, a Confluence space, etc.). Has

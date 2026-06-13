@@ -28,7 +28,7 @@ Every phase that produces an artifact (doc, plan, ADR, test, slice doc, capstone
 1. **`git add` the artifact + `git commit`** with a structured message naming the slice / phase.
 2. **`git push origin <branch>`** to the configured remote. If the push fails for transient reasons (network, auth retry), retry ONCE with `git pull --rebase` first then re-push. If it still fails, **HALT** the phase with the error printed — do not proceed.
 3. **Publish to Confluence** under the project's space and label. If `atlassian.confluenceSpaceKey` is missing from `.claude/quantnik.json`, **HALT** the phase with: *"Confluence publish target missing — set `atlassian.confluenceSpaceKey` and `atlassian.labels` in the quantnik project's Atlassian settings, then re-run this phase."* No silent skip.
-4. **Ingest into Context Fabric** as one source per doc, scope=`project`, type=`document`, label-prefixed `modernization-...`. Same halt-on-failure as above.
+4. **Ingest into Context Engine** as one source per doc, scope=`project`, type=`document`, label-prefixed `modernization-...`. Same halt-on-failure as above.
 
 The earlier version of this skill said "if Atlassian is wired" as a hedge. That hedge is REMOVED. Confluence is mandatory. If the operator hasn't configured a Confluence space, they configure it before running the skill — the skill does not run with a missing sink.
 
@@ -181,7 +181,7 @@ Before Phase 1, resolve the project context from quantnik:
 
 **Do:**
 
-1. **Walk the entire codebase.** `Glob` for source files, configuration, build scripts, CI/CD definitions, docs. Skip vendored / build-output dirs (`node_modules`, `dist`, `build`, `vendor`, `.git`, etc.) — same exclude list pattern as the Context Fabric repo source uses.
+1. **Walk the entire codebase.** `Glob` for source files, configuration, build scripts, CI/CD definitions, docs. Skip vendored / build-output dirs (`node_modules`, `dist`, `build`, `vendor`, `.git`, etc.) — same exclude list pattern as the Context Engine repo source uses.
 
 2. **Inventory subsystems.** Group files into logical subsystems (auth, billing, reporting, etc.). For each:
    - Read entry points + the heaviest 3-5 files
@@ -218,7 +218,7 @@ curl -s -X POST http://localhost:6060/api/phases/<projectId> \
   -d '{"phase":2,"status":"running","name":"Recommend Strategy"}'
 ```
 
-**Then ingest the understanding docs into the Context Fabric** so Quantnik BRAIN can answer questions about the legacy system during the rest of the modernization. One source per subsystem doc, type=`document`, scope=`project`:
+**Then ingest the understanding docs into the Context Engine** so Ms. Q can answer questions about the legacy system during the rest of the modernization. One source per subsystem doc, type=`document`, scope=`project`:
 
 ```bash
 for f in modernization/understanding/*.md; do
@@ -406,7 +406,7 @@ POST `{"phase":5,"status":"done","name":"Verify","note":"slice <id> · gate-2 ap
 
 ### Phase 6 — Document the slice (technical + business → Confluence)
 
-**Objective.** Capture what's shipping in this slice BEFORE it reaches real users, so stakeholders, support, and on-call have time to read, review, and prepare. Documentation is generated automatically from the verified slice, published to Confluence, and ingested back into the Context Fabric so Quantnik BRAIN can answer questions about the modernized system, not just the legacy one. No human gate here — docs are designed for revisable iteration; reviewers comment in Confluence and the slice's canary pauses if a substantive concern is raised, but the workflow itself doesn't block on doc-approval.
+**Objective.** Capture what's shipping in this slice BEFORE it reaches real users, so stakeholders, support, and on-call have time to read, review, and prepare. Documentation is generated automatically from the verified slice, published to Confluence, and ingested back into the Context Engine so Ms. Q can answer questions about the modernized system, not just the legacy one. No human gate here — docs are designed for revisable iteration; reviewers comment in Confluence and the slice's canary pauses if a substantive concern is raised, but the workflow itself doesn't block on doc-approval.
 
 **Do:**
 
@@ -432,7 +432,7 @@ POST `{"phase":5,"status":"done","name":"Verify","note":"slice <id> · gate-2 ap
 
 5. **Publish to Confluence.** Use the body-size-aware publish path (stdio MCP for ≤ 30 KB, `curl + REST` for larger). Per-slice pages live as children of a `<Project> — Modernization · Slice <id>` parent, which itself sits under the project's modernization root so the navigation tree stays clean. Apply `atlassian.labels`.
 
-6. **Ingest into the Context Fabric.** Same pattern as Phase 1's understanding-doc ingest — one source per published page, type=`document`, scope=`project`, label prefixed `modernization-slice-<id>: …`. This is what lets Quantnik BRAIN answer questions like "how does the new auth flow handle expired tokens?" once a slice is documented:
+6. **Ingest into the Context Engine.** Same pattern as Phase 1's understanding-doc ingest — one source per published page, type=`document`, scope=`project`, label prefixed `modernization-slice-<id>: …`. This is what lets Ms. Q answer questions like "how does the new auth flow handle expired tokens?" once a slice is documented:
 
    ```bash
    for f in modernization/slices/<id>/docs/technical/*.md modernization/slices/<id>/docs/business/*.md; do
@@ -444,7 +444,7 @@ POST `{"phase":5,"status":"done","name":"Verify","note":"slice <id> · gate-2 ap
 
 7. **Stamp `SLICES.md`** with `docs-published: <Confluence URL of the slice parent page>` so the SLICES backlog records the doc artifact alongside the gate-2 approval.
 
-**Exit criteria:** technical + business doc sets exist on disk AND in Confluence; living docs updated; Context Fabric sources ingested; `SLICES.md` row records the doc URL. If Atlassian wasn't wired (no `quantnik.json` Confluence config), exit criteria reduce to "docs on disk + Context Fabric ingested" and the skill tells the user the Confluence mirror was skipped.
+**Exit criteria:** technical + business doc sets exist on disk AND in Confluence; living docs updated; Context Engine sources ingested; `SLICES.md` row records the doc URL. If Atlassian wasn't wired (no `quantnik.json` Confluence config), exit criteria reduce to "docs on disk + Context Engine ingested" and the skill tells the user the Confluence mirror was skipped.
 
 **Phase tracking:**
 ```bash
@@ -549,7 +549,7 @@ Print one last **Modernization Status** block first (every row should read `done
   Slice doc sets:           <N published>  ·  technical + business per slice
   Living architecture page: <Confluence URL>
   Release notes (rolled-up): <Confluence URL>
-  Context Fabric sources:   <N ingested>  ·  Quantnik BRAIN now answers on the modernized system
+  Context Engine sources:   <N ingested>  ·  Ms. Q now answers on the modernized system
 
 📄 Report
   Confluence root: <URL or "skipped — no quantnik.json">

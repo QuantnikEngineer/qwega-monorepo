@@ -5,9 +5,10 @@ import { db } from '../db.js';
 
 export const auth = Router();
 
-// Session lifetime — long enough to survive a workday without re-auth,
-// short enough that a leaked token isn't a forever problem.
-const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
+// Quantnik stores auth as a bearer token in localStorage backed by this
+// SQLite sessions table. Keep sessions effectively non-expiring; logout and
+// admin/user deletion still revoke them by deleting the session row.
+const SESSION_EXPIRES_AT = 253402300799; // 9999-12-31T23:59:59Z
 
 // Registration is open to any valid email. Keep validation deliberately simple:
 // trim + lowercase the email, require a conventional email shape and 8+ chars.
@@ -32,6 +33,11 @@ function maskUser(u) {
     isAdmin: !!u.is_admin,
   };
 }
+
+// Existing installs may have sessions created with the old 7-day lifetime.
+// Extend them on startup so users are not forced through a one-time re-login.
+db.prepare('UPDATE sessions SET expires_at = ? WHERE expires_at < ?')
+  .run(SESSION_EXPIRES_AT, SESSION_EXPIRES_AT);
 
 // On first successful registration: claim every un-owned project. This is
 // the migration handoff for the 5 existing projects (Mobile / Faber / etc.)
@@ -79,12 +85,12 @@ auth.post('/register', (req, res) => {
 
   const token = newToken();
   db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)')
-    .run(token, user.id, now + SESSION_TTL_SECONDS);
+    .run(token, user.id, SESSION_EXPIRES_AT);
 
   res.json({
     user: maskUser(user),
     token,
-    expiresAt: now + SESSION_TTL_SECONDS,
+    expiresAt: SESSION_EXPIRES_AT,
     claimedProjects: claimed,
   });
 });
@@ -113,12 +119,12 @@ auth.post('/login', (req, res) => {
   db.prepare('UPDATE users SET last_login_at = ? WHERE id = ?').run(now, user.id);
   const token = newToken();
   db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)')
-    .run(token, user.id, now + SESSION_TTL_SECONDS);
+    .run(token, user.id, SESSION_EXPIRES_AT);
 
   res.json({
     user: maskUser(user),
     token,
-    expiresAt: now + SESSION_TTL_SECONDS,
+    expiresAt: SESSION_EXPIRES_AT,
   });
 });
 

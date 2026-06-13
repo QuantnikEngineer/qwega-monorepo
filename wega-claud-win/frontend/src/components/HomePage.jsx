@@ -123,7 +123,7 @@ export function HomePage({ projects, onPickProject }) {
               <div style={{ color: 'var(--w-text-3)', font: '800 11px/1 var(--w-display)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>
                 Knowledge layer
               </div>
-              <div style={{ font: '800 24px/1.15 var(--w-display)', marginBottom: 12 }}>Context Fabric</div>
+              <div style={{ font: '800 24px/1.15 var(--w-display)', marginBottom: 12 }}>Context Engine</div>
               <div style={{ font: '500 13.5px/1.6 var(--w-display)', color: 'var(--w-text-2)' }}>
                 Register shared runbooks, product notes, source material, and architecture decisions once.
               </div>
@@ -135,7 +135,7 @@ export function HomePage({ projects, onPickProject }) {
         <section style={{ marginBottom: 28 }}>
           <SectionTitle eyebrow="Get moving" title="Recommended flow" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
-            <Card><Step n={1} title="Create or open a project" text="Each project gets its own files, repos, skills, chat history, settings, and Context Fabric scope." /></Card>
+            <Card><Step n={1} title="Create or open a project" text="Each project gets its own files, repos, skills, chat history, settings, and Context Engine scope." /></Card>
             <Card><Step n={2} title="Connect the working sources" text="Add repositories, upload requirements, and configure Jira or Confluence targets from the project tabs." /></Card>
             <Card><Step n={3} title="Run skills or chat" text="Use slash skills for repeatable workflows, or ask Quantnik directly in the chat surface." /></Card>
           </div>

@@ -7,18 +7,42 @@ export const authToken = {
   clear: () => localStorage.removeItem(TOKEN_KEY),
 };
 
+const BACKEND_UNAVAILABLE =
+  'Quantnik backend is unavailable. Start or restart the backend on port 6060, then refresh the page.';
+
+async function errorFromResponse(res) {
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    const body = await res.json().catch(() => ({}));
+    return body.error || body.message || res.statusText || `HTTP ${res.status}`;
+  }
+  const text = await res.text().catch(() => '');
+  if (res.status === 503 || (res.status >= 500 && /internal server error|proxy|econnrefused/i.test(text))) {
+    return BACKEND_UNAVAILABLE;
+  }
+  return text?.trim() || res.statusText || `HTTP ${res.status}`;
+}
+
+async function fetchApi(path, opts = {}) {
+  try {
+    return await fetch(`/api${path}`, opts);
+  } catch {
+    throw new Error(BACKEND_UNAVAILABLE);
+  }
+}
+
 async function req(path, opts = {}) {
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
   const tok = authToken.get();
   if (tok) headers.Authorization = `Bearer ${tok}`;
-  const res = await fetch(`/api${path}`, { ...opts, headers });
+  const res = await fetchApi(path, { ...opts, headers });
   if (res.status === 401) {
     // Session expired or token revoked — clear local state and let the
     // app shell push the user back to the login screen.
     authToken.clear();
     window.dispatchEvent(new CustomEvent('quantnik:auth-expired'));
   }
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+  if (!res.ok) throw new Error(await errorFromResponse(res));
   return res.json();
 }
 
@@ -71,12 +95,12 @@ export const api = {
     const headers = {};
     const tok = authToken.get();
     if (tok) headers.Authorization = `Bearer ${tok}`;
-    const r = await fetch(`/api/uploads/${projectId}`, { method: 'POST', body: fd, headers });
+    const r = await fetchApi(`/uploads/${projectId}`, { method: 'POST', body: fd, headers });
     if (r.status === 401) {
       authToken.clear();
       window.dispatchEvent(new CustomEvent('quantnik:auth-expired'));
     }
-    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.statusText);
+    if (!r.ok) throw new Error(await errorFromResponse(r));
     return r.json();
   },
   listUploads: (projectId) => req(`/uploads/${projectId}`),
@@ -90,12 +114,12 @@ export const api = {
   downloadUpload: async (projectId, storedName, displayName) => {
     const tok = authToken.get();
     const headers = tok ? { Authorization: `Bearer ${tok}` } : {};
-    const r = await fetch(`/api/uploads/${projectId}/${encodeURIComponent(storedName)}/raw`, { headers });
+    const r = await fetchApi(`/uploads/${projectId}/${encodeURIComponent(storedName)}/raw`, { headers });
     if (r.status === 401) {
       authToken.clear();
       window.dispatchEvent(new CustomEvent('quantnik:auth-expired'));
     }
-    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.statusText);
+    if (!r.ok) throw new Error(await errorFromResponse(r));
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -122,7 +146,7 @@ export const api = {
   adminRestartBackend: () => req('/admin/restart/backend', { method: 'POST' }),
   adminRestartFrontend: () => req('/admin/restart/frontend', { method: 'POST' }),
 
-  // Context Fabric — the RAG knowledge surface.
+  // Context Engine — the RAG knowledge surface.
   contextHealth: () => req('/context/health'),
   listContextSources: ({ scope, projectId }) =>
     req(`/context/sources?scope=${encodeURIComponent(scope)}${projectId ? `&projectId=${projectId}` : ''}`),
@@ -135,10 +159,10 @@ export const api = {
   reposAvailableForContext: (projectId) => req(`/context/repos-available?projectId=${projectId}`),
   bulkAddContextSources: (sources) => req('/context/sources/bulk', { method: 'POST', body: JSON.stringify({ sources }) }),
   autoInitContext: (projectId) => req(`/context/auto-init?projectId=${projectId}`, { method: 'POST' }),
-  // Quantnik Brain — RAG-grounded conversational Q&A. Returns { answer,
+  // Ms. Q — RAG-grounded conversational Q&A. Returns { answer,
   // citations[], usage, costUsd, model, via }. Optional history is the
   // prior multi-turn exchange; pass the whole local conversation each call.
-  askQuantnikBrain: ({ scope, projectId, question, topK, model, history, userName }) =>
+  askMsQ: ({ scope, projectId, question, topK, model, history, userName }) =>
     req('/context/ask', { method: 'POST', body: JSON.stringify({ scope, projectId, question, topK, model, history, userName }) }),
 
   listRepos: (projectId) => req(`/repos/${projectId}`),

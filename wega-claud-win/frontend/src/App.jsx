@@ -9,10 +9,10 @@ import { ReposPanel } from './components/ReposPanel.jsx';
 import { FilesPanel } from './components/FilesPanel.jsx';
 import { DashboardPanel } from './components/DashboardPanel.jsx';
 import { HomePage } from './components/HomePage.jsx';
-import { ContextFabricPanel } from './components/ContextFabricPanel.jsx';
+import { ContextEnginePanel } from './components/ContextEnginePanel.jsx';
 import { AuthGate, AuthHeader } from './components/AuthGate.jsx';
 import { WindowFrame, TabBar, StatusBar } from './components/ui.jsx';
-import { api } from './lib/api.js';
+import { api, authToken } from './lib/api.js';
 
 const TABS = [
   { id: 'chat',      glyph: '>_' },
@@ -31,9 +31,9 @@ const TABS = [
 const LS_TAB     = 'quantnik.app.tab';
 const LS_PROJECT = 'quantnik.app.activeProjectId';
 
-// URL → state mapping. The Context Fabric is a quantnik-level surface as well
+// URL → state mapping. The Context Engine is a quantnik-level surface as well
 // as a per-project tab, so we recognise both:
-//   /context                   → global (org) Context Fabric
+//   /context                   → global (org) Context Engine
 //   /skills, /mcp, /settings   → global workbench surfaces
 //   /projects/:id              → project, tab defaults to chat
 //   /projects/:id/:tab         → project + specific tab
@@ -106,6 +106,10 @@ export default function App() {
   };
 
   const refresh = async () => {
+    if (!authToken.get()) {
+      setProjects([]);
+      return;
+    }
     const list = await api.listProjects({ scope: projectScope });
     setProjects(list);
 
@@ -137,16 +141,46 @@ export default function App() {
 
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
 
+  useEffect(() => {
+    const handler = () => refresh();
+    window.addEventListener('quantnik:auth-changed', handler);
+    window.addEventListener('quantnik:auth-expired', handler);
+    window.addEventListener('quantnik:auth-logout', handler);
+    return () => {
+      window.removeEventListener('quantnik:auth-changed', handler);
+      window.removeEventListener('quantnik:auth-expired', handler);
+      window.removeEventListener('quantnik:auth-logout', handler);
+    };
+    /* eslint-disable-next-line */
+  }, [projectScope, urlProjectId]);
+
   // Fetch the logged-in user once so the sidebar can show admin-only UI
   // (the scope toggle). Non-admins never see it; the API endpoint is the
   // ultimate gate, so showing the toggle is purely cosmetic.
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      if (!authToken.get()) {
+        if (!cancelled) setUser(null);
+        return;
+      }
       const me = await api.me();
       if (!cancelled && me?.user) setUser(me.user);
     })();
-    return () => { cancelled = true; };
+    const handler = async () => {
+      if (!authToken.get()) { setUser(null); return; }
+      const me = await api.me();
+      if (me?.user) setUser(me.user);
+    };
+    window.addEventListener('quantnik:auth-changed', handler);
+    window.addEventListener('quantnik:auth-expired', handler);
+    window.addEventListener('quantnik:auth-logout', handler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('quantnik:auth-changed', handler);
+      window.removeEventListener('quantnik:auth-expired', handler);
+      window.removeEventListener('quantnik:auth-logout', handler);
+    };
   }, []);
 
   // Re-fetch projects whenever the admin scope toggle flips. Persist the
@@ -200,7 +234,7 @@ export default function App() {
           {!active && !globalRoute && (
             <HomePage projects={projects} onPickProject={setActiveId} />
           )}
-          {!active && globalRoute === 'context' && <ContextFabricPanel mode="global" />}
+          {!active && globalRoute === 'context' && <ContextEnginePanel mode="global" />}
           {!active && globalRoute === 'skills' && <SkillsPanel project={null} />}
           {!active && globalRoute === 'mcp' && <McpPanel project={null} sessionInfo={sessionInfo} />}
           {!active && globalRoute === 'settings' && <SettingsPanel project={null} onChanged={refresh} />}
@@ -222,7 +256,7 @@ export default function App() {
                 {tab === 'dashboard' && <DashboardPanel project={active} />}
                 {tab === 'files' && <FilesPanel project={active} onSendToSkill={sendToChat} />}
                 {tab === 'repos' && <ReposPanel project={active} />}
-                {tab === 'context' && <ContextFabricPanel mode="project" project={active} />}
+                {tab === 'context' && <ContextEnginePanel mode="project" project={active} />}
                 {tab === 'skills' && <SkillsPanel project={active} />}
                 {tab === 'mcp' && <McpPanel project={active} sessionInfo={sessionInfo} />}
                 {tab === 'settings' && <SettingsPanel project={active} onChanged={refresh} />}

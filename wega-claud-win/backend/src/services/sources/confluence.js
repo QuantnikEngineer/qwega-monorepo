@@ -12,7 +12,7 @@
 export async function fetchDocuments(/* source */) {
   throw new Error(
     'Confluence ingest is not yet wired. The Atlassian MCP is authenticated for chat, ' +
-    'but the Context Fabric ingest path needs an explicit pages-pull implementation. ' +
+    'but the Context Engine ingest path needs an explicit pages-pull implementation. ' +
     'Tracked as a follow-up.'
   );
 }

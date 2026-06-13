@@ -1,5 +1,5 @@
-// Quantnik Brain — RAG generation. Given a question, retrieve top-K context
-// chunks (from the Context Fabric), pass them to Claude as system context,
+// Ms. Q — RAG generation. Given a question, retrieve top-K context
+// chunks (from the Context Engine), pass them to Claude as system context,
 // and return a grounded answer with citations.
 //
 // Auth: reads ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN from the quantnik
@@ -7,11 +7,11 @@
 // No extra subscription, no new vendor. The Claude Code subscription token
 // works because the SDK accepts it as an authToken bearer.
 //
-// Model:  QUANTNIK_BRAIN_MODEL env var, default claude-sonnet-4-6 (balanced for
+// Model:  QUANTNIK_MS_Q_MODEL env var, default claude-sonnet-4-6 (balanced for
 // Q&A — Haiku is too thin for nuanced grounding, Opus is overkill).
 //
 // Usage cost is recorded in the existing usage_events table with model name
-// "quantnik-brain:<model>" so the admin overview rolls it up next to chat usage.
+// "ms-q:<model>" so the admin overview rolls it up next to chat usage.
 
 import Anthropic from '@anthropic-ai/sdk';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
@@ -20,14 +20,20 @@ import { retrieve } from './retrieval.js';
 
 const DEFAULT_MODEL          = 'claude-sonnet-4-6';
 // House default for Bedrock: Sonnet 4.6 inference profile. Was 3.7 Sonnet
-// (now retired). Override per-instance via QUANTNIK_BRAIN_BEDROCK_MODEL in .env.
+// (now retired). Override per-instance via QUANTNIK_MS_Q_BEDROCK_MODEL in .env.
 const DEFAULT_BEDROCK_MODEL  = 'us.anthropic.claude-sonnet-4-6-20251001-v1:0';
 const DEFAULT_BEDROCK_REGION = 'us-east-1';
+
+const msQModel = () => process.env.QUANTNIK_MS_Q_MODEL || process.env.QUANTNIK_BRAIN_MODEL || DEFAULT_MODEL;
+const msQBedrockModel = () =>
+  process.env.QUANTNIK_MS_Q_BEDROCK_MODEL ||
+  process.env.QUANTNIK_BRAIN_BEDROCK_MODEL ||
+  DEFAULT_BEDROCK_MODEL;
 
 function buildSystemPrompt(userName) {
   const name = userName ? userName.split(/[.@\s]/)[0].replace(/^./, (c) => c.toUpperCase()) : null;
   const addressed = name ? name : 'friend';
-  return `You are Quantnik Brain — the Quantnik platform's resident know-it-all. You live inside the user's project, you've read everything they've ingested, and your job is to be useful and a little bit fun about it.
+  return `You are Ms. Q — the Quantnik platform's resident know-it-all. You live inside the user's project, you've read everything they've ingested, and your job is to be useful and a little bit fun about it.
 
 WHO YOU'RE TALKING TO
 ${name ? `The human's first name is ${name}. Address them by name occasionally (not every message — only when it feels natural, like "Yeah ${name}, …" or "Good question, ${name} —"). Never overdo it.` : `You don't know the user's name in this session, so call them "friend" sparingly or just skip the address.`}
@@ -48,7 +54,7 @@ You have two kinds of grounding material in every turn:
   2. CONTEXT EXCERPTS — passages retrieved from the user's ingested sources. Each is numbered [1], [2], etc. When you state a NARRATIVE fact pulled from an excerpt ("the BRD says …", "the test plan covers …"), cite the source inline with its number — e.g. "the BRD describes a card discovery flow with three steps [3]". Cite the SMALLEST set of excerpts that supports each claim. Don't pile on numbers for effect.
 
 When you genuinely can't answer (the facts don't cover it AND no excerpt does), say so honestly. Phrases that work:
-  - "I don't see that in this project's context — want to add it to the Context Fabric?"
+  - "I don't see that in this project's context — want to add it to the Context Engine?"
   - "Not in what's been ingested yet — but if you point me at a doc or repo, I'll have it next time."
   - For project-shape questions that fall outside the project's actual knowledge: just be direct that the question is outside scope.
 
@@ -140,7 +146,7 @@ async function generateViaAnthropic({ model, system, messages }) {
 async function generateViaBedrock({ system, messages }) {
   const client = bedrockClient();
   if (!client) throw new Error('bedrock_unconfigured: no AWS_BEARER_TOKEN_BEDROCK or AWS_ACCESS_KEY_ID');
-  const modelId = process.env.QUANTNIK_BRAIN_BEDROCK_MODEL || DEFAULT_BEDROCK_MODEL;
+  const modelId = msQBedrockModel();
   const resp = await client.send(new InvokeModelCommand({
     modelId,
     contentType: 'application/json',
@@ -163,7 +169,7 @@ async function generateViaBedrock({ system, messages }) {
 
 // In-memory cache for project facts — keyed by projectId. 5-min TTL.
 // gatherProjectFacts walks the repo for LOC each call otherwise, which on a
-// medium codebase can take 300-2000 ms. Caching keeps Quantnik Brain snappy for
+// medium codebase can take 300-2000 ms. Caching keeps Ms. Q snappy for
 // follow-up questions on the same project within a working session.
 const FACTS_TTL_MS = 5 * 60 * 1000;
 const factsCache = new Map(); // projectId → { at, value }
@@ -179,7 +185,7 @@ async function gatherProjectFacts(projectId) {
   // Repos configured in the Repos tab
   const repos = db.prepare(`SELECT id, name, path, remote_url FROM project_repos WHERE project_id = ?`).all(projectId);
 
-  // Context Fabric sources for this project
+  // Context Engine sources for this project
   const sources = db.prepare(`
     SELECT s.type, s.label, s.status, s.last_ingested_at,
       (SELECT COUNT(*) FROM context_chunks ch
@@ -261,7 +267,7 @@ function formatFactsBlock(facts) {
   else facts.repos.forEach((r) => out.push(`    - ${r.name}  ${r.path}${r.remote_url ? `  (${r.remote_url})` : ''}`));
 
   out.push('');
-  out.push('  CONTEXT FABRIC SOURCES (project-scoped)');
+  out.push('  CONTEXT ENGINE SOURCES (project-scoped)');
   if (facts.sources.length === 0) out.push('    (none yet — visit /projects/' + p.id + '/context to add)');
   else facts.sources.forEach((s) => {
     out.push(`    - ${s.type.padEnd(14)} ${s.status.padEnd(10)} ${s.chunks} chunk${s.chunks === 1 ? '' : 's'} / ${s.docs} doc${s.docs === 1 ? '' : 's'}${s.label ? `  · ${s.label}` : ''}`);
@@ -269,7 +275,7 @@ function formatFactsBlock(facts) {
 
   if (facts.orgSources.length > 0) {
     out.push('');
-    out.push('  CONTEXT FABRIC SOURCES (inherited from org)');
+    out.push('  CONTEXT ENGINE SOURCES (inherited from org)');
     facts.orgSources.forEach((s) => out.push(`    - ${s.type.padEnd(14)} ${s.chunks} chunk${s.chunks === 1 ? '' : 's'}${s.label ? `  · ${s.label}` : ''}`));
   }
 
@@ -312,7 +318,7 @@ function buildUserMessage(question, retrieved, factsBlock) {
 }
 
 /**
- * Run a Quantnik Brain query end-to-end.
+ * Run a Ms. Q query end-to-end.
  *
  * @param {{
  *   question: string,
@@ -344,11 +350,11 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
   // returns nothing — so we continue to Claude in that case.
   if (!r.results.length && !factsBlock) {
     return {
-      answer: 'No context available for this scope yet — register sources in the Context Fabric and try again.',
+      answer: 'No context available for this scope yet — register sources in the Context Engine and try again.',
       citations: [],
       retrieved: 0,
       candidateCount: r.candidateCount ?? 0,
-      model:   model || process.env.QUANTNIK_BRAIN_MODEL || DEFAULT_MODEL,
+      model:   model || msQModel(),
       usage:   { input_tokens: 0, output_tokens: 0 },
       costUsd: 0,
       durationMs: Date.now() - t0,
@@ -357,7 +363,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
   }
 
   // --- 2. compose prompt + invoke Claude -----------------------------------
-  const chosenModel = model || process.env.QUANTNIK_BRAIN_MODEL || DEFAULT_MODEL;
+  const chosenModel = model || msQModel();
   const systemPrompt = buildSystemPrompt(userName);
 
   // Multi-turn messages array: prior turns from `history` (sanity-trimmed),
@@ -415,7 +421,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
   // --- 3. cost estimate. Rates vary by platform AND model. ----------------
   // Anthropic direct: published per-million input/output rates.
   // Bedrock: same Claude model price + a thin AWS markup; we use the same
-  //          numbers since the quantnik-brain "cost" line is directional.
+  //          numbers since the ms-q "cost" line is directional.
   const costPerMillion = {
     'claude-opus-4-7':                                       { in: 15,   out: 75 },
     'claude-sonnet-4-6':                                     { in:  3,   out: 15 },
@@ -436,7 +442,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
     try {
       const projectId = scope.kind === 'project' ? scope.projectId : null;
       if (projectId) {
-        const modelTag = `quantnik-brain:${resp.via === 'bedrock' ? 'bedrock:' : ''}${resp.modelUsed}`;
+        const modelTag = `ms-q:${resp.via === 'bedrock' ? 'bedrock:' : ''}${resp.modelUsed}`;
         db.prepare(`
           INSERT INTO usage_events
             (project_id, user_id, model, session_id,
@@ -454,7 +460,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
         );
       }
     } catch (e) {
-      console.warn('[quantnik-brain] usage_events insert failed:', e?.message);
+      console.warn('[ms-q] usage_events insert failed:', e?.message);
     }
   }
 

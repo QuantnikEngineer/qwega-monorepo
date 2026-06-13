@@ -241,11 +241,12 @@ export function applyBedrockFallbackEnv(targetEnv) {
   targetEnv.CLAUDE_CODE_USE_BEDROCK = '1';
   if (!targetEnv.AWS_REGION) targetEnv.AWS_REGION = 'us-east-1';
 
-  // Model cascade: chat-specific env var → BRAIN's var (shared default) →
+  // Model cascade: chat-specific env var → Ms. Q's var (shared default) →
   // known-good fallback. Haiku 4.5 has been verified live on the test
   // account's Bedrock; safer than older Sonnet ids that are now retired.
   const model =
     targetEnv.QUANTNIK_CHAT_BEDROCK_MODEL  ||
+    targetEnv.QUANTNIK_MS_Q_BEDROCK_MODEL ||
     targetEnv.QUANTNIK_BRAIN_BEDROCK_MODEL ||
     'us.anthropic.claude-haiku-4-5-20251001-v1:0';
 

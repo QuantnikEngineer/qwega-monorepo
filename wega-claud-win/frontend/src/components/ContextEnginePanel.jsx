@@ -352,14 +352,14 @@ function QueryProbe({ scope, projectId }) {
 // Top-level panel
 //
 // Renders in two modes:
-//   mode="global"  → quantnik-level Context Fabric (org scope only).
+//   mode="global"  → quantnik-level Context Engine (org scope only).
 //                    Admin-managed. Visible at /context. Project sources
 //                    aren't shown — those belong to per-project surfaces.
-//   mode="project" → per-project Context Fabric. Default scope is the
+//   mode="project" → per-project Context Engine. Default scope is the
 //                    project; admins can toggle to view org sources too
 //                    (read-only — they're managed at /context).
 // ─────────────────────────────────────────────────────────────────────────────
-export function ContextFabricPanel({ mode = 'project', project }) {
+export function ContextEnginePanel({ mode = 'project', project }) {
   const isGlobal = mode === 'global';
 
   const [sources, setSources] = useState([]);
@@ -466,7 +466,7 @@ export function ContextFabricPanel({ mode = 'project', project }) {
   };
 
   const handleDelete = async (s) => {
-    if (!confirm(`Remove "${s.label || TYPE_META[s.type]?.label}" from the Context Fabric? All chunks for this source will be deleted.`)) return;
+    if (!confirm(`Remove "${s.label || TYPE_META[s.type]?.label}" from the Context Engine? All chunks for this source will be deleted.`)) return;
     setBusy(true); setError('');
     try { await api.deleteContextSource(s.id); await reload(); }
     catch (e) { setError(e.message); }
@@ -500,7 +500,7 @@ export function ContextFabricPanel({ mode = 'project', project }) {
           ? <><S c="var(--w-phosphor)">quantnik</S> ─ context-fabric · global</>
           : <><S c="var(--w-phosphor)">~/{project?.name || 'quantnik'}</S> ─ context-fabric</>
       }
-      title={isGlobal ? 'Context Fabric — Global' : 'Context Fabric'}
+      title={isGlobal ? 'Context Engine — Global' : 'Context Engine'}
       subtitle={
         isGlobal
           ? <>Quantnik-level RAG knowledge layer. Sources registered here are visible to <S c="var(--w-phosphor)">every project's queries</S> — runbooks, brand guidelines, architecture decisions, policy docs. Admin-managed.</>

@@ -1,7 +1,7 @@
 // SharePoint source — stub for v1. SharePoint ingest needs an OAuth handshake
 // against Microsoft Graph (`/sites/{site-id}/drives/{drive-id}/root/children`
 // + delegated/app permissions), which is non-trivial setup specific to each
-// tenant. The Context Fabric UI exposes the form so users can register their
+// tenant. The Context Engine UI exposes the form so users can register their
 // intent; ingest is intentionally rejected until the Graph plumbing is wired.
 //
 // To implement: take cfg.siteUrl + cfg.driveId + OAuth tokens (from a quantnik-
