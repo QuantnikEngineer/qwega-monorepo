@@ -5,6 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { resolveProjectPath } from '../../config.js';
 
 export async function fetchDocuments(source, project) {
   const cfg = JSON.parse(source.config || '{}');
@@ -13,7 +14,7 @@ export async function fetchDocuments(source, project) {
 
   let absPath = rel;
   if (!path.isAbsolute(rel) && project) {
-    absPath = path.join(project.path, rel);
+    absPath = path.join(resolveProjectPath(project), rel);
   }
   if (!fs.existsSync(absPath)) {
     throw new Error(`document not found: ${absPath}`);

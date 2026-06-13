@@ -152,7 +152,6 @@ function Bubble({ msg, firstName }) {
             <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
               <span style={{ color: 'var(--w-text-3)', font: '9.5px/1 var(--w-mono)' }}>
                 {msg.meta.model}
-                {msg.meta.via === 'bedrock-fallback' && <span style={{ color: 'var(--w-amber)' }}> · via bedrock</span>}
                 {' · '}${msg.meta.costUsd?.toFixed(4) ?? '0.0000'}
                 {' · '}retrieval {msg.meta.retrievalMs}ms · gen {msg.meta.generationMs}ms
               </span>

@@ -14,21 +14,12 @@
 // "ms-q:<model>" so the admin overview rolls it up next to chat usage.
 
 import Anthropic from '@anthropic-ai/sdk';
-import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { db } from '../db.js';
 import { retrieve } from './retrieval.js';
 
 const DEFAULT_MODEL          = 'claude-sonnet-4-6';
-// House default for Bedrock: Sonnet 4.6 inference profile. Was 3.7 Sonnet
-// (now retired). Override per-instance via QUANTNIK_MS_Q_BEDROCK_MODEL in .env.
-const DEFAULT_BEDROCK_MODEL  = 'us.anthropic.claude-sonnet-4-6-20251001-v1:0';
-const DEFAULT_BEDROCK_REGION = 'us-east-1';
 
 const msQModel = () => process.env.QUANTNIK_MS_Q_MODEL || process.env.QUANTNIK_BRAIN_MODEL || DEFAULT_MODEL;
-const msQBedrockModel = () =>
-  process.env.QUANTNIK_MS_Q_BEDROCK_MODEL ||
-  process.env.QUANTNIK_BRAIN_BEDROCK_MODEL ||
-  DEFAULT_BEDROCK_MODEL;
 
 function buildSystemPrompt(userName) {
   const name = userName ? userName.split(/[.@\s]/)[0].replace(/^./, (c) => c.toUpperCase()) : null;
@@ -90,39 +81,9 @@ function anthropicClient() {
   return _anthropicClient;
 }
 
-let _bedrockClient = null;
-let _bedrockClientRegion = null;
-function bedrockClient() {
-  // Bedrock fallback. Activates when AWS_BEARER_TOKEN_BEDROCK is present in
-  // env (the SDK reads it natively for AuthV4-with-bearer signing). Other
-  // AWS_* credentials are also honoured if present. Region defaults to
-  // us-east-1 unless overridden via AWS_REGION.
-  if (!process.env.AWS_BEARER_TOKEN_BEDROCK
-      && !process.env.AWS_ACCESS_KEY_ID) return null;
-  const region = process.env.AWS_REGION || DEFAULT_BEDROCK_REGION;
-  if (_bedrockClient && _bedrockClientRegion === region) return _bedrockClient;
-  _bedrockClient = new BedrockRuntimeClient({ region });
-  _bedrockClientRegion = region;
-  return _bedrockClient;
-}
-
-function isRateLimitOrOverloaded(err) {
-  // Anthropic SDK throws RateLimitError (429) and InternalServerError /
-  // OverloadedError (529). Match by status code AND name string for
-  // robustness across SDK versions.
-  const status = err?.status || err?.statusCode;
-  if (status === 429 || status === 529 || status === 503 || status === 502) return true;
-  const name = (err?.name || '').toLowerCase();
-  if (name.includes('ratelimit') || name.includes('overloaded')) return true;
-  // Some Anthropic 429s surface as plain errors with the body in the message.
-  const msg = (err?.message || '').toLowerCase();
-  if (msg.includes('429') || msg.includes('rate_limit') || msg.includes('overloaded')) return true;
-  return false;
-}
-
 /**
- * Direct-Anthropic generation path. Throws on failure (caller decides
- * whether to fall back to Bedrock).
+ * Direct-Anthropic generation path. Throws on failure so the route handler
+ * can surface the provider error cleanly.
  */
 async function generateViaAnthropic({ model, system, messages }) {
   const client = anthropicClient();
@@ -135,35 +96,7 @@ async function generateViaAnthropic({ model, system, messages }) {
     text: resp.content.filter((b) => b.type === 'text').map((b) => b.text).join(''),
     usage: resp.usage || {},
     modelUsed: model,
-    via: 'anthropic',  // fallback path now (was the primary in the prior version).
-  };
-}
-
-/**
- * Bedrock generation path. Wraps the same messages-style payload Bedrock's
- * Anthropic adapter expects (`anthropic_version: bedrock-2023-05-31`).
- */
-async function generateViaBedrock({ system, messages }) {
-  const client = bedrockClient();
-  if (!client) throw new Error('bedrock_unconfigured: no AWS_BEARER_TOKEN_BEDROCK or AWS_ACCESS_KEY_ID');
-  const modelId = msQBedrockModel();
-  const resp = await client.send(new InvokeModelCommand({
-    modelId,
-    contentType: 'application/json',
-    accept: 'application/json',
-    body: JSON.stringify({
-      anthropic_version: 'bedrock-2023-05-31',
-      max_tokens: 1536,
-      system,
-      messages,
-    }),
-  }));
-  const parsed = JSON.parse(new TextDecoder().decode(resp.body));
-  return {
-    text: (parsed.content || []).filter((b) => b.type === 'text').map((b) => b.text).join(''),
-    usage: parsed.usage || {},
-    modelUsed: modelId,
-    via: 'bedrock',  // was 'bedrock-fallback' — Bedrock is the primary path now.
+    via: 'anthropic',
   };
 }
 
@@ -379,58 +312,26 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
   const userMsg = buildUserMessage(question, r.results, factsBlock);
   const messages = [...trimmedHistory, { role: 'user', content: userMsg }];
 
-  // Two-path generation: try Anthropic-direct first; on rate-limit /
-  // overloaded / 5xx, fall back to Bedrock if AWS credentials are wired.
-  // If Anthropic credentials aren't wired at all, go straight to Bedrock.
-  // If neither is wired, surface a clear error to the route handler.
+  // Generation is Anthropic-direct. Do not route through AWS provider state.
   const hasAnthropic = !!(process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_CODE_OAUTH_TOKEN);
-  const hasBedrock   = !!(process.env.AWS_BEARER_TOKEN_BEDROCK || process.env.AWS_ACCESS_KEY_ID);
 
-  if (!hasAnthropic && !hasBedrock) {
+  if (!hasAnthropic) {
     throw new Error(
-      'No LLM credential — set ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN ' +
-      'and/or AWS_BEARER_TOKEN_BEDROCK in backend/.env. ' +
-      'quantnik will use Anthropic-direct first and fall back to Bedrock on rate-limit.'
+      'No Anthropic credential — set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN in backend/.env.'
     );
   }
 
-  let resp;
-  let fellBackReason = null;
-  // PRIMARY = Bedrock (Sonnet 4.6 — quantnik's house default). Anthropic-direct
-  // is the FALLBACK now, the reverse of the old order. If Bedrock fails for
-  // a rate-limit / overload reason and Anthropic creds are present, retry
-  // there. Any other error from Bedrock propagates.
-  if (hasBedrock) {
-    try {
-      resp = await generateViaBedrock({ system: systemPrompt, messages });
-    } catch (err) {
-      if (hasAnthropic && isRateLimitOrOverloaded(err)) {
-        fellBackReason = `bedrock ${err?.status || err?.name || 'failed'} — using Anthropic direct`;
-        resp = await generateViaAnthropic({ model: chosenModel, system: systemPrompt, messages });
-      } else {
-        throw err;
-      }
-    }
-  } else {
-    resp = await generateViaAnthropic({ model: chosenModel, system: systemPrompt, messages });
-  }
+  const resp = await generateViaAnthropic({ model: chosenModel, system: systemPrompt, messages });
 
   const generationDoneAt = Date.now();
   const answerText = resp.text;
 
   // --- 3. cost estimate. Rates vary by platform AND model. ----------------
   // Anthropic direct: published per-million input/output rates.
-  // Bedrock: same Claude model price + a thin AWS markup; we use the same
-  //          numbers since the ms-q "cost" line is directional.
   const costPerMillion = {
     'claude-opus-4-7':                                       { in: 15,   out: 75 },
     'claude-sonnet-4-6':                                     { in:  3,   out: 15 },
     'claude-haiku-4-5':                                      { in:  0.8, out:  4 },
-    // Bedrock model ids (matched verbatim against resp.modelUsed)
-    'us.anthropic.claude-3-7-sonnet-20250219-v1:0':          { in:  3,   out: 15 },
-    'us.anthropic.claude-3-5-sonnet-20241022-v2:0':          { in:  3,   out: 15 },
-    'us.anthropic.claude-3-5-haiku-20241022-v1:0':           { in:  0.8, out:  4 },
-    'us.anthropic.claude-3-opus-20240229-v1:0':              { in: 15,   out: 75 },
   };
   const rate = costPerMillion[resp.modelUsed] || { in: 3, out: 15 };
   const inT  = resp.usage?.input_tokens  || 0;
@@ -442,7 +343,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
     try {
       const projectId = scope.kind === 'project' ? scope.projectId : null;
       if (projectId) {
-        const modelTag = `ms-q:${resp.via === 'bedrock' ? 'bedrock:' : ''}${resp.modelUsed}`;
+        const modelTag = `ms-q:${resp.modelUsed}`;
         db.prepare(`
           INSERT INTO usage_events
             (project_id, user_id, model, session_id,
@@ -480,8 +381,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
     retrieved: r.results.length,
     candidateCount: r.candidateCount ?? 0,
     model: resp.modelUsed,
-    via: resp.via,                   // 'bedrock' (primary, default) | 'anthropic' (fallback)
-    fellBackReason,                  // populated only when Bedrock kicked in
+    via: resp.via,
     usage: {
       input_tokens:  inT,
       output_tokens: outT,

@@ -184,9 +184,9 @@ ensureColumn('projects', 'confluence_space_id', 'TEXT');
 ensureColumn('projects', 'confluence_space_key', 'TEXT');
 ensureColumn('projects', 'atlassian_labels', 'TEXT'); // JSON-encoded string[]
 
-// LLM provider — defaults to Anthropic; Bedrock/Vertex/Foundry route Claude
-// through alt clouds; OpenAI/Gemini store config but are not yet wired into
-// the quantnik agent runtime (which uses the Claude Agent SDK).
+// LLM provider — defaults to Anthropic. Vertex/Foundry route Claude through
+// alternate clouds; OpenAI/Gemini store config but are not yet wired into the
+// quantnik agent runtime (which uses the Claude Agent SDK).
 ensureColumn('projects', 'llm_provider', "TEXT DEFAULT 'anthropic'");
 ensureColumn('projects', 'llm_model', 'TEXT');
 ensureColumn('projects', 'llm_config', 'TEXT'); // JSON blob — provider-specific fields
@@ -257,10 +257,11 @@ try {
   console.warn('[db] default-admin bootstrap:', e?.message);
 }
 
-// Managed project paths are environment-specific absolute paths. A database
-// committed from a laptop can point at /Users/.../backend/data/projects/foo,
+// Managed project paths should stay portable in the committed database. A DB
+// copied from a laptop can point at an environment-specific projects folder,
 // which is invalid on a server checkout. For projects that clearly belong to
-// Quantnik's managed projects root, rewrite the path to this host's root.
+// Quantnik's managed projects root, normalize the stored path to a relative
+// ./data/projects/<name> path and create the concrete directory on this host.
 try {
   const marker = `${path.sep}backend${path.sep}data${path.sep}projects${path.sep}`;
   const rows = db.prepare('SELECT id, name, path FROM projects').all();
@@ -278,9 +279,9 @@ try {
     const managed = relativeManaged || normalisedCurrent.includes(marker) || current.startsWith(config.projectsRoot);
     if (!managed) continue;
     const projectDirName = path.basename(current) || p.name;
-    const repaired = path.join(config.projectsRoot, projectDirName);
+    const repaired = `./data/projects/${projectDirName}`;
     if (current !== repaired) update.run(repaired, p.id);
-    fs.mkdirSync(path.join(repaired, '.claude', 'skills'), { recursive: true });
+    fs.mkdirSync(path.join(config.projectsRoot, projectDirName, '.claude', 'skills'), { recursive: true });
   }
 } catch (e) {
   console.warn('[db] managed-project-path repair:', e?.message);
@@ -323,7 +324,7 @@ try {
     }
     const name = String(sidecar?.project?.name || entry.name || '').trim();
     if (!name || existingByName.get(name)) continue;
-    const projectPath = path.join(config.projectsRoot, entry.name);
+    const projectPath = `./data/projects/${entry.name}`;
     const labels = Array.isArray(sidecar?.atlassian?.labels) ? JSON.stringify(sidecar.atlassian.labels) : null;
     const llmProvider = sidecar?.llm?.provider || 'anthropic';
     const llmModel = sidecar?.llm?.model || null;
@@ -401,11 +402,11 @@ db.exec(`
 //                      a Confluence page, an uploaded PDF. Holds the title +
 //                      content hash so we can skip re-embedding unchanged docs.
 //
-//   context_chunks     the embedded units. content + embedding BLOB (1024-dim
-//                      float32 from Bedrock Titan v2). In-memory cosine search
-//                      for v1; trivial to swap for sqlite-vec / pgvector when
-//                      scale demands it. The embedding column being part of
-//                      the relational row keeps the migration path simple.
+//   context_chunks     the embedded units. content + embedding BLOB from the
+//                      local embedding model. In-memory cosine search for v1;
+//                      trivial to swap for sqlite-vec / pgvector when scale
+//                      demands it. The embedding column being part of the
+//                      relational row keeps the migration path simple.
 db.exec(`
   CREATE TABLE IF NOT EXISTS context_sources (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,

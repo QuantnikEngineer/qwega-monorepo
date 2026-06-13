@@ -3,12 +3,12 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { db } from '../db.js';
 import { projectForRead, projectForWrite } from './projectAccess.js';
-import { getMcpServersFromEnv } from '../config.js';
+import { getMcpServersFromEnv, resolveProjectPath } from '../config.js';
 
 export const mcp = Router();
 
 function settingsPath(project) {
-  const dir = path.join(project.path, '.claude');
+  const dir = path.join(resolveProjectPath(project), '.claude');
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, 'settings.json');
   if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify({}, null, 2));

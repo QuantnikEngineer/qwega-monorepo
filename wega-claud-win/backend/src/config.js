@@ -22,6 +22,21 @@ export const config = {
   dbPath: path.resolve(ROOT, process.env.DB_PATH || './data/quantnik.db'),
 };
 
+export function resolveProjectPath(projectOrPath) {
+  const raw = typeof projectOrPath === 'string'
+    ? projectOrPath
+    : projectOrPath?.path;
+  const name = typeof projectOrPath === 'object' ? projectOrPath?.name : null;
+  const value = String(raw || name || '').trim();
+  if (!value) return config.projectsRoot;
+  if (path.isAbsolute(value)) return value;
+  const normalised = value.replace(/[\\/]+/g, '/');
+  if (normalised === name || normalised.startsWith('./data/projects/') || normalised.startsWith('data/projects/')) {
+    return path.join(config.projectsRoot, path.basename(normalised));
+  }
+  return path.resolve(ROOT, value.replace(/^\.\//, ''));
+}
+
 // MCP server configurations from environment variables
 export function getMcpServersFromEnv() {
   const mcpServers = {};

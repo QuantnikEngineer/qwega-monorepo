@@ -1,6 +1,6 @@
 {
   "generatedBy": "quantnik",
-  "generatedAt": "2026-06-13T06:23:53.761Z",
+  "generatedAt": "2026-06-13T13:01:45.829Z",
   "project": {
     "id": 2,
     "name": "testreation",
@@ -18,7 +18,7 @@
     ]
   },
   "llm": {
-    "provider": "bedrock",
-    "model": "us.anthropic.claude-sonnet-4-6-20251001-v1:0"
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-6"
   }
 }

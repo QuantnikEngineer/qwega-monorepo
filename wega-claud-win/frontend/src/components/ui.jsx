@@ -6,7 +6,7 @@ export const S = ({ c, children }) => <span style={{ color: c }}>{children}</spa
 // Single source of truth for "what model name do we put on screen". The
 // raw model id can take several forms depending on the provider:
 //   - Anthropic direct:  claude-opus-4-7  ·  claude-sonnet-4-6  ·  claude-haiku-4-5-20251001
-//   - Bedrock:           us.anthropic.claude-sonnet-4-6  ·  us.anthropic.claude-3-5-haiku-20241022-v1:0
+//   - Legacy AWS-style:  us.anthropic.claude-sonnet-4-6  ·  us.anthropic.claude-3-5-haiku-20241022-v1:0
 //                        global.anthropic.claude-sonnet-4-6  ·  anthropic.claude-sonnet-4-6
 //   - Vertex:            claude-3-7-sonnet@20250219
 //   - Foundry:           claude-opus-4-7
@@ -18,15 +18,15 @@ export const S = ({ c, children }) => <span style={{ color: c }}>{children}</spa
 export function formatModel(raw) {
   if (!raw) return '';
   let s = String(raw);
-  // Strip Bedrock cross-region prefixes (us. · global. · eu. · apac. · ca.)
+  // Strip legacy AWS-style cross-region prefixes (us. · global. · eu. · apac. · ca.)
   s = s.replace(/^(?:us|global|eu|apac|ca|sa)\.anthropic\./, '');
-  // Strip the bare Bedrock foundation-model namespace
+  // Strip the bare provider namespace
   s = s.replace(/^anthropic\./, '');
   // Strip the Anthropic-direct prefix
   s = s.replace(/^claude-/, '');
   // Strip Vertex @YYYYMMDD suffix
   s = s.replace(/@\d{8}$/, '');
-  // Strip trailing Bedrock version + date suffixes: -20251001-v1:0  ·  -v1:0  ·  :0
+  // Strip trailing provider version + date suffixes: -20251001-v1:0  ·  -v1:0  ·  :0
   s = s.replace(/-\d{8}-v\d+:\d+$/, '');
   s = s.replace(/-\d{8}$/, '');
   s = s.replace(/-v\d+:\d+$/, '');

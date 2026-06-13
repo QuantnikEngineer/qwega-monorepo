@@ -3,11 +3,12 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { db } from '../db.js';
 import { projectForRead, projectForWrite } from './projectAccess.js';
+import { resolveProjectPath } from '../config.js';
 
 export const skills = Router();
 
 function skillsDir(project) {
-  const dir = path.join(project.path, '.claude', 'skills');
+  const dir = path.join(resolveProjectPath(project), '.claude', 'skills');
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }

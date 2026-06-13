@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import multer from 'multer';
 import { db } from '../db.js';
 import { projectForRead, projectForWrite } from './projectAccess.js';
+import { resolveProjectPath } from '../config.js';
 
 export const uploads = Router();
 
@@ -20,7 +21,7 @@ const storage = multer.diskStorage({
   destination(req, _file, cb) {
     const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.projectId);
     if (!project) return cb(new Error('project not found'));
-    const dir = path.join(project.path, UPLOAD_SUBDIR);
+    const dir = path.join(resolveProjectPath(project), UPLOAD_SUBDIR);
     fs.mkdirSync(dir, { recursive: true });
     req._project = project;
     cb(null, dir);
@@ -78,7 +79,7 @@ uploads.post('/:projectId',
 uploads.get('/:projectId', (req, res) => {
   const project = projectForRead(req.params.projectId, req, res);
   if (!project) return;
-  const dir = path.join(project.path, UPLOAD_SUBDIR);
+  const dir = path.join(resolveProjectPath(project), UPLOAD_SUBDIR);
   if (!fs.existsSync(dir)) return res.json([]);
   const files = fs.readdirSync(dir).map((name) => {
     const stat = fs.statSync(path.join(dir, name));
@@ -95,7 +96,7 @@ uploads.delete('/:projectId/:filename', (req, res) => {
   if (name.includes('/') || name.includes('\\') || name === '..' || name === '.') {
     return res.status(400).json({ error: 'invalid filename' });
   }
-  const file = path.join(project.path, UPLOAD_SUBDIR, name);
+  const file = path.join(resolveProjectPath(project), UPLOAD_SUBDIR, name);
   if (fs.existsSync(file)) fs.unlinkSync(file);
   res.json({ ok: true });
 });
@@ -107,7 +108,7 @@ uploads.get('/:projectId/:filename/raw', (req, res) => {
   if (name.includes('/') || name.includes('\\') || name === '..' || name === '.') {
     return res.status(400).json({ error: 'invalid filename' });
   }
-  const file = path.join(project.path, UPLOAD_SUBDIR, name);
+  const file = path.join(resolveProjectPath(project), UPLOAD_SUBDIR, name);
   if (!fs.existsSync(file)) return res.status(404).json({ error: 'not found' });
   res.download(file);
 });

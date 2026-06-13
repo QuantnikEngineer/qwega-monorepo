@@ -2,7 +2,7 @@ import { Router } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { db } from '../db.js';
-import { config } from '../config.js';
+import { resolveProjectPath } from '../config.js';
 import { projectForRead, projectForWrite } from './projectAccess.js';
 
 export const atlassian = Router();
@@ -12,7 +12,9 @@ export const atlassian = Router();
 // well-known file to consult for defaults instead of guessing or asking.
 export function writeQuantnikProjectFile(project) {
   try {
-    const dir = path.join(project.path, '.claude');
+    const projectDirName = path.basename(String(project.path || project.name || '.'));
+    const projectFsPath = resolveProjectPath(project);
+    const dir = path.join(projectFsPath, '.claude');
     fs.mkdirSync(dir, { recursive: true });
     let labels = [];
     if (project.atlassian_labels) {
@@ -25,7 +27,7 @@ export function writeQuantnikProjectFile(project) {
         id: project.id,
         name: project.name,
         path: '.',
-        managedPath: path.relative(config.projectsRoot, project.path) || '.',
+        managedPath: projectDirName || '.',
       },
       atlassian: {
         siteName: process.env.MCP_ATLASSIAN_SITE_NAME || null,

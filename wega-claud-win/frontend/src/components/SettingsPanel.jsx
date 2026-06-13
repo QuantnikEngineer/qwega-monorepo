@@ -594,7 +594,7 @@ const MODELS = [
 
 // LLM providers — must match the backend PROVIDERS catalog in routes/llm.js.
 // `wired: true` means the quantnik agent runtime can actually use this provider
-// today (Claude Agent SDK supports Anthropic + Bedrock + Vertex + Foundry).
+// today (Claude Agent SDK supports Anthropic + Vertex + Foundry).
 // `wired: false` providers store config but the runtime can't execute against
 // them yet — switching to one of these will surface a clear error on the next
 // chat turn instead of silently routing to Claude.
@@ -607,29 +607,9 @@ const LLM_PROVIDERS = [
     fields: [
       { name: 'anthropicApiKey', label: 'Anthropic API key (optional, overrides .env)', placeholder: 'sk-ant-api03-…', secret: true },
     ],
-    defaultModel: 'claude-opus-4-7',
+    defaultModel: 'claude-sonnet-4-6',
     models: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
     tone: 'phosphor',
-  },
-  {
-    id: 'bedrock',
-    label: 'AWS Bedrock (Claude)',
-    wired: true,
-    note: 'Claude on AWS Bedrock. Region + access key + secret. Session token optional (STS).',
-    fields: [
-      { name: 'awsRegion',          label: 'AWS region',          placeholder: 'us-east-1' },
-      { name: 'awsAccessKeyId',     label: 'AWS access key ID',   placeholder: 'AKIA...' },
-      { name: 'awsSecretAccessKey', label: 'AWS secret key',      placeholder: '...', secret: true },
-      { name: 'awsSessionToken',    label: 'AWS session token (optional)', placeholder: '', secret: true },
-    ],
-    defaultModel: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    models: [
-      'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-      'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-      'us.anthropic.claude-3-5-haiku-20241022-v1:0',
-      'us.anthropic.claude-3-opus-20240229-v1:0',
-    ],
-    tone: 'amber',
   },
   {
     id: 'vertex',

@@ -1,12 +1,12 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import fs from 'node:fs';
 import { db } from '../db.js';
-import { getMcpServersFromEnv } from '../config.js';
-import { applyProviderEnv, applyBedrockFallbackEnv } from '../routes/llm.js';
+import { getMcpServersFromEnv, resolveProjectPath } from '../config.js';
+import { applyProviderEnv } from '../routes/llm.js';
 
 function buildQueryOptions(project, repoPaths, requestPermission, resumeId, llmModel, abortController) {
   return {
-    cwd: project.path,
+    cwd: resolveProjectPath(project),
     model: llmModel || project.model || 'claude-opus-4-7[1m]',
     // Auto-accept file edits; prompt the user via canUseTool (→ PermissionCard
     // in the chat UI) for Bash, MCPs, and anything else with real side effects.
@@ -221,14 +221,9 @@ export async function runTurn({ project, userMessage, onEvent, requestPermission
   }
   let llmModel = providerResult.model;
 
-  // Track whether Bedrock fallback has been engaged this turn — protects
-  // against an infinite loop if Bedrock itself also returns rate-limit.
-  let bedrockFallbackEngaged = false;
-
-  // Cap at 3 attempts: primary, the existing stale/long recovery, then the
-  // Bedrock fallback. Each branch decides what makes the next iteration
-  // recoverable; un-recognised errors still throw on the last attempt.
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  // Cap at 2 attempts: primary, plus one recovery for stale/too-long session
+  // state. Provider throttling is surfaced cleanly; there is no AWS fallback.
+  for (let attempt = 1; attempt <= 2; attempt++) {
     const abortController = new AbortController();
     const iter = query({
       prompt: userMessage,
@@ -249,12 +244,9 @@ export async function runTurn({ project, userMessage, onEvent, requestPermission
       // the SDK a fresh slate, then retry the current user message once.
       const tooLong = attempt === 1 && /Prompt is too long|context.*(window|length).*(exceeded|too long)|input is too long/i.test(msg);
 
-      // Recoverable error (c): primary provider rate-limited or overloaded.
-      // Falls back to Bedrock if .env has AWS creds wired. Only attempts ONCE
-      // per turn (bedrockFallbackEngaged guards a second swap), and only when
-      // we haven't already swapped to Bedrock — otherwise we'd re-enter the
-      // same throttled path.
-      const rateLimited = !bedrockFallbackEngaged && /\b429\b|\b529\b|\b503\b|\b502\b|rate.?limit|overloaded/i.test(msg);
+      // Provider throttling/overload. Quantnik is Anthropic-direct here, so
+      // report the actual provider state instead of silently jumping to AWS.
+      const rateLimited = /\b429\b|\b529\b|\b503\b|\b502\b|rate.?limit|overloaded/i.test(msg);
 
       // Non-recoverable but expected: watchdog fired on a hung tool. The
       // assistant_text explaining the abort already went to the user from
@@ -266,7 +258,16 @@ export async function runTurn({ project, userMessage, onEvent, requestPermission
         return { sessionId: resumeId };
       }
 
-      if (!stale && !tooLong && !rateLimited) throw err;
+      if (rateLimited) {
+        onEvent({
+          type: 'assistant_text',
+          text: `⚠ Anthropic returned a rate-limit or overload error. Retry in a minute, or use a lower-traffic model if this persists. Original error: ${msg.slice(0, 160)}`,
+        });
+        onEvent({ type: 'result', subtype: 'provider_rate_limited', durationMs: 0, totalCostUsd: 0, usage: {} });
+        return { sessionId: resumeId };
+      }
+
+      if (!stale && !tooLong) throw err;
 
       if (tooLong) {
         db.prepare('UPDATE projects SET last_session_id = NULL WHERE id = ?').run(project.id);
@@ -287,28 +288,6 @@ export async function runTurn({ project, userMessage, onEvent, requestPermission
         resumeId = null;
         continue;
       }
-      // rateLimited === true and not yet swapped. Try Bedrock fallback.
-      const fb = applyBedrockFallbackEnv(process.env);
-      if (!fb.available) {
-        // No AWS creds in .env — rate-limit error is genuinely terminal for
-        // this turn. Surface the original error so the user sees what
-        // throttled them rather than a generic "no fallback" message.
-        onEvent({
-          type: 'assistant_text',
-          text: `⚠ Primary LLM provider rate-limited and no Bedrock fallback is configured. Add AWS_BEARER_TOKEN_BEDROCK (or AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY) to backend/.env to enable automatic fallback. Original error: ${msg.slice(0, 160)}`,
-        });
-        throw err;
-      }
-      bedrockFallbackEngaged = true;
-      llmModel = fb.model;
-      // Start the retry as a fresh session — the rate-limited attempt didn't
-      // produce conversation state on disk, so resuming would be meaningless.
-      resumeId = null;
-      onEvent({
-        type: 'assistant_text',
-        text: `(primary LLM rate-limited — switching to Bedrock for this turn · ${fb.model} · ${process.env.AWS_REGION || 'us-east-1'})`,
-      });
-      onEvent({ type: 'system_event', subtype: 'bedrock_fallback_engaged', payload: { model: fb.model, region: process.env.AWS_REGION } });
     }
   }
 

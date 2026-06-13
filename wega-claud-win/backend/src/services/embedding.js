@@ -19,9 +19,8 @@
 //   EMBEDDING_BATCH          (default: 16 — true batch passed to the
 //                              pipeline; bigger = faster but more RAM)
 //
-// Output: Float32Array, normalised. Same shape as the previous Bedrock
-// path, so downstream services (ingest, retrieval, cosine math) didn't
-// have to change.
+// Output: Float32Array, normalised. Downstream services (ingest, retrieval,
+// cosine math) consume the vector through a provider-neutral interface.
 //
 // First-call latency: 10-60 sec on cold cache (model download). Subsequent
 // calls: ~30-150 ms per chunk on CPU. Batches of 16 typically take
@@ -188,7 +187,6 @@ export function authMode() {
 /**
  * True if the embedder is usable. For local embeddings there's no credential
  * gate — disk space + Node version is all that's required, so this is always
- * true. Kept for API compatibility with callers that previously checked
- * Bedrock creds.
+ * true. Kept for API compatibility with callers that check embedding health.
  */
 export function isConfigured() { return true; }

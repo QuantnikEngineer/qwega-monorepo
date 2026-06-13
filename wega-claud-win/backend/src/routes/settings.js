@@ -2,11 +2,12 @@ import { Router } from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
 import { projectForRead, projectForWrite } from './projectAccess.js';
+import { resolveProjectPath } from '../config.js';
 
 export const settings = Router();
 
 function settingsPath(project) {
-  const dir = path.join(project.path, '.claude');
+  const dir = path.join(resolveProjectPath(project), '.claude');
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, 'settings.json');
   if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify({ hooks: {} }, null, 2));

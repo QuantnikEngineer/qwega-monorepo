@@ -37,11 +37,12 @@ projects.post('/', (req, res) => {
   if (!name || !/^[a-zA-Z0-9_-]+$/.test(name)) {
     return res.status(400).json({ error: 'name must match [a-zA-Z0-9_-]+' });
   }
-  const projectPath = customPath
+  const projectFsPath = customPath
     ? path.resolve(customPath)
     : path.join(config.projectsRoot, name);
-  fs.mkdirSync(projectPath, { recursive: true });
-  ensureClaudeDir(projectPath);
+  const projectPath = customPath ? projectFsPath : `./data/projects/${name}`;
+  fs.mkdirSync(projectFsPath, { recursive: true });
+  ensureClaudeDir(projectFsPath);
 
   try {
     const defaultJira = process.env.DEFAULT_JIRA_PROJECT_KEY?.trim() || null;
@@ -58,17 +59,10 @@ projects.post('/', (req, res) => {
     // claimOrphanedProjects). Skills that scaffold projects from the agent
     // process therefore don't have to invent a fake owner.
     const ownerId = req.user?.id ?? null;
-    // Default LLM for newly-created projects should match credentials that
-    // are actually present on this backend. Prefer Bedrock when AWS creds are
-    // wired; otherwise use Anthropic direct when that key/token is available.
-    const hasBedrock = !!(
-      process.env.AWS_BEARER_TOKEN_BEDROCK ||
-      (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY)
-    );
-    const defaultProvider = hasBedrock ? 'bedrock' : 'anthropic';
-    const defaultModel = hasBedrock
-      ? (process.env.QUANTNIK_CHAT_BEDROCK_MODEL || 'us.anthropic.claude-sonnet-4-6-20251001-v1:0')
-      : 'claude-sonnet-4-6';
+    // Chat runs through Anthropic direct. Do not default new projects to AWS
+    // provider state just because old AWS env vars happen to exist.
+    const defaultProvider = 'anthropic';
+    const defaultModel = process.env.QUANTNIK_CHAT_ANTHROPIC_MODEL || 'claude-sonnet-4-6';
     const result = db
       .prepare(`INSERT INTO projects
         (name, path, permission_mode, jira_project_key, confluence_space_key, atlassian_labels, owner_user_id,
