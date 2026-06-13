@@ -27,7 +27,7 @@ function filesIdentical(a, b) {
   } catch { return false; }
 }
 
-// Seed skills from the wega2 repo's `seed-skills/` directory into the user's
+// Seed skills from the quantnik repo's `seed-skills/` directory into the user's
 // `~/.claude/skills/` so the Claude Agent SDK can load them. Runs at startup.
 //
 // Behaviour:

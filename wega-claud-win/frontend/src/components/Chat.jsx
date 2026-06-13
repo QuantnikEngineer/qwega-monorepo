@@ -401,7 +401,7 @@ function OrchestratorStatusPanel({ status, minimized, onToggle, onClose }) {
   // Draggable position — null means "use default top-right anchor".
   const [pos, setPos] = React.useState(() => {
     try {
-      const raw = localStorage.getItem('wega-orch-pos-v2');
+      const raw = localStorage.getItem('quantnik-orch-pos-v2');
       if (!raw) return null;
       const p = JSON.parse(raw);
       if (typeof p?.x === 'number' && typeof p?.y === 'number') return p;
@@ -451,7 +451,7 @@ function OrchestratorStatusPanel({ status, minimized, onToggle, onClose }) {
   };
   const onUp = () => {
     if (dragState.current && pos) {
-      try { localStorage.setItem('wega-orch-pos-v2', JSON.stringify(pos)); } catch {}
+      try { localStorage.setItem('quantnik-orch-pos-v2', JSON.stringify(pos)); } catch {}
     }
     dragState.current = null;
     document.removeEventListener('mousemove', onMove);
@@ -460,7 +460,7 @@ function OrchestratorStatusPanel({ status, minimized, onToggle, onClose }) {
   // Persist on every position settle.
   React.useEffect(() => {
     if (pos) {
-      try { localStorage.setItem('wega-orch-pos-v2', JSON.stringify(pos)); } catch {}
+      try { localStorage.setItem('quantnik-orch-pos-v2', JSON.stringify(pos)); } catch {}
     }
   }, [pos]);
 
@@ -474,7 +474,7 @@ function OrchestratorStatusPanel({ status, minimized, onToggle, onClose }) {
   const resetPosition = (e) => {
     e.preventDefault();
     setPos(null);
-    try { localStorage.removeItem('wega-orch-pos-v2'); } catch {}
+    try { localStorage.removeItem('quantnik-orch-pos-v2'); } catch {}
   };
 
   return (

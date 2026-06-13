@@ -1,6 +1,6 @@
 ---
 name: dotnet-modernize
-description: Modernizes a legacy .NET codebase (any of .NET Framework 4.x, .NET Core 2.x / 3.x, or .NET 5 / 6 / 7) to .NET 8 LTS. Reads the project's configured git repo as input, produces the modernized output as a new top-level folder called `NEW/` in the same repo on a fresh `modernize/dotnet8-<YYYYMMDD>` branch, runs `dotnet build` to validate, executes any test projects it finds, and publishes a modernization report to Confluence (labelled with the project's wega2 tag so it lands in the right dashboard). The skill never overwrites the legacy code in-place — `NEW/` sits alongside the original so reviewers can diff side-by-side and a PR is the merge surface. Use this when a stakeholder asks "can you bring this .NET Framework / .NET Core 3.1 app up to .NET 8?"; the skill does the mechanical conversion (csproj format upgrade, TFM bump, package-version bumps, `System.Web` → ASP.NET Core middleware, `web.config` → `appsettings.json` + `Program.cs`, generic-host pattern, nullable-reference-type enablement, file-scoped namespaces) and flags anything that requires human judgement.
+description: Modernizes a legacy .NET codebase (any of .NET Framework 4.x, .NET Core 2.x / 3.x, or .NET 5 / 6 / 7) to .NET 8 LTS. Reads the project's configured git repo as input, produces the modernized output as a new top-level folder called `NEW/` in the same repo on a fresh `modernize/dotnet8-<YYYYMMDD>` branch, runs `dotnet build` to validate, executes any test projects it finds, and publishes a modernization report to Confluence (labelled with the project's quantnik tag so it lands in the right dashboard). The skill never overwrites the legacy code in-place — `NEW/` sits alongside the original so reviewers can diff side-by-side and a PR is the merge surface. Use this when a stakeholder asks "can you bring this .NET Framework / .NET Core 3.1 app up to .NET 8?"; the skill does the mechanical conversion (csproj format upgrade, TFM bump, package-version bumps, `System.Web` → ASP.NET Core middleware, `web.config` → `appsettings.json` + `Program.cs`, generic-host pattern, nullable-reference-type enablement, file-scoped namespaces) and flags anything that requires human judgement.
 ---
 
 When invoked, follow the steps below in order. Halt early only when a step's hard guardrail trips — otherwise the skill runs autonomously, surfacing decisions in a single report at the end.
@@ -9,16 +9,16 @@ This skill targets **.NET 8 LTS** (TFM `net8.0` / `net8.0-windows`). LTS through
 
 ---
 
-## Step 0 — Resolve context from `wega.json`
+## Step 0 — Resolve context from `quantnik.json`
 
-`Read` `.claude/wega.json` at the project cwd. Capture:
+`Read` `.claude/quantnik.json` at the project cwd. Capture:
 - `project.id`, `project.name` — for report titles and slug
 - `atlassian.confluenceSpaceKey` — target space for the modernization report
 - `atlassian.jiraProjectKey` — target project for any bug tickets if a build/test failure warrants one
-- `atlassian.labels` — the **initiative label** (e.g. `wega-project-faber`). Apply to every Confluence page and Jira issue this skill creates.
+- `atlassian.labels` — the **initiative label** (e.g. `quantnik-project-faber`). Apply to every Confluence page and Jira issue this skill creates.
 - `atlassian.siteName` / `siteUrl` — for browse URLs
 
-If `wega.json` is absent, halt: *"No wega.json — open this project in wega2 first so the sidecar gets written; the Confluence + Jira targets depend on it."*
+If `quantnik.json` is absent, halt: *"No quantnik.json — open this project in quantnik first so the sidecar gets written; the Confluence + Jira targets depend on it."*
 
 ---
 
@@ -26,9 +26,9 @@ If `wega.json` is absent, halt: *"No wega.json — open this project in wega2 fi
 
 Discovery order — first hit wins:
 
-1. **wega2 Repos tab** — `Bash` `curl -s http://localhost:6060/api/repos/<projectId>`. Pick the first row whose `path` exists on disk AND whose `.git` folder is present. If exactly one repo is registered, use it. If multiple, prefer the one whose name matches the project, else ask the user which to modernize.
+1. **quantnik Repos tab** — `Bash` `curl -s http://localhost:6060/api/repos/<projectId>`. Pick the first row whose `path` exists on disk AND whose `.git` folder is present. If exactly one repo is registered, use it. If multiple, prefer the one whose name matches the project, else ask the user which to modernize.
 2. **`additionalDirectories` from the session init** — for each, `Bash` `[ -d "<path>/.git" ] && echo yes`. Same selection rule as above.
-3. **Explicit path** — if neither yielded a repo, halt with: *"No source repo registered. Add one in the wega2 Repos tab (Remote URL is enough — wega2 will clone), then re-run /dotnet-modernize."*
+3. **Explicit path** — if neither yielded a repo, halt with: *"No source repo registered. Add one in the quantnik Repos tab (Remote URL is enough — quantnik will clone), then re-run /dotnet-modernize."*
 
 Record into `run-context.sourceRepo`: `{ path, remote, branch }`. Capture the current branch with `git -C <path> rev-parse --abbrev-ref HEAD` and the latest commit with `git -C <path> rev-parse --short HEAD`.
 
@@ -266,7 +266,7 @@ In the source repo, on a fresh feature branch:
 Bash  cd <repo> && git checkout -b modernize/dotnet8-<YYYYMMDD>
 Bash  cd <repo> && git add NEW/ && git status --porcelain
 Bash  cd <repo> && git commit -m "modernize: add .NET 8 port of <project name> under NEW/" \
-        -m "Generated by wega2 dotnet-modernize skill. See Confluence report for the patch-by-patch plan."
+        -m "Generated by quantnik dotnet-modernize skill. See Confluence report for the patch-by-patch plan."
 Bash  cd <repo> && git push -u origin modernize/dotnet8-<YYYYMMDD>
 ```
 
@@ -289,9 +289,9 @@ Body sections (Confluence storage HTML — use the body-size-aware publish path:
 5. **Test results** — pass / fail / skipped counts per test project + a table of failures with stack traces (first 30 lines each)
 6. **Blockers requiring human judgement** — anything the skill flagged as `manual-port-required` / `manual-decision-required` (WCF / WebForms / heavy EF6 schema migrations / removed APIs with no drop-in)
 7. **Recommended next steps** — concrete list, max 10 items, prioritised
-8. **Run metadata** — wega2 project, branch, commit hashes, skill version, run timestamp
+8. **Run metadata** — quantnik project, branch, commit hashes, skill version, run timestamp
 
-Apply the project's `wega.json.atlassian.labels` to the published page (mandatory — drives dashboard per-project filtering).
+Apply the project's `quantnik.json.atlassian.labels` to the published page (mandatory — drives dashboard per-project filtering).
 
 Record `run-context.reportUrl`.
 
@@ -299,7 +299,7 @@ Record `run-context.reportUrl`.
 
 ## Step 10 — Final summary
 
-Print exactly this shape so the wega2 chat panel renders it cleanly:
+Print exactly this shape so the quantnik chat panel renders it cleanly:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

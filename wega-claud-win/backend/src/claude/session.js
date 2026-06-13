@@ -203,7 +203,7 @@ export async function runTurn({ project, userMessage, onEvent, requestPermission
 
   // Apply the project's LLM provider env vars before kicking off the SDK.
   // process.env mutation is fine here because this is the only inference path
-  // and wega2 is single-tenant; the SDK's subprocess inherits these at spawn.
+  // and quantnik is single-tenant; the SDK's subprocess inherits these at spawn.
   const providerResult = applyProviderEnv(project, process.env);
   if (providerResult.wired === false) {
     onEvent({

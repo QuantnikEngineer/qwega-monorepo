@@ -2,8 +2,8 @@ import { Router } from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
 import { db } from '../db.js';
-import { config, getMcpServersFromEnv } from '../config.js';
-import { writeWegaProjectFile } from './atlassian.js';
+import { config } from '../config.js';
+import { writeQuantnikProjectFile } from './atlassian.js';
 
 export const projects = Router();
 
@@ -12,13 +12,9 @@ function ensureClaudeDir(projectPath) {
   fs.mkdirSync(path.join(claudeDir, 'skills'), { recursive: true });
   const settingsPath = path.join(claudeDir, 'settings.json');
   if (!fs.existsSync(settingsPath)) {
-    // Auto-populate MCP servers from environment variables
-    const mcpServers = getMcpServersFromEnv();
-    const settings = { hooks: {} };
-    if (Object.keys(mcpServers).length > 0) {
-      settings.mcpServers = mcpServers;
-    }
-    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+    // Service-wide MCP servers are injected at runtime from backend env.
+    // Do not copy env-backed credentials into project-local files.
+    fs.writeFileSync(settingsPath, JSON.stringify({ hooks: {} }, null, 2));
   }
   return claudeDir;
 }
@@ -71,11 +67,11 @@ projects.post('/', (req, res) => {
     const defaultConfluence = process.env.DEFAULT_CONFLUENCE_SPACE_KEY?.trim() || null;
     // Auto-assign a unique Atlassian label so the dashboard's JQL filter
     // (and Confluence label filter) can scope cleanly to this project. Every
-    // skill that writes to Jira/Confluence pulls labels from wega.json and
+    // skill that writes to Jira/Confluence pulls labels from quantnik.json and
     // applies them — so artifacts created under this project carry the tag
     // and only those show up in this project's dashboard.
     const slug = name.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
-    const projectLabel = `wega-project-${slug}`;
+    const projectLabel = `quantnik-project-${slug}`;
     // owner_user_id is NULL for loopback creates — the first authenticated
     // user to log in afterward will claim un-owned rows (see auth.js
     // claimOrphanedProjects). Skills that scaffold projects from the agent
@@ -83,10 +79,10 @@ projects.post('/', (req, res) => {
     const ownerId = req.user?.id ?? null;
     // Default LLM for newly-created projects: Bedrock + Sonnet 4.6. The
     // operator can change this from the Settings panel any time. Sonnet 4.6
-    // via Bedrock is wega2's house default per the org's LLM standard;
+    // via Bedrock is quantnik's house default per the org's LLM standard;
     // Anthropic direct is still selectable but no longer the new-project
     // landing path.
-    const defaultModel = process.env.WEGA_CHAT_BEDROCK_MODEL || 'us.anthropic.claude-sonnet-4-6-20251001-v1:0';
+    const defaultModel = process.env.QUANTNIK_CHAT_BEDROCK_MODEL || 'us.anthropic.claude-sonnet-4-6-20251001-v1:0';
     const result = db
       .prepare(`INSERT INTO projects
         (name, path, permission_mode, jira_project_key, confluence_space_key, atlassian_labels, owner_user_id,
@@ -95,7 +91,7 @@ projects.post('/', (req, res) => {
       .run(name, projectPath, defaultJira, defaultConfluence, JSON.stringify([projectLabel]), ownerId,
            defaultModel, defaultModel);
     const created = db.prepare('SELECT * FROM projects WHERE id = ?').get(result.lastInsertRowid);
-    writeWegaProjectFile(created);
+    writeQuantnikProjectFile(created);
     res.json(created);
   } catch (e) {
     res.status(400).json({ error: e.message });
@@ -175,7 +171,7 @@ projects.patch('/:id', (req, res) => {
   values.push(req.params.id);
   db.prepare(`UPDATE projects SET ${fields.join(', ')} WHERE id = ?`).run(...values);
   const updated = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
-  writeWegaProjectFile(updated);
+  writeQuantnikProjectFile(updated);
   res.json(updated);
 });
 

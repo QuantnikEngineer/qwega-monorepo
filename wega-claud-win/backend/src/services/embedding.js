@@ -1,16 +1,16 @@
 // Local embeddings via @xenova/transformers — pure-JS / ONNX, runs on the
-// wega2 host CPU. No external embedding vendor, no API key. The model is
+// quantnik host CPU. No external embedding vendor, no API key. The model is
 // downloaded once to a local cache on first use and cached on disk
 // thereafter.
 //
 // Why local: the user's "use the Claude Code subscription LLM" intent comes
 // down to not paying for a second vendor. Anthropic doesn't ship an
 // embeddings API (they partner with Voyage AI), so the cleanest fit is to
-// run the embedder locally and reserve Claude — via the existing wega2
+// run the embedder locally and reserve Claude — via the existing quantnik
 // CLAUDE_CODE_OAUTH_TOKEN / ANTHROPIC_API_KEY env vars — for the generation
 // side when the /ask skill is wired.
 //
-// Config (all via wega2 backend .env, hot-loadable):
+// Config (all via quantnik backend .env, hot-loadable):
 //   EMBEDDING_MODEL          (default: Xenova/bge-base-en-v1.5)
 //   EMBEDDING_DIM            (default: 768 — matches bge-base)
 //   TRANSFORMERS_CACHE       (default: <backend>/data/models — where ONNX

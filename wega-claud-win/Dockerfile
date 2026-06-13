@@ -19,7 +19,7 @@ FROM node:20-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
       git ca-certificates tini \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd -m -u 10001 wega
+    && useradd -m -u 10001 quantnik
 
 WORKDIR /app/backend
 COPY --from=backend-build  /app/backend/node_modules ./node_modules
@@ -30,18 +30,18 @@ COPY --from=frontend-build /app/frontend/dist /app/frontend/dist
 # build host via scripts/snapshot-claude-user.sh. Required so the deployed
 # Agent SDK sees the same user skills/plugins as the local environment.
 # create directory first
-RUN mkdir -p /home/wega/.claude && chown -R wega:wega /home/wega
+RUN mkdir -p /home/quantnik/.claude && chown -R quantnik:quantnik /home/quantnik
 
 # copy only if exists (handled via wildcard trick)
-COPY --chown=wega:wega .claude-user* /home/wega/.claude/
+COPY --chown=quantnik:quantnik .claude-user* /home/quantnik/.claude/
 
-RUN mkdir -p /app/backend/data && chown -R wega:wega /app /home/wega
+RUN mkdir -p /app/backend/data && chown -R quantnik:quantnik /app /home/quantnik
 
 ENV NODE_ENV=production \
     PORT=6060 \
-    HOME=/home/wega
+    HOME=/home/quantnik
 EXPOSE 6060
-USER wega
+USER quantnik
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["node", "src/index.js"]

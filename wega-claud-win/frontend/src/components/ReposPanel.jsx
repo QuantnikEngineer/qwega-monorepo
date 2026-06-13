@@ -193,7 +193,7 @@ export function ReposPanel({ project }) {
           <h3 style={{ marginTop: 0, color: 'var(--w-phosphor)', font: '600 14px/1 var(--w-mono)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>// add repository</h3>
 
           <p style={{ font: '11px/1.5 var(--w-mono)', color: 'var(--w-text-3)', margin: '6px 0 14px' }}>
-            Paste a remote URL — wega2 clones it under <S c="var(--w-cyan)">backend/data/repos/&lt;project&gt;/&lt;repo&gt;</S> and points the Claude agent at the working copy. No local-path field: the repo's identity is its remote, the working copy is wega2-managed.
+            Paste a remote URL — quantnik clones it under <S c="var(--w-cyan)">backend/data/repos/&lt;project&gt;/&lt;repo&gt;</S> and points the Claude agent at the working copy. No local-path field: the repo's identity is its remote, the working copy is quantnik-managed.
           </p>
 
           <label style={{ display: 'block', font: '10.5px/1 var(--w-mono)', color: 'var(--w-text-2)', letterSpacing: '0.1em', textTransform: 'uppercase', margin: '14px 0 6px' }}>display name</label>

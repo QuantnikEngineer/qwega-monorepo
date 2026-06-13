@@ -5,14 +5,14 @@ description: Containerises a generated full-stack app (frontend + backend from f
 
 When invoked, run end-to-end. **Autonomous after a single Phase 0 confirmation** when a destructive operation is in play (overwriting an existing image tag in a remote registry, or starting containers on ports already in use by other processes). Every other step proceeds without prompts.
 
-**Scope rule (read this first).** `Read` `.claude/wega.json` at the project cwd. If present:
+**Scope rule (read this first).** `Read` `.claude/quantnik.json` at the project cwd. If present:
 - `atlassian.jiraProjectKey` → the **only** allowed Jira project for failure tickets (Phase 5 fallback).
 - `atlassian.confluenceSpaceKey` / `confluenceSpaceId` → the **only** allowed Confluence space for the deployment report.
 - `atlassian.labels` → propagate to every created bug.
 
 If the sidecar is silent or missing, fall back to MEMORY.md / chat-history defaults; never to "first personal space" / "first visible Jira project" for the published report.
 
-This skill supports the same two Atlassian MCP shapes used by the other SDLC skills (`mcp__Confluence__conf_*` / `mcp__Jira__jira_*` for wega2 stdio; `mcp__claude_ai_Atlassian__*` for claude.ai-managed). **Jira logging is mandatory only on hard failures** (not on every successful run). Confluence publish is best-effort — if neither MCP shape is available, the report falls back to a local markdown file at `<app-folder>/deploy/report-<timestamp>.md` and the deployment is still considered successful.
+This skill supports the same two Atlassian MCP shapes used by the other SDLC skills (`mcp__Confluence__conf_*` / `mcp__Jira__jira_*` for quantnik stdio; `mcp__claude_ai_Atlassian__*` for claude.ai-managed). **Jira logging is mandatory only on hard failures** (not on every successful run). Confluence publish is best-effort — if neither MCP shape is available, the report falls back to a local markdown file at `<app-folder>/deploy/report-<timestamp>.md` and the deployment is still considered successful.
 
 ---
 
@@ -22,7 +22,7 @@ This skill supports the same two Atlassian MCP shapes used by the other SDLC ski
 
 `Bash` `docker --version` then `docker compose version` (or `docker-compose --version` as a v1 fallback). If either fails, halt with:
 
-> "Docker (or `docker compose`) is not on the PATH for the wega2 service. Install Docker Desktop, ensure it's running, and retry. Alternatively, point me at a remote Docker host via DOCKER_HOST."
+> "Docker (or `docker compose`) is not on the PATH for the quantnik service. Install Docker Desktop, ensure it's running, and retry. Alternatively, point me at a remote Docker host via DOCKER_HOST."
 
 Probe the daemon: `docker info --format "{{.ServerVersion}}"`. If the daemon isn't reachable, halt with the same hint.
 
@@ -31,7 +31,7 @@ Probe the daemon: `docker info --format "{{.ServerVersion}}"`. If the daemon isn
 In order:
 1. User-supplied path in the invocation message.
 2. Run-context `output_folder` from a prior `/sdlc-orchestrator` Phase 3.
-3. Configured wega2 repos (`additionalDirectories`) that contain both a `frontend/` and a `backend/` subfolder at the root.
+3. Configured quantnik repos (`additionalDirectories`) that contain both a `frontend/` and a `backend/` subfolder at the root.
 4. Chat-history scan for `Application Path:` / `Output folder:` / `Path:` lines (same approach as the dashboard's code-stats endpoint), require `frontend/` + `backend/` siblings to count.
 5. `~/projects/*` directories with both subfolders.
 
@@ -65,7 +65,7 @@ If both ports are clear or are held by an existing container of this same app (c
 ### 0.5 — Detect registry config
 
 Read `<app>/.env` and `~/.docker/config.json` (best-effort) for:
-- `DOCKER_REGISTRY` (e.g. `ghcr.io/wipro`, `<account>.dkr.ecr.us-east-1.amazonaws.com`, `wegabuildiq.azurecr.io`).
+- `DOCKER_REGISTRY` (e.g. `ghcr.io/wipro`, `<account>.dkr.ecr.us-east-1.amazonaws.com`, `quantnik.azurecr.io`).
 - A logged-in registry from `~/.docker/config.json`'s `auths` keys.
 
 If neither is found, push step is skipped — local images only. Record `run-context.registry` (or `null`).
@@ -238,7 +238,7 @@ If both pass → Phase 5 is skipped (no failure ticket). If either fails → Pha
 
 Only when Phase 2 (build), Phase 3 (start), or Phase 4 (health) failed.
 
-Use the same RCA + corrective-action playbook style as `test-script-executor` Phase 4. Issuetype: `Bug` → `Defect` → `Task` fallback. Project key from `wega.json` `jiraProjectKey` (hard-fail if neither sidecar nor MEMORY.md resolves a key).
+Use the same RCA + corrective-action playbook style as `test-script-executor` Phase 4. Issuetype: `Bug` → `Defect` → `Task` fallback. Project key from `quantnik.json` `jiraProjectKey` (hard-fail if neither sidecar nor MEMORY.md resolves a key).
 
 Bug summary: `Container deploy failed: <stage> [<short reason>]`. Description sections:
 - **Stage** — build / start / healthcheck.
@@ -255,7 +255,7 @@ Idempotency: search the project for an existing open bug with the same summary; 
 
 ## Phase 6 — Publish report to Confluence
 
-Use **`wega.json.atlassian.confluenceSpaceKey`** as the target — non-negotiable when present. Never fall back to "first personal space" when the sidecar has a value.
+Use **`quantnik.json.atlassian.confluenceSpaceKey`** as the target — non-negotiable when present. Never fall back to "first personal space" when the sidecar has a value.
 
 Title: `<Project slug> — Container Deployment Report — <YYYY-MM-DD HH:mm>`.
 
@@ -342,6 +342,6 @@ If no Atlassian MCP was loaded at all, the report line shows the local markdown 
 - **Never overwrite existing Dockerfiles / compose / nginx config.** If they're there, the team has reasons; respect them, log "kept existing", continue.
 - **No silent registry pushes.** Phase 7 only fires when a registry is explicitly resolvable. No magic guessing at default Docker Hub.
 - **Never delete volumes or images without user consent.** The stop recipe in the report mentions `-v --rmi all` but the skill never runs that variant itself.
-- **Treat the wega.json scope as authoritative** for Jira project key and Confluence space — never fall back to personal-space or first-visible-project when the sidecar has a value.
+- **Treat the quantnik.json scope as authoritative** for Jira project key and Confluence space — never fall back to personal-space or first-visible-project when the sidecar has a value.
 - **Don't leak secrets.** When echoing `<app>/.env` content into the report or into a Jira bug, mask any value whose key matches `(?:_KEY|_TOKEN|_SECRET|_PASSWORD|API_KEY)\b` to `••••<last4>`.
 - **Idempotent.** Re-running over a healthy deploy returns within seconds (compose ps confirms running, healthcheck reconfirms, nothing rebuilt unless source changed).

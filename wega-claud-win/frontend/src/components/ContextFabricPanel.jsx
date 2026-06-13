@@ -185,7 +185,7 @@ function AddSourceForm({ type, scope, projectId, availableRepos, onSubmit, onSub
             rows={5}
             placeholder={
               type === 'website'    ? 'https://example.com/page\nhttps://docs.example.com/getting-started\nhttps://blog.example.com/announcement'
-            : type === 'confluence' ? 'BL\nWSKB, label=wega-project-faber\nDOCS'
+            : type === 'confluence' ? 'BL\nWSKB, label=quantnik-project-faber\nDOCS'
             :                          'https://contoso.sharepoint.com/sites/engineering\nhttps://contoso.sharepoint.com/sites/design'
             }
             style={{
@@ -352,7 +352,7 @@ function QueryProbe({ scope, projectId }) {
 // Top-level panel
 //
 // Renders in two modes:
-//   mode="global"  → wega2-level Context Fabric (org scope only).
+//   mode="global"  → quantnik-level Context Fabric (org scope only).
 //                    Admin-managed. Visible at /context. Project sources
 //                    aren't shown — those belong to per-project surfaces.
 //   mode="project" → per-project Context Fabric. Default scope is the
@@ -497,8 +497,8 @@ export function ContextFabricPanel({ mode = 'project', project }) {
     <ScreenFrame
       breadcrumb={
         isGlobal
-          ? <><S c="var(--w-phosphor)">wega</S> ─ context-fabric · global</>
-          : <><S c="var(--w-phosphor)">~/{project?.name || 'wega'}</S> ─ context-fabric</>
+          ? <><S c="var(--w-phosphor)">quantnik</S> ─ context-fabric · global</>
+          : <><S c="var(--w-phosphor)">~/{project?.name || 'quantnik'}</S> ─ context-fabric</>
       }
       title={isGlobal ? 'Context Fabric — Global' : 'Context Fabric'}
       subtitle={

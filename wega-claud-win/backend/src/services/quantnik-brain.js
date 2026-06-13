@@ -2,16 +2,16 @@
 // chunks (from the Context Fabric), pass them to Claude as system context,
 // and return a grounded answer with citations.
 //
-// Auth: reads ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN from the wega2
+// Auth: reads ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN from the quantnik
 // .env — same env vars routes/llm.js uses for direct-Anthropic LLM calls.
 // No extra subscription, no new vendor. The Claude Code subscription token
 // works because the SDK accepts it as an authToken bearer.
 //
-// Model:  WEGA_BRAIN_MODEL env var, default claude-sonnet-4-6 (balanced for
+// Model:  QUANTNIK_BRAIN_MODEL env var, default claude-sonnet-4-6 (balanced for
 // Q&A — Haiku is too thin for nuanced grounding, Opus is overkill).
 //
 // Usage cost is recorded in the existing usage_events table with model name
-// "wega-brain:<model>" so the admin overview rolls it up next to chat usage.
+// "quantnik-brain:<model>" so the admin overview rolls it up next to chat usage.
 
 import Anthropic from '@anthropic-ai/sdk';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
@@ -20,7 +20,7 @@ import { retrieve } from './retrieval.js';
 
 const DEFAULT_MODEL          = 'claude-sonnet-4-6';
 // House default for Bedrock: Sonnet 4.6 inference profile. Was 3.7 Sonnet
-// (now retired). Override per-instance via WEGA_BRAIN_BEDROCK_MODEL in .env.
+// (now retired). Override per-instance via QUANTNIK_BRAIN_BEDROCK_MODEL in .env.
 const DEFAULT_BEDROCK_MODEL  = 'us.anthropic.claude-sonnet-4-6-20251001-v1:0';
 const DEFAULT_BEDROCK_REGION = 'us-east-1';
 
@@ -140,7 +140,7 @@ async function generateViaAnthropic({ model, system, messages }) {
 async function generateViaBedrock({ system, messages }) {
   const client = bedrockClient();
   if (!client) throw new Error('bedrock_unconfigured: no AWS_BEARER_TOKEN_BEDROCK or AWS_ACCESS_KEY_ID');
-  const modelId = process.env.WEGA_BRAIN_BEDROCK_MODEL || DEFAULT_BEDROCK_MODEL;
+  const modelId = process.env.QUANTNIK_BRAIN_BEDROCK_MODEL || DEFAULT_BEDROCK_MODEL;
   const resp = await client.send(new InvokeModelCommand({
     modelId,
     contentType: 'application/json',
@@ -348,7 +348,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
       citations: [],
       retrieved: 0,
       candidateCount: r.candidateCount ?? 0,
-      model:   model || process.env.WEGA_BRAIN_MODEL || DEFAULT_MODEL,
+      model:   model || process.env.QUANTNIK_BRAIN_MODEL || DEFAULT_MODEL,
       usage:   { input_tokens: 0, output_tokens: 0 },
       costUsd: 0,
       durationMs: Date.now() - t0,
@@ -357,7 +357,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
   }
 
   // --- 2. compose prompt + invoke Claude -----------------------------------
-  const chosenModel = model || process.env.WEGA_BRAIN_MODEL || DEFAULT_MODEL;
+  const chosenModel = model || process.env.QUANTNIK_BRAIN_MODEL || DEFAULT_MODEL;
   const systemPrompt = buildSystemPrompt(userName);
 
   // Multi-turn messages array: prior turns from `history` (sanity-trimmed),
@@ -384,13 +384,13 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
     throw new Error(
       'No LLM credential — set ANTHROPIC_API_KEY / CLAUDE_CODE_OAUTH_TOKEN ' +
       'and/or AWS_BEARER_TOKEN_BEDROCK in backend/.env. ' +
-      'wega2 will use Anthropic-direct first and fall back to Bedrock on rate-limit.'
+      'quantnik will use Anthropic-direct first and fall back to Bedrock on rate-limit.'
     );
   }
 
   let resp;
   let fellBackReason = null;
-  // PRIMARY = Bedrock (Sonnet 4.6 — wega2's house default). Anthropic-direct
+  // PRIMARY = Bedrock (Sonnet 4.6 — quantnik's house default). Anthropic-direct
   // is the FALLBACK now, the reverse of the old order. If Bedrock fails for
   // a rate-limit / overload reason and Anthropic creds are present, retry
   // there. Any other error from Bedrock propagates.
@@ -415,7 +415,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
   // --- 3. cost estimate. Rates vary by platform AND model. ----------------
   // Anthropic direct: published per-million input/output rates.
   // Bedrock: same Claude model price + a thin AWS markup; we use the same
-  //          numbers since the wega-brain "cost" line is directional.
+  //          numbers since the quantnik-brain "cost" line is directional.
   const costPerMillion = {
     'claude-opus-4-7':                                       { in: 15,   out: 75 },
     'claude-sonnet-4-6':                                     { in:  3,   out: 15 },
@@ -436,7 +436,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
     try {
       const projectId = scope.kind === 'project' ? scope.projectId : null;
       if (projectId) {
-        const modelTag = `wega-brain:${resp.via === 'bedrock' ? 'bedrock:' : ''}${resp.modelUsed}`;
+        const modelTag = `quantnik-brain:${resp.via === 'bedrock' ? 'bedrock:' : ''}${resp.modelUsed}`;
         db.prepare(`
           INSERT INTO usage_events
             (project_id, user_id, model, session_id,
@@ -454,7 +454,7 @@ export async function ask({ question, scope, topK = 6, model, userId = null, use
         );
       }
     } catch (e) {
-      console.warn('[wega-brain] usage_events insert failed:', e?.message);
+      console.warn('[quantnik-brain] usage_events insert failed:', e?.message);
     }
   }
 

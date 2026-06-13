@@ -17,7 +17,7 @@ export const RESERVED_SLUGS = new Set([
   'api', 'ws', 'auth', 'assets', 'health', 'static', 'public', 'admin',
   'login', 'logout', 'callback', 'favicon.ico', 'index.html', 'd',
   // SPA route prefixes — must fall through to the SPA catch-all instead of
-  // matching a deployed app whose slug happens to clash with a wega2 URL.
+  // matching a deployed app whose slug happens to clash with a quantnik URL.
   'projects',
 ]);
 
@@ -96,14 +96,14 @@ function spawnBackend(dep) {
   // from the public host. Browsers send Origin even on same-origin POSTs
   // (anti-CSRF), so a generated app that defaults CORS to http://localhost:5173
   // will otherwise reject every dispatcher-proxied write. PUBLIC_BASE_URL is
-  // wega2's authoritative public host; default the dev port for localhost runs.
+  // quantnik's authoritative public host; default the dev port for localhost runs.
   if (process.env.PUBLIC_BASE_URL) {
     env.CORS_ORIGIN = `${process.env.PUBLIC_BASE_URL},http://localhost:${process.env.PORT || 6060},http://localhost:5173`;
   }
   if (dep.backend_env) {
     try { Object.assign(env, JSON.parse(dep.backend_env)); } catch {}
   }
-  // Ensure PORT is the wega2-allocated one even if backend_env specified a different one.
+  // Ensure PORT is the quantnik-allocated one even if backend_env specified a different one.
   env.PORT = String(dep.backend_port);
 
   const logFd = fs.openSync(dep.log_path || deploymentLogPath(dep.slug), 'a');
@@ -218,7 +218,7 @@ export function deploymentDispatcher(req, res, next) {
   return res.status(404).type('text').send('not found');
 }
 
-// On wega2 startup: re-spawn every deployment that was running before the
+// On quantnik startup: re-spawn every deployment that was running before the
 // restart, so the user's deployed apps survive a service bounce.
 export function restartLiveDeployments() {
   const rows = db.prepare(`SELECT * FROM deployments WHERE status IN ('running', 'pending') AND backend_path IS NOT NULL`).all();

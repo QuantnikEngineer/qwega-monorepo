@@ -27,12 +27,12 @@ Every phase that produces an artifact (doc, plan, ADR, test, slice doc, capstone
 
 1. **`git add` the artifact + `git commit`** with a structured message naming the slice / phase.
 2. **`git push origin <branch>`** to the configured remote. If the push fails for transient reasons (network, auth retry), retry ONCE with `git pull --rebase` first then re-push. If it still fails, **HALT** the phase with the error printed — do not proceed.
-3. **Publish to Confluence** under the project's space and label. If `atlassian.confluenceSpaceKey` is missing from `.claude/wega.json`, **HALT** the phase with: *"Confluence publish target missing — set `atlassian.confluenceSpaceKey` and `atlassian.labels` in the wega2 project's Atlassian settings, then re-run this phase."* No silent skip.
+3. **Publish to Confluence** under the project's space and label. If `atlassian.confluenceSpaceKey` is missing from `.claude/quantnik.json`, **HALT** the phase with: *"Confluence publish target missing — set `atlassian.confluenceSpaceKey` and `atlassian.labels` in the quantnik project's Atlassian settings, then re-run this phase."* No silent skip.
 4. **Ingest into Context Fabric** as one source per doc, scope=`project`, type=`document`, label-prefixed `modernization-...`. Same halt-on-failure as above.
 
 The earlier version of this skill said "if Atlassian is wired" as a hedge. That hedge is REMOVED. Confluence is mandatory. If the operator hasn't configured a Confluence space, they configure it before running the skill — the skill does not run with a missing sink.
 
-For the publish step, prefer the body-size-aware path (`Bash` + `curl + REST` for any body that may exceed 30 KB — slice diff reports, the capstone, the technical-architecture page all do). See `backend/scripts/publish-modernization-docs.js` in the wega2 repo for the canonical Node script that publishes every modernization doc on disk to Confluence in one shot — invoke it from inside a `Bash` call after each phase's commit + push.
+For the publish step, prefer the body-size-aware path (`Bash` + `curl + REST` for any body that may exceed 30 KB — slice diff reports, the capstone, the technical-architecture page all do). See `backend/scripts/publish-modernization-docs.js` in the quantnik repo for the canonical Node script that publishes every modernization doc on disk to Confluence in one shot — invoke it from inside a `Bash` call after each phase's commit + push.
 
 ### B. Autonomous gates with 60-second timeout
 
@@ -48,7 +48,7 @@ Every Human Gate (Gate 1 after Phase 2 · Gate 2 after Phase 5 per slice · Gate
       reply is treated as a non-trivial response — read it as a human
       instruction and route accordingly.
    ```
-4. **`Bash` `sleep 60`** — a real 60-second wait. The user may interrupt during this window via the wega2 chat panel's stop button or a follow-up message.
+4. **`Bash` `sleep 60`** — a real 60-second wait. The user may interrupt during this window via the quantnik chat panel's stop button or a follow-up message.
 5. **After the sleep returns:** if no user message arrived during the wait, print:
    ```
    🤖 Auto-approved · 60s elapsed without a human response.
@@ -73,7 +73,7 @@ Auto-approval at Gate 2 or Gate 3 is the agent's recommendation only when the sa
 
 ## Modernization Status block (print after every phase transition)
 
-Mirrors the sdlc-orchestrator's pipeline-status block — print this exact shape after every phase-tracker POST so the wega2 chat panel echoes the Dashboard's phase tracker and the user can read progress at a glance. The block IS the user-visible heartbeat of the workflow; without it, multi-week slice-loop runs feel silent even when the agent is doing meaningful work.
+Mirrors the sdlc-orchestrator's pipeline-status block — print this exact shape after every phase-tracker POST so the quantnik chat panel echoes the Dashboard's phase tracker and the user can read progress at a glance. The block IS the user-visible heartbeat of the workflow; without it, multi-week slice-loop runs feel silent even when the agent is doing meaningful work.
 
 **Template (copy verbatim, fill in the bracketed slots):**
 
@@ -102,7 +102,7 @@ Mirrors the sdlc-orchestrator's pipeline-status block — print this exact shape
 - `done` — phase completed. For slice-loop phases, suffix with the loop count, e.g. `done · 3 of 8 slices`
 - `awaiting-gate` — phase done, waiting on a human approval before advancing (shown for Phase 2 between done + Gate 1 approval, Phase 5 between done + Gate 2 approval, Phase 8 between done + Gate 3 approval)
 - `failed` — phase exited with an error. Rare — most failures are surfaced as gate concerns, not failures
-- `skipped` — phase wasn't applicable on this run (e.g. Atlassian not wired → Phase 6's Confluence step emits `skipped — no wega.json` but the on-disk doc generation still ran)
+- `skipped` — phase wasn't applicable on this run (e.g. Atlassian not wired → Phase 6's Confluence step emits `skipped — no quantnik.json` but the on-disk doc generation still ran)
 
 **When to print:**
 
@@ -115,28 +115,28 @@ Inside the slice loop, "after each tracker POST" means: every time Phase 4/5/6/7
 
 ---
 
-## Phase 0 — wega2 setup (always runs first)
+## Phase 0 — quantnik setup (always runs first)
 
-Before Phase 1, resolve the project context from wega2:
+Before Phase 1, resolve the project context from quantnik:
 
-1. **`Read` `.claude/wega.json`** at the project cwd. If present, cache:
+1. **`Read` `.claude/quantnik.json`** at the project cwd. If present, cache:
    - `project.id`, `project.name` — for the phase-tracker POSTs and report titles
    - `atlassian.confluenceSpaceKey` (or `confluenceSpaceId`) — where understanding docs publish
    - `atlassian.jiraProjectKey` — where slice tickets go (optional but recommended)
    - `atlassian.labels` — apply to every Confluence page / Jira issue created
-   If `wega.json` is absent, proceed without Atlassian publishing — write docs to disk only and tell the user the Confluence/Jira mirror is skipped.
+   If `quantnik.json` is absent, proceed without Atlassian publishing — write docs to disk only and tell the user the Confluence/Jira mirror is skipped.
 
 2. **Identify the source repo(s).** Three-tier discovery — first hit wins:
 
-   **Tier 1 — wega2 Repos tab.** `Bash` `curl -s http://localhost:6060/api/repos/<projectId>` lists registered repos for the project. For each row, verify `path` exists on disk AND `<path>/.git` is present (so a registered-but-never-cloned row isn't picked). If exactly one survives, use it. If multiple, prefer the one whose `name` matches the project name; if still ambiguous, list them in chat and ask the user which to modernize.
+   **Tier 1 — quantnik Repos tab.** `Bash` `curl -s http://localhost:6060/api/repos/<projectId>` lists registered repos for the project. For each row, verify `path` exists on disk AND `<path>/.git` is present (so a registered-but-never-cloned row isn't picked). If exactly one survives, use it. If multiple, prefer the one whose `name` matches the project name; if still ambiguous, list them in chat and ask the user which to modernize.
 
-   **Tier 2 — `additionalDirectories` from session init.** Each entry in the agent's `additionalDirectories` array is a directory the wega2 process has read access to (often holds the project cwd + any extra paths the user has wired in). Probe each: `Bash` `[ -d "<path>/.git" ] && echo yes`. Apply the same name-match → ask-the-user rule as Tier 1. This tier catches greenfield modernization runs where the legacy code is sitting in a temp directory the user hasn't formalised in the Repos tab yet.
+   **Tier 2 — `additionalDirectories` from session init.** Each entry in the agent's `additionalDirectories` array is a directory the quantnik process has read access to (often holds the project cwd + any extra paths the user has wired in). Probe each: `Bash` `[ -d "<path>/.git" ] && echo yes`. Apply the same name-match → ask-the-user rule as Tier 1. This tier catches greenfield modernization runs where the legacy code is sitting in a temp directory the user hasn't formalised in the Repos tab yet.
 
    **Tier 3 — explicit path from the user.** If Tiers 1 and 2 yielded nothing, ask in chat:
 
    ```
    No legacy repo registered or discovered for this project. Two options:
-     (a) Add the remote URL in the wega2 Repos tab — I'll clone it and continue.
+     (a) Add the remote URL in the quantnik Repos tab — I'll clone it and continue.
      (b) Paste the absolute path to the legacy code on this host and I'll modernize from there.
 
    Reply with the path (option b) or "added" (option a).
@@ -163,7 +163,7 @@ Before Phase 1, resolve the project context from wega2:
    <repoRoot>/modern/    ← Phase 4 transformed code (per-slice subfolders)
    ```
 
-5. **POST Phase 1 = running** to the wega2 phase tracker so the Dashboard panel lights up:
+5. **POST Phase 1 = running** to the quantnik phase tracker so the Dashboard panel lights up:
 
    ```bash
    curl -s -X POST http://localhost:6060/api/phases/<projectId> \
@@ -218,7 +218,7 @@ curl -s -X POST http://localhost:6060/api/phases/<projectId> \
   -d '{"phase":2,"status":"running","name":"Recommend Strategy"}'
 ```
 
-**Then ingest the understanding docs into the Context Fabric** so WEGA BRAIN can answer questions about the legacy system during the rest of the modernization. One source per subsystem doc, type=`document`, scope=`project`:
+**Then ingest the understanding docs into the Context Fabric** so Quantnik BRAIN can answer questions about the legacy system during the rest of the modernization. One source per subsystem doc, type=`document`, scope=`project`:
 
 ```bash
 for f in modernization/understanding/*.md; do
@@ -352,7 +352,7 @@ Run this loop for each slice in backlog order, starting with the pilot if one wa
 
 Each slice flows: **Transform → Verify (Gate 2) → Document → Deploy (canary)**. Documentation runs after Gate 2 approval but before any canary traffic — that's intentional, so stakeholders, support, and on-call have time to read the new docs before real users see the new code.
 
-The slice loop uses phases 4/5/6/7 in the wega2 phase tracker. Re-POST them as `running` at the start of each slice's iteration; the `note` field carries the slice id. The Dashboard panel will show the loop as "running" on the active slice and reflect Phase 8 (decommission) only after every slice has been promoted.
+The slice loop uses phases 4/5/6/7 in the quantnik phase tracker. Re-POST them as `running` at the start of each slice's iteration; the `note` field carries the slice id. The Dashboard panel will show the loop as "running" on the active slice and reflect Phase 8 (decommission) only after every slice has been promoted.
 
 ### Phase 4 — Transform
 
@@ -361,7 +361,7 @@ The slice loop uses phases 4/5/6/7 in the wega2 phase tracker. Re-POST them as `
 3. **Build the facade route first.** Before writing any new code, wire the facade so the legacy and new paths are both addressable. The facade defaults to legacy for this slice; new is dark.
 4. **Migrate exactly this one slice** to the target stack. Preserve business logic exactly — including the legacy quirks unless an intentional-divergence test explicitly authorises a behaviour change.
 5. **Small steps, frequent commits.** Every successfully-compiling + safety-net-passing intermediate state gets a commit. If a step derails, `git reset` back to the last checkpoint rather than patching forward through broken code.
-6. **Role separation.** One agent transforms (this run), a second agent reviews. If wega2's `ultrareview` skill is available, invoke it for the slice's diff before moving to Phase 5.
+6. **Role separation.** One agent transforms (this run), a second agent reviews. If quantnik's `ultrareview` skill is available, invoke it for the slice's diff before moving to Phase 5.
 7. **Unmigrated code stays callable through the facade** as an anti-corruption layer.
 
 POST phase 4 with `{"phase":4,"status":"running","name":"Transform","note":"slice <id> · transforming"}`. When the slice's transform is checkpointed and code-review feedback is incorporated, POST `{"phase":4,"status":"done","name":"Transform","note":"slice <id> · transformed"}`, then POST `{"phase":5,"status":"running","name":"Verify","note":"slice <id>"}`. Every POST includes `name` — the API preserves the existing name when one isn't passed but always including it makes the intent explicit and survives DELETE-then-recreate cycles.
@@ -406,7 +406,7 @@ POST `{"phase":5,"status":"done","name":"Verify","note":"slice <id> · gate-2 ap
 
 ### Phase 6 — Document the slice (technical + business → Confluence)
 
-**Objective.** Capture what's shipping in this slice BEFORE it reaches real users, so stakeholders, support, and on-call have time to read, review, and prepare. Documentation is generated automatically from the verified slice, published to Confluence, and ingested back into the Context Fabric so WEGA BRAIN can answer questions about the modernized system, not just the legacy one. No human gate here — docs are designed for revisable iteration; reviewers comment in Confluence and the slice's canary pauses if a substantive concern is raised, but the workflow itself doesn't block on doc-approval.
+**Objective.** Capture what's shipping in this slice BEFORE it reaches real users, so stakeholders, support, and on-call have time to read, review, and prepare. Documentation is generated automatically from the verified slice, published to Confluence, and ingested back into the Context Fabric so Quantnik BRAIN can answer questions about the modernized system, not just the legacy one. No human gate here — docs are designed for revisable iteration; reviewers comment in Confluence and the slice's canary pauses if a substantive concern is raised, but the workflow itself doesn't block on doc-approval.
 
 **Do:**
 
@@ -432,7 +432,7 @@ POST `{"phase":5,"status":"done","name":"Verify","note":"slice <id> · gate-2 ap
 
 5. **Publish to Confluence.** Use the body-size-aware publish path (stdio MCP for ≤ 30 KB, `curl + REST` for larger). Per-slice pages live as children of a `<Project> — Modernization · Slice <id>` parent, which itself sits under the project's modernization root so the navigation tree stays clean. Apply `atlassian.labels`.
 
-6. **Ingest into the Context Fabric.** Same pattern as Phase 1's understanding-doc ingest — one source per published page, type=`document`, scope=`project`, label prefixed `modernization-slice-<id>: …`. This is what lets WEGA BRAIN answer questions like "how does the new auth flow handle expired tokens?" once a slice is documented:
+6. **Ingest into the Context Fabric.** Same pattern as Phase 1's understanding-doc ingest — one source per published page, type=`document`, scope=`project`, label prefixed `modernization-slice-<id>: …`. This is what lets Quantnik BRAIN answer questions like "how does the new auth flow handle expired tokens?" once a slice is documented:
 
    ```bash
    for f in modernization/slices/<id>/docs/technical/*.md modernization/slices/<id>/docs/business/*.md; do
@@ -444,7 +444,7 @@ POST `{"phase":5,"status":"done","name":"Verify","note":"slice <id> · gate-2 ap
 
 7. **Stamp `SLICES.md`** with `docs-published: <Confluence URL of the slice parent page>` so the SLICES backlog records the doc artifact alongside the gate-2 approval.
 
-**Exit criteria:** technical + business doc sets exist on disk AND in Confluence; living docs updated; Context Fabric sources ingested; `SLICES.md` row records the doc URL. If Atlassian wasn't wired (no `wega.json` Confluence config), exit criteria reduce to "docs on disk + Context Fabric ingested" and the skill tells the user the Confluence mirror was skipped.
+**Exit criteria:** technical + business doc sets exist on disk AND in Confluence; living docs updated; Context Fabric sources ingested; `SLICES.md` row records the doc URL. If Atlassian wasn't wired (no `quantnik.json` Confluence config), exit criteria reduce to "docs on disk + Context Fabric ingested" and the skill tells the user the Confluence mirror was skipped.
 
 **Phase tracking:**
 ```bash
@@ -518,7 +518,7 @@ These are non-negotiable. The skill prints the gate banner, waits, and only adva
 
 ## Final summary (printed after Phase 8 done)
 
-Print one last **Modernization Status** block first (every row should read `done`), then the summary below — that way the final two blocks in the conversation tell the user "the board is green" and "here's what landed" back-to-back. Use this exact shape so the wega2 chat panel renders the summary cleanly:
+Print one last **Modernization Status** block first (every row should read `done`), then the summary below — that way the final two blocks in the conversation tell the user "the board is green" and "here's what landed" back-to-back. Use this exact shape so the quantnik chat panel renders the summary cleanly:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -549,10 +549,10 @@ Print one last **Modernization Status** block first (every row should read `done
   Slice doc sets:           <N published>  ·  technical + business per slice
   Living architecture page: <Confluence URL>
   Release notes (rolled-up): <Confluence URL>
-  Context Fabric sources:   <N ingested>  ·  WEGA BRAIN now answers on the modernized system
+  Context Fabric sources:   <N ingested>  ·  Quantnik BRAIN now answers on the modernized system
 
 📄 Report
-  Confluence root: <URL or "skipped — no wega.json">
+  Confluence root: <URL or "skipped — no quantnik.json">
   In-repo:         <repoRoot>/modernization/
 
 Next steps:

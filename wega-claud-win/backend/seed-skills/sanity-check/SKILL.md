@@ -3,15 +3,15 @@ name: sanity-check
 description: Runs an end-to-end sanity / smoke check against a deployed application — verifies the public URL serves the SPA, the deployed backend's health endpoint responds, every API route the frontend actually calls returns a healthy status, and each main user-story feature visible in Jira maps to a live endpoint. Publishes a structured pass/fail report to Confluence with the URL printed at the end. Use this after a deploy-to-platform (or orchestrator Phase 10) run to confirm the deployment is actually healthy, not just "running". The counterpart to test-script-executor — that runs scripted Playwright tests against the UI; this runs a lightweight HTTP/SPA probe suite for fast deploy-time confidence and produces a single Confluence-published report stakeholders can read in 30 seconds.
 ---
 
-When invoked, run the sanity checks end-to-end. **Mostly autonomous** — no interactive prompts under happy path. Halt with a clear error only when (a) `wega.json` is missing, (b) no deployment exists for this project, or (c) the Confluence MCP isn't loaded.
+When invoked, run the sanity checks end-to-end. **Mostly autonomous** — no interactive prompts under happy path. Halt with a clear error only when (a) `quantnik.json` is missing, (b) no deployment exists for this project, or (c) the Confluence MCP isn't loaded.
 
-This skill supports the **two Atlassian MCP shapes** described in other wega2 skills (`mcp__Jira__*` + `mcp__Confluence__*` stdio, or `mcp__claude_ai_Atlassian__*`). Detect which is loaded at session start and use the matching tool calls throughout. If neither is available, still run the checks but skip the Confluence-publish step — print the report to chat instead so the user can paste it elsewhere.
+This skill supports the **two Atlassian MCP shapes** described in other quantnik skills (`mcp__Jira__*` + `mcp__Confluence__*` stdio, or `mcp__claude_ai_Atlassian__*`). Detect which is loaded at session start and use the matching tool calls throughout. If neither is available, still run the checks but skip the Confluence-publish step — print the report to chat instead so the user can paste it elsewhere.
 
 ---
 
 ## Step 0 — Resolve context
 
-### 0.1 — Read `.claude/wega.json` at the project cwd
+### 0.1 — Read `.claude/quantnik.json` at the project cwd
 
 Pull from the sidecar:
 - `project.id` → required for the deployments API.
@@ -20,14 +20,14 @@ Pull from the sidecar:
 - `atlassian.confluenceSpaceKey` → target space for the report (do **not** publish elsewhere).
 - `atlassian.siteName` / `siteUrl` → for browse URLs.
 
-Halt with a clear error if `wega.json` is absent — without `project.id` we can't find the deployment to probe.
+Halt with a clear error if `quantnik.json` is absent — without `project.id` we can't find the deployment to probe.
 
 ### 0.2 — Fetch the deployment record
 
-`GET http://localhost:6060/api/deployments` and find the row where `project_id === wega.json's project.id`. Capture:
+`GET http://localhost:6060/api/deployments` and find the row where `project_id === quantnik.json's project.id`. Capture:
 - `slug`
-- `url` (e.g. `https://claude.wegaplatform.com/<slug>`) — the **canonical public URL** under test
-- `backend_port` (loopback port — used for direct probes that bypass IIS / wega2 proxy)
+- `url` (e.g. `https://claude.quantnik.com/<slug>`) — the **canonical public URL** under test
+- `backend_port` (loopback port — used for direct probes that bypass IIS / quantnik proxy)
 - `frontend_path` (the served dist directory — for static-asset checks)
 - `backend_path` + `backend_start_args` (for backend source inspection)
 - `status` — if `stopped`, the deployment isn't running; halt with an error pointing the user at `POST /api/deployments/<id>/restart`.
@@ -46,14 +46,14 @@ Run each as a single `Bash` call (use `curl -sI` for HEAD, `curl -s -o /dev/null
 
 | Check | Probe | Pass criteria |
 |-------|-------|---------------|
-| Public SPA | `HEAD <deployment.url>/` | 200 + `content-type: text/html` + body bytes > 500 (not a 389-byte wega2 SPA fallback) |
+| Public SPA | `HEAD <deployment.url>/` | 200 + `content-type: text/html` + body bytes > 500 (not a 389-byte quantnik SPA fallback) |
 | Loopback SPA | `HEAD http://localhost:6060/<slug>/` | 200 + `content-type: text/html` |
 | Main JS bundle | Parse `<script src=...>` from the public SPA's index.html, then `HEAD` it | 200 + `content-type: text/javascript` or `application/javascript` + size > 10 KB |
 | Stylesheet | Parse `<link rel=stylesheet>` similarly | 200 + `text/css` |
 | Backend health | Try in order: `<deployment.url>/api/health` → `<deployment.url>/health` → `http://127.0.0.1:<backend_port>/health`. First 2xx wins. | 2xx response (any body) |
-| Slug isolation | `HEAD <deployment.url>/<random-string>/` | If this returns the same 1100+ byte SPA as the slug root, **fail** — the proxy is forwarding paths it shouldn't. If it returns wega2's 389-byte fallback, that's actually correct here. |
+| Slug isolation | `HEAD <deployment.url>/<random-string>/` | If this returns the same 1100+ byte SPA as the slug root, **fail** — the proxy is forwarding paths it shouldn't. If it returns quantnik's 389-byte fallback, that's actually correct here. |
 
-If the public SPA check returns a body that matches wega2's own index.html (`<title>WEGA</title>`, ~389 bytes), mark as **critical fail** — the reverse proxy is eating the slug. Skip downstream checks that need the SPA to be live and jump to step 6.
+If the public SPA check returns a body that matches quantnik's own index.html (`<title>Quantnik</title>`, ~389 bytes), mark as **critical fail** — the reverse proxy is eating the slug. Skip downstream checks that need the SPA to be live and jump to step 6.
 
 ---
 
@@ -80,7 +80,7 @@ Parse each match into `{ method, path, file, line }`. Skip routes mounted under 
 grep -rn "fetch(\|api\.\(get\|post\|put\|delete\)\|request(" <frontend_path's source mirror>/src
 ```
 
-Frontend source is the original repo dir (find it in `wega.json` repos list or the orchestrator's Phase 3 output folder, NOT the deployed `dist/` — that's minified). Record `{ method, path, file, line }` per call site.
+Frontend source is the original repo dir (find it in `quantnik.json` repos list or the orchestrator's Phase 3 output folder, NOT the deployed `dist/` — that's minified). Record `{ method, path, file, line }` per call site.
 
 If you can't find the original frontend source on disk, fall back to **string-scanning the minified `dist/<bundle>.js`** for `/api/` substrings — this catches at least the paths if not the methods. Mark these as "method:?" so the probe step uses `GET` by default.
 
@@ -188,7 +188,7 @@ For uncovered stories, add a "Likely UI-only" or "Needs manual check" note.
 
 ## Run Metadata
 
-- Project: <name> (wega2 id <id>)
+- Project: <name> (quantnik id <id>)
 - Slug: <slug>
 - Deployment URL: <url>
 - Backend path: <backend_path>
@@ -244,7 +244,7 @@ Print **exactly** this format at the end:
 Overall verdict rules:
 - `PASS` — every Reachability check passes AND ≥ 80% of API probes pass AND zero timeouts AND no story marked `fail`.
 - `DEGRADED` — Reachability all-pass, but one of: <80% API probes, any timeouts, any partial/uncovered stories.
-- `FAIL` — any Reachability check failed, OR the public URL served wega2's fallback SPA, OR Confluence publish failed AND every other check failed too.
+- `FAIL` — any Reachability check failed, OR the public URL served quantnik's fallback SPA, OR Confluence publish failed AND every other check failed too.
 
 Ask: "Report published. Anything to drill into — re-run a specific endpoint, expand a failing story into a Playwright test, or re-deploy?"
 
@@ -254,6 +254,6 @@ Ask: "Report published. Anything to drill into — re-run a specific endpoint, e
 
 - **Never mutate the deployed app** — every probe is a read-only HEAD/GET or a deliberately-malformed POST that the backend should reject before doing any work. Never run `delete`, `clear`, or anything that creates real records.
 - **No interactive prompts under happy path.** The user invoked the skill; that's the consent. Final summary is the only output that waits for engagement.
-- **Confluence space is `run-context.confluenceSpaceKey` ONLY.** Same rule as every other wega2 skill — read from `wega.json`, never `getConfluenceSpaces` to pick a different one.
+- **Confluence space is `run-context.confluenceSpaceKey` ONLY.** Same rule as every other quantnik skill — read from `quantnik.json`, never `getConfluenceSpaces` to pick a different one.
 - **Hard timeout per probe = 10 s.** Whole-suite budget should land under 2 minutes even on a 30-endpoint API.
 - **Never re-roll the deployment row.** If `status === 'stopped'`, halt with the exact restart command — don't try to start it from this skill.

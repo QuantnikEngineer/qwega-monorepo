@@ -61,19 +61,24 @@ function McpRow({ name, status, transport, url, json, onAuth, onRemove }) {
 }
 
 export function McpPanel({ project, sessionInfo }) {
+  const hasProject = !!project?.id;
   const [data, setData] = useState({ local: {}, env: {}, runtime: [] });
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const dialogRef = useRef(null);
 
   const load = async () => {
-    try { setData(await api.listMcp(project.id)); }
+    try { setData(hasProject ? await api.listMcp(project.id) : await api.globalMcp()); }
     catch (e) { setError(e.message); }
   };
 
-  useEffect(() => { setError(''); load(); /* eslint-disable-next-line */ }, [project.id]);
+  useEffect(() => { setError(''); load(); /* eslint-disable-next-line */ }, [project?.id]);
 
   const openAdd = (prefill) => {
+    if (!hasProject) {
+      setError('create or select a project before adding project-local MCP servers');
+      return;
+    }
     setForm({ ...EMPTY_FORM, ...(prefill || {}) });
     setError('');
     dialogRef.current?.showModal();
@@ -81,6 +86,7 @@ export function McpPanel({ project, sessionInfo }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!hasProject) return;
     setError('');
     let config;
     try {
@@ -106,6 +112,7 @@ export function McpPanel({ project, sessionInfo }) {
   };
 
   const remove = async (name) => {
+    if (!hasProject) return;
     if (!confirm(`delete MCP server "${name}"? changes take effect next chat turn.`)) return;
     await api.deleteMcp(project.id, name);
     await load();
@@ -120,15 +127,17 @@ export function McpPanel({ project, sessionInfo }) {
 
   return (
     <ScreenFrame
-      breadcrumb={<><S c="var(--w-phosphor)">~/{project.name}</S> ─ mcp</>}
+      breadcrumb={<><S c="var(--w-phosphor)">~/{hasProject ? project.name : 'workbench'}</S> ─ mcp</>}
       title="MCP servers"
       subtitle={
-        <>Model Context Protocol servers extend Claude with external tools. Live connections are reported by the Agent SDK at the start of each chat turn. Local entries are added to <S c="var(--w-cyan)">.claude/settings.json</S> under <S c="var(--w-amber)">mcpServers</S>.</>
+        hasProject
+          ? <>Model Context Protocol servers extend Claude with external tools. Live connections are reported by the Agent SDK at the start of each chat turn. Local entries are added to <S c="var(--w-cyan)">.claude/settings.json</S> under <S c="var(--w-amber)">mcpServers</S>.</>
+          : <>Service-wide MCP servers are visible before a project exists. Create or select a project to add project-local <S c="var(--w-cyan)">mcpServers</S>.</>
       }
       action={
         <div style={{ display: 'flex', gap: 8 }}>
           <Btn tone="ghost" onClick={load}>[ ↻ ] refresh</Btn>
-          <Btn tone="primary" onClick={() => openAdd()}>[ + ] add server</Btn>
+          <Btn tone="primary" onClick={() => openAdd()} disabled={!hasProject}>[ + ] add server</Btn>
         </div>
       }
     >
@@ -180,9 +189,13 @@ export function McpPanel({ project, sessionInfo }) {
           {/* Local */}
           <div>
             <SectionLabel tone="cyan" right={<Pill>active on next turn</Pill>}>
-              // local · {project.name}
+              // local · {hasProject ? project.name : 'no project selected'}
             </SectionLabel>
-            {localEntries.length === 0 ? (
+            {!hasProject ? (
+              <div style={{ color: 'var(--w-text-3)', font: '11.5px/1.4 var(--w-mono)', padding: '10px 14px', border: '1px dashed var(--w-line)', borderRadius: 3 }}>
+                project-local MCP servers require a project. Service-wide backend environment MCP servers are shown above.
+              </div>
+            ) : localEntries.length === 0 ? (
               <div style={{ color: 'var(--w-text-3)', font: '11.5px/1.4 var(--w-mono)', padding: '10px 14px', border: '1px dashed var(--w-line)', borderRadius: 3 }}>
                 no local servers defined for this project.
               </div>

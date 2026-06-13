@@ -19,7 +19,7 @@ export function openChatSocket({ onEvent, onClose, onConnectionChange }) {
   // Carry the auth token on the WS upgrade. The server rejects (401) the
   // upgrade if the token is missing or invalid, so the auto-reconnect loop
   // below will also tear down cleanly when a session expires.
-  const tok = localStorage.getItem('wega.auth.token') || '';
+  const tok = localStorage.getItem('quantnik.auth.token') || '';
   const url = `${proto}://${window.location.host}/ws${tok ? `?token=${encodeURIComponent(tok)}` : ''}`;
 
   let ws = null;

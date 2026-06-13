@@ -1,4 +1,4 @@
-# WEGA
+# Quantnik
 
 A local web wrapper around Claude Code. Run a Node backend that uses the
 **Claude Agent SDK** to drive Claude Code sessions, and a React frontend that

@@ -186,7 +186,7 @@ ensureColumn('projects', 'atlassian_labels', 'TEXT'); // JSON-encoded string[]
 
 // LLM provider — defaults to Anthropic; Bedrock/Vertex/Foundry route Claude
 // through alt clouds; OpenAI/Gemini store config but are not yet wired into
-// the wega2 agent runtime (which uses the Claude Agent SDK).
+// the quantnik agent runtime (which uses the Claude Agent SDK).
 ensureColumn('projects', 'llm_provider', "TEXT DEFAULT 'anthropic'");
 ensureColumn('projects', 'llm_model', 'TEXT');
 ensureColumn('projects', 'llm_config', 'TEXT'); // JSON blob — provider-specific fields
@@ -220,7 +220,7 @@ try {
 // (rename/delete/reset still require being the project owner).
 ensureColumn('users', 'is_admin', 'INTEGER DEFAULT 0');
 
-// One-shot data migration: the wega2 administrator. Same idempotent
+// One-shot data migration: the quantnik administrator. Same idempotent
 // pattern as the Mobile project. Case-insensitive email match.
 try {
   db.prepare(`UPDATE users SET is_admin = 1
@@ -267,7 +267,15 @@ try {
   const update = db.prepare('UPDATE projects SET path = ? WHERE id = ?');
   for (const p of rows) {
     const current = String(p.path || '');
-    const managed = current.includes(marker) || current.startsWith(config.projectsRoot);
+    const normalisedCurrent = current.replace(/[\\/]+/g, path.sep);
+    const relativeManaged =
+      !path.isAbsolute(current)
+      && (
+        current === p.name
+        || normalisedCurrent.startsWith(`.${path.sep}data${path.sep}projects${path.sep}`)
+        || normalisedCurrent.startsWith(`data${path.sep}projects${path.sep}`)
+      );
+    const managed = relativeManaged || normalisedCurrent.includes(marker) || current.startsWith(config.projectsRoot);
     if (!managed) continue;
     const projectDirName = path.basename(current) || p.name;
     const repaired = path.join(config.projectsRoot, projectDirName);
@@ -384,9 +392,9 @@ db.exec(`
 `);
 
 // Deployments — the deploy-to-platform skill writes here. Each row is one
-// deployed app served by wega2 at /<slug>. Backend (if present) is a child
-// process bound to a wega2-allocated port; /<slug>/api/* is reverse-proxied
-// to it. status='running' deployments are re-spawned on wega2 startup.
+// deployed app served by quantnik at /<slug>. Backend (if present) is a child
+// process bound to a quantnik-allocated port; /<slug>/api/* is reverse-proxied
+// to it. status='running' deployments are re-spawned on quantnik startup.
 db.exec(`
   CREATE TABLE IF NOT EXISTS deployments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

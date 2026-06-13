@@ -1,10 +1,11 @@
 {
-  "generatedBy": "wega2",
-  "generatedAt": "2026-06-12T18:33:57.724Z",
+  "generatedBy": "quantnik",
+  "generatedAt": "2026-06-13T06:35:54.999Z",
   "project": {
     "id": 1,
     "name": "tester",
-    "path": "/Users/akk/Documents/quantnik/qwega-monorepo/wega-claud-win/backend/data/projects/tester"
+    "path": ".",
+    "managedPath": "tester"
   },
   "atlassian": {
     "siteName": null,
@@ -13,7 +14,7 @@
     "confluenceSpaceId": null,
     "confluenceSpaceKey": null,
     "labels": [
-      "wega-project-tester"
+      "quantnik-project-tester"
     ]
   },
   "llm": {

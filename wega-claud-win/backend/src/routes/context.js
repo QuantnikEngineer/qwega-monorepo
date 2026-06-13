@@ -13,7 +13,7 @@ import { db } from '../db.js';
 import { ingestSource } from '../services/ingest.js';
 import { retrieve } from '../services/retrieval.js';
 import { isConfigured, authMode, getEmbeddingModel, getEmbeddingDim } from '../services/embedding.js';
-import { ask as wegaBrainAsk } from '../services/wega-brain.js';
+import { ask as quantnikBrainAsk } from '../services/quantnik-brain.js';
 import { projectForRead, projectForWrite } from './projectAccess.js';
 
 export const context = Router();
@@ -83,7 +83,7 @@ context.get('/health', (_req, res) => {
     embeddingModel: getEmbeddingModel(),
     embeddingDim:   getEmbeddingDim(),
     configured:     isConfigured(),
-    backend:        'local',           // no remote vendor — runs on the wega2 host
+    backend:        'local',           // no remote vendor — runs on the quantnik host
     authMode:       auth.mode,         // always 'local' for now
     authHint:       auth.hint,
     cached:         auth.cached,
@@ -318,7 +318,7 @@ context.post('/auto-init', (req, res) => {
   });
 });
 
-// POST /api/wega-brain/ask  (mounted under /api/context for tidiness — keeps
+// POST /api/quantnik-brain/ask  (mounted under /api/context for tidiness — keeps
 // auth posture + db imports consistent with the other RAG endpoints).
 //
 // body:
@@ -348,7 +348,7 @@ context.post('/ask', async (req, res) => {
   }
 
   try {
-    const out = await wegaBrainAsk({
+    const out = await quantnikBrainAsk({
       question:   String(question),
       scope,
       topK:       Math.min(20, Math.max(1, Number(topK) || 6)),

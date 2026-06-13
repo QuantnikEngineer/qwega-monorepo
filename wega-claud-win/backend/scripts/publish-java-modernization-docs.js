@@ -3,14 +3,14 @@
 // Mirrors backend/scripts/publish-modernization-docs.js (the eShopLegacy one)
 // but for project 16 (modernization-java). Every page title is prefixed with
 // "Java —" so it doesn't collide with the eShopLegacy tree in the same
-// wegaclaude space (Confluence enforces per-space title uniqueness; the
+// quantnik space (Confluence enforces per-space title uniqueness; the
 // prior run hit this for slice-level page names like "Diff report").
 //
 // The page tree lives under a single "Java fixture — sample-legacy-java"
 // parent so it's clearly separable from the eShopLegacy tree in the
 // space navigation.
 //
-// Label: wega-project-modernization-java (matches project 16's
+// Label: quantnik-project-modernization-java (matches project 16's
 // atlassian_labels — so /api/atlassian/16/artifacts picks them up).
 //
 // Run:
@@ -32,8 +32,8 @@ const HOST  = `${SITE}.atlassian.net`;
 const AUTH  = 'Basic ' + Buffer.from(`${EMAIL}:${TOKEN}`).toString('base64');
 
 const SPACE_ID   = '127270916';
-const SPACE_KEY  = 'wegaclaude';
-const LABEL      = 'wega-project-modernization-java';
+const SPACE_KEY  = 'quantnik';
+const LABEL      = 'quantnik-project-modernization-java';
 const REPO_ROOT  = 'C:/tmp/sample-legacy-java/modernization';
 
 // ---- helpers --------------------------------------------------------------
@@ -115,7 +115,7 @@ async function ensureLabel(pageId) {
 
 const TREE = {
   title: 'Java fixture — sample-legacy-java',
-  body: `<p>End-to-end modernization run on the Java fixture at <code>C:\\tmp\\sample-legacy-java</code> — a 4-class Maven multi-module app on Java 1.8 with log4j 1.x / commons-lang 2 / gson 2.2.4, ported to Java 21 + SLF4J + Logback + commons-lang3 + gson 2.11. Status: <strong>all slices live · 0 unintentional diffs · 8/8 characterization tests green on both legacy and modern</strong>. Every page in this tree carries label <strong>${LABEL}</strong> so the wega2 dashboard for project 16 surfaces them automatically.</p>`,
+  body: `<p>End-to-end modernization run on the Java fixture at <code>C:\\tmp\\sample-legacy-java</code> — a 4-class Maven multi-module app on Java 1.8 with log4j 1.x / commons-lang 2 / gson 2.2.4, ported to Java 21 + SLF4J + Logback + commons-lang3 + gson 2.11. Status: <strong>all slices live · 0 unintentional diffs · 8/8 characterization tests green on both legacy and modern</strong>. Every page in this tree carries label <strong>${LABEL}</strong> so the quantnik dashboard for project 16 surfaces them automatically.</p>`,
   children: [
     { title: 'Java — Plan',                                       file: 'plan.md' },
     { title: 'Java — Slice backlog',                              file: 'SLICES.md' },

@@ -187,7 +187,7 @@ function isLoopback(req) {
 
 // Loopback OR valid token. For endpoints the local agent process must
 // reach without holding a user-scoped bearer token — anyone with shell
-// access to the wega2 host has strictly greater privileges than a phase
+// access to the quantnik host has strictly greater privileges than a phase
 // transition write, so the bypass is safe. Remote callers still need a
 // real session token.
 export function requireAuthOrLocal(req, res, next) {

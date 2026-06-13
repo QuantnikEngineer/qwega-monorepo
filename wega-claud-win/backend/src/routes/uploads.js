@@ -41,10 +41,11 @@ const upload = multer({
 // trace when the frontend has a stale project id cached.
 uploads.post('/:projectId',
   (req, res, next) => {
-    // Write gate — uploading a file mutates the project's filesystem.
-    // Admins do NOT bypass; only the owner (or loopback) may upload.
-    const project = projectForWrite(req.params.projectId, req, res);
-    if (!project) return; // projectForWrite already sent 404
+    // Collaborative gate — uploads are part of the shared project surface.
+    // Anyone who can open/read/chat in the project may attach files; deletion
+    // remains owner-only below.
+    const project = projectForRead(req.params.projectId, req, res);
+    if (!project) return; // projectForRead already sent 404
     next();
   },
   (req, res, next) => {

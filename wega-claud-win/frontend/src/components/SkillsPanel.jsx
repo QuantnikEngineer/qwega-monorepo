@@ -69,6 +69,7 @@ function SkillCard({ name, blurb, cat, owner, inherited, runs, onOpen, onRemove,
 const ALL_CATS = ['all', 'plan', 'build', 'test', 'explain', 'orchestrate'];
 
 export function SkillsPanel({ project }) {
+  const hasProject = !!project?.id;
   const [skills, setSkills] = useState([]);
   const [inherited, setInherited] = useState({ user: [], plugins: [] });
   const [selected, setSelected] = useState(null);
@@ -84,13 +85,18 @@ export function SkillsPanel({ project }) {
   };
 
   const load = async () => {
-    try { setSkills(await api.listSkills(project.id)); } catch (e) { flash('error', e.message); }
+    if (hasProject) {
+      try { setSkills(await api.listSkills(project.id)); } catch (e) { flash('error', e.message); }
+    } else {
+      setSkills([]);
+    }
     try { setInherited(await api.inheritedSkills()); } catch { /* ignore */ }
   };
 
-  useEffect(() => { load(); setSelected(null); setContent(''); setStatus(null); }, [project.id]);
+  useEffect(() => { load(); setSelected(null); setContent(''); setStatus(null); }, [project?.id]);
 
   const open = async (name) => {
+    if (!hasProject) return;
     try {
       setSelected(name);
       const s = await api.getSkill(project.id, name);
@@ -110,6 +116,10 @@ export function SkillsPanel({ project }) {
   };
 
   const create = async () => {
+    if (!hasProject) {
+      flash('error', 'create a project first to add project-local skills');
+      return;
+    }
     const name = prompt('new skill name (a-zA-Z0-9_-)');
     if (!name || !/^[a-zA-Z0-9_-]+$/.test(name.trim())) return;
     const n = name.trim();
@@ -122,6 +132,7 @@ export function SkillsPanel({ project }) {
   };
 
   const remove = async (name) => {
+    if (!hasProject) return;
     if (!confirm(`delete skill "${name}"?`)) return;
     try {
       await api.deleteSkill(project.id, name);
@@ -146,14 +157,16 @@ export function SkillsPanel({ project }) {
 
   return (
     <ScreenFrame
-      breadcrumb={<><S c="var(--w-phosphor)">~/{project.name}</S> ─ skills</>}
+      breadcrumb={<><S c="var(--w-phosphor)">~/{hasProject ? project.name : 'workbench'}</S> ─ skills</>}
       title="Skills"
       subtitle={
-        <>Skills live in <S c="var(--w-cyan)">.claude/skills/&lt;name&gt;/SKILL.md</S>. Project skills override user-scoped skills with the same name. Both scopes are passed to the Agent SDK as <S c="var(--w-amber)">settingSources</S>.</>
+        hasProject
+          ? <>Skills live in <S c="var(--w-cyan)">.claude/skills/&lt;name&gt;/SKILL.md</S>. Project skills override user-scoped skills with the same name. Both scopes are passed to the Agent SDK as <S c="var(--w-amber)">settingSources</S>.</>
+          : <>Inherited skills are available before a project exists. Create or select a project to add project-local <S c="var(--w-cyan)">SKILL.md</S> workflows.</>
       }
       action={
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn tone="primary" onClick={create}>[ + ] new skill</Btn>
+          <Btn tone="primary" onClick={create} disabled={!hasProject}>[ + ] new skill</Btn>
         </div>
       }
     >
@@ -203,9 +216,20 @@ export function SkillsPanel({ project }) {
       {/* Local section */}
       <div style={{ marginBottom: 18 }}>
         <SectionLabel tone="phosphor" right={<Pill>{skills.length === 0 ? 'none yet' : `${skills.length} skill${skills.length === 1 ? '' : 's'}`}</Pill>}>
-          // local · {project.name}
+          // local · {hasProject ? project.name : 'no project selected'}
         </SectionLabel>
-        {skills.length === 0 ? (
+        {!hasProject ? (
+          <div style={{
+            border: '1px dashed var(--w-line)',
+            borderRadius: 3,
+            padding: '16px 20px',
+            background: 'var(--w-bg-1)',
+            color: 'var(--w-text-2)',
+            font: '12px/1.5 var(--w-mono)',
+          }}>
+            Project-local skills are stored inside a project's <S c="var(--w-cyan)">.claude/skills</S> directory. The inherited skills below remain visible globally.
+          </div>
+        ) : skills.length === 0 ? (
           <div style={{
             border: '1px dashed var(--w-line)',
             borderRadius: 3,

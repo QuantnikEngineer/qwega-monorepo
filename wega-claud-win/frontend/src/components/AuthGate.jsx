@@ -29,8 +29,8 @@ export function AuthGate({ children }) {
       setChecked(true);
     })();
     const handler = () => { setUser(null); authToken.clear(); };
-    window.addEventListener('wega:auth-expired', handler);
-    return () => { cancelled = true; window.removeEventListener('wega:auth-expired', handler); };
+    window.addEventListener('quantnik:auth-expired', handler);
+    return () => { cancelled = true; window.removeEventListener('quantnik:auth-expired', handler); };
   }, []);
 
   const submit = async (e) => {
@@ -283,7 +283,7 @@ export function AuthHeader() {
   const signOut = async () => {
     await api.logout();
     authToken.clear();
-    window.dispatchEvent(new CustomEvent('wega:auth-expired'));
+    window.dispatchEvent(new CustomEvent('quantnik:auth-expired'));
   };
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, font: '12.5px/1 var(--w-mono)' }}>

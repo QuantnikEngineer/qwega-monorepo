@@ -19,7 +19,7 @@ loadEnv();
 export const config = {
   port: Number(process.env.PORT || 6060),
   projectsRoot: path.resolve(ROOT, process.env.PROJECTS_ROOT || './data/projects'),
-  dbPath: path.resolve(ROOT, process.env.DB_PATH || './data/wega2.db'),
+  dbPath: path.resolve(ROOT, process.env.DB_PATH || './data/quantnik.db'),
 };
 
 // MCP server configurations from environment variables

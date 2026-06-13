@@ -17,7 +17,7 @@ export async function fetchDocuments(source) {
   let resp;
   try {
     resp = await fetch(url, {
-      headers: { 'User-Agent': 'wega2-context-fabric/1.0 (RAG ingest)' },
+      headers: { 'User-Agent': 'quantnik-context-fabric/1.0 (RAG ingest)' },
       redirect: 'follow',
     });
   } catch (e) {

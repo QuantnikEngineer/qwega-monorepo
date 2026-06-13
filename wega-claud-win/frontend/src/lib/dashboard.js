@@ -290,7 +290,7 @@ function parseRun(text, isVuln) {
   // ("Phase 4 complete. Vulnerability report published: <url>",
   //  "Phase 5 published: <url>", "Phase 4 complete — report URL: <url>").
   // Accepts both absolute (https://…) and relative (/wiki/…) — the latter is
-  // normalised to absolute against the known wega.json site below.
+  // normalised to absolute against the known quantnik.json site below.
   const URL_TOKEN = '(https?:\\/\\/[^\\s`\\\'"]+|\\/wiki\\/[^\\s`\\\'"]+)';
   const mk = (pat, flags = 'i') => new RegExp(pat, flags);
   let url = (
@@ -304,7 +304,7 @@ function parseRun(text, isVuln) {
   )[1];
   // Relative `/wiki/…` paths emitted by some skills — promote to absolute.
   if (url && url.startsWith('/wiki/')) {
-    url = `https://wegabuildiq.atlassian.net${url}`;
+    url = `https://quantnik.atlassian.net${url}`;
   }
 
   return {
@@ -348,7 +348,7 @@ export function extractLatestRuns(messages) {
     const txt = p.text;
     // Free-floating URLs that might pair with a later severity-line match.
     // Accept both absolute and relative /wiki/… forms; normalise relative.
-    const normalise = (u) => (u && u.startsWith('/wiki/')) ? `https://wegabuildiq.atlassian.net${u}` : u;
+    const normalise = (u) => (u && u.startsWith('/wiki/')) ? `https://quantnik.atlassian.net${u}` : u;
     const vUrl = (txt.match(/Phase\s*4[^.]{0,80}(?:report\s+(?:url|published)|complete|published)[:\s—]*[`'"]?(https?:\/\/[^\s`'"]+|\/wiki\/[^\s`'"]+)/i) || [])[1];
     if (vUrl) vulnUrl = normalise(vUrl);
     const dUrl = (txt.match(/Phase\s*5[^.]{0,80}(?:report\s+(?:url|published)|complete|published)[:\s—]*[`'"]?(https?:\/\/[^\s`'"]+|\/wiki\/[^\s`'"]+)/i) || [])[1];

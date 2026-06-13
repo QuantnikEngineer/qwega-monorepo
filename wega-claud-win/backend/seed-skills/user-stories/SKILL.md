@@ -7,22 +7,22 @@ When this skill is invoked, follow the steps below in strict order. Do not skip 
 
 This skill supports **two Atlassian MCP shapes** — detect which one is loaded at session start and use the matching tool calls throughout:
 
-- **Shape A (wega2 stdio):** generic REST verbs `mcp__Jira__jira_get/post/put/patch/delete` and `mcp__Confluence__conf_get/post/...`. The site URL is `https://<ATLASSIAN_SITE_NAME>.atlassian.net`; read it from env or ask once if unknown.
+- **Shape A (quantnik stdio):** generic REST verbs `mcp__Jira__jira_get/post/put/patch/delete` and `mcp__Confluence__conf_get/post/...`. The site URL is `https://<ATLASSIAN_SITE_NAME>.atlassian.net`; read it from env or ask once if unknown.
 - **Shape B (claude.ai-managed):** discrete tools `mcp__claude_ai_Atlassian__atlassianUserInfo`, `getAccessibleAtlassianResources`, `getVisibleJiraProjects`, `getJiraProjectIssueTypesMetadata`, `createJiraIssue`, `searchConfluenceUsingCql`, `getConfluencePage`, etc.
 
 If **neither** shape is loaded, stop and tell the user: "No Atlassian MCP is available in this session. Configure one (or run in a context that has it) before retrying."
 
 ---
 
-## Step 0 — Resolve scope from `wega.json` (do this first)
+## Step 0 — Resolve scope from `quantnik.json` (do this first)
 
-`Read` `.claude/wega.json` at the project cwd. If present, treat as authoritative:
+`Read` `.claude/quantnik.json` at the project cwd. If present, treat as authoritative:
 - `atlassian.jiraProjectKey` → the Jira project for all Epics/Stories created in this run. Do **not** prompt the user to pick from `getVisibleJiraProjects` if this is set.
 - `atlassian.confluenceSpaceKey` / `confluenceSpaceId` → if Step 2 needs to read an existing BRD, scope the search to this space.
 - `atlassian.siteName` / `siteUrl` → use when building browse URLs.
-- `atlassian.labels` → the **initiative label** (e.g. `wega-project-faber`). Add this to every issue created or updated. It is also the predicate used in Step 4.5 to find an existing backlog.
+- `atlassian.labels` → the **initiative label** (e.g. `quantnik-project-faber`). Add this to every issue created or updated. It is also the predicate used in Step 4.5 to find an existing backlog.
 
-If `wega.json` is absent, fall back to the previous flow (ask the user for project + initiative slug).
+If `quantnik.json` is absent, fall back to the previous flow (ask the user for project + initiative slug).
 
 ---
 
@@ -35,11 +35,11 @@ If `wega.json` is absent, fall back to the previous flow (ask the user for proje
 
 ## Step 2 — Find the BRD via the project's Confluence label
 
-**The BRD is labelled.** The `sdlc-planning` skill tags every BRD it publishes with the project's `atlassian.labels` (e.g. `wega-project-faber`). That label — read from `wega.json` in Step 0 — is the authoritative selector. Do NOT do a generic CQL `title ~ "BRD"` search; that leaks across projects.
+**The BRD is labelled.** The `sdlc-planning` skill tags every BRD it publishes with the project's `atlassian.labels` (e.g. `quantnik-project-faber`). That label — read from `quantnik.json` in Step 0 — is the authoritative selector. Do NOT do a generic CQL `title ~ "BRD"` search; that leaks across projects.
 
 ### 2.1 — Primary lookup (label-scoped CQL)
 
-Build the CQL from the wega.json values:
+Build the CQL from the quantnik.json values:
 
 ```
 space = "<atlassian.confluenceSpaceKey>"
@@ -63,7 +63,7 @@ Confluence's CQL search index can lag by minutes to ~an hour after a label is ap
 
 1. `mcp__Confluence__conf_get` `/wiki/api/v2/spaces/<spaceId>/pages?limit=50&sort=-modified-date`
 2. For each result, `mcp__Confluence__conf_get` `/wiki/api/v2/pages/<id>/labels?limit=50`
-3. Keep pages whose label set intersects `wega.json.atlassian.labels`
+3. Keep pages whose label set intersects `quantnik.json.atlassian.labels`
 4. Of those, prefer pages whose title matches `/BRD/i` or `/Business Requirements/i`
 5. Pick the most-recent. Tell the user *which* page you chose and let them override.
 
@@ -99,12 +99,12 @@ Summarise what you extracted in 3–4 bullet points so the user can spot misread
 
 ## Step 4 — Select the Jira project
 
-If `wega.json.atlassian.jiraProjectKey` is set, use it without prompting. Confirm Epic + Story issue types are supported:
+If `quantnik.json.atlassian.jiraProjectKey` is set, use it without prompting. Confirm Epic + Story issue types are supported:
 
 - **Shape A:** `mcp__Jira__jira_get` with path `/rest/api/3/project/<KEY>?expand=issueTypes`.
 - **Shape B:** `getJiraProjectIssueTypesMetadata` with `cloudId` and `projectIdOrKey`.
 
-If `wega.json` does not set the project, list available projects and ask the user to pick.
+If `quantnik.json` does not set the project, list available projects and ask the user to pick.
 
 If the project does not have Epic, use the highest-level available type as the grouping container and note this to the user.
 
@@ -149,7 +149,7 @@ Derive all Epics and User Stories from the BRD content. Every story **must** pas
 - **Story points:** 1 / 2 / 3 / 5 / 8 — with a one-line rationale
 - **Priority:** P1 Highest / P2 High / P3 Medium / P4 Low
 - **MoSCoW label:** exactly one of `moscow-must` / `moscow-should` / `moscow-could` / `moscow-would`
-- **Initiative label:** the project label from `wega.json.atlassian.labels` (e.g. `wega-project-faber`)
+- **Initiative label:** the project label from `quantnik.json.atlassian.labels` (e.g. `quantnik-project-faber`)
 - **Domain labels:** category-specific tags (e.g. `mdm`, `integration`, `accessibility`, `migration`)
 - **Source citation:** at the bottom of the description, cite the BR-n or NFR-n that drove the story. In Update mode, also cite the BRD version (e.g. "Source: BR-7 (BRD v1.1, SDD §2.9)").
 

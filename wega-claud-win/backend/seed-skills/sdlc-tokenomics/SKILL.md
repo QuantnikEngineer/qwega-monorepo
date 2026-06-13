@@ -12,7 +12,7 @@ When invoked, follow the steps below in order. Halt only when a guardrail trips 
 ## Step 0 — Get the requirement document
 
 1. `Glob` `uploads/*` from the project cwd. The cwd is the project root; `uploads/` is a sibling (also check `../uploads/*` if the first pattern returns nothing — different deployments lay this out differently).
-2. If multiple files match, pick the **most recently uploaded** — the wega2 upload route prepends a `<unix-timestamp>-` to every stored filename, so a descending sort by name puts the newest first.
+2. If multiple files match, pick the **most recently uploaded** — the quantnik upload route prepends a `<unix-timestamp>-` to every stored filename, so a descending sort by name puts the newest first.
 3. If zero files found, halt with this exact message:
 
    > No file in `uploads/`. Upload the requirement document via the **Files** tab (the `[ + ]` upload button), then re-run `/sdlc-tokenomics`.
@@ -162,7 +162,7 @@ Round costs to 2 decimal places (cents). Use exact integer tokens — no roundin
 
 ## Step 6 — Render the table
 
-Output exactly this shape so the wega2 chat panel renders it cleanly:
+Output exactly this shape so the quantnik chat panel renders it cleanly:
 
 ```
 ## SDLC Tokenomics for `<source filename>`
@@ -205,35 +205,35 @@ Always write to `<repo-root>/SDLC_TOKENOMICS_<YYYY-MM-DD>.md` so the report trav
 
 ### 7b — Excel workbook (.xlsx) in the **Files** tab (always)
 
-Write a multi-sheet Excel file into the project's `uploads/` folder so it appears in the wega2 **Files** tab alongside the source requirement document. Three sheets: **Summary** (project + doc + complexity + total cost), **Phase mapping** (the 11 phases with model + tokens + cost + rationale + a TOTAL row), and **Model catalog** (the price reference table from Step 2).
+Write a multi-sheet Excel file into the project's `uploads/` folder so it appears in the quantnik **Files** tab alongside the source requirement document. Three sheets: **Summary** (project + doc + complexity + total cost), **Phase mapping** (the 11 phases with model + tokens + cost + rationale + a TOTAL row), and **Model catalog** (the price reference table from Step 2).
 
-**Naming convention.** wega2's upload route prepends `<unix-timestamp-ms>-` to every stored file, and the FilesPanel strips that prefix when displaying the name. Mirror that convention so your generated file lists cleanly:
+**Naming convention.** quantnik's upload route prepends `<unix-timestamp-ms>-` to every stored file, and the FilesPanel strips that prefix when displaying the name. Mirror that convention so your generated file lists cleanly:
 
 ```
 uploads/<13-digit-ms>-sdlc-tokenomics-<YYYY-MM-DD>.xlsx
        ^^^^^^^^^^^^^                                  ← display strips this prefix → user sees `sdlc-tokenomics-<YYYY-MM-DD>.xlsx`
 ```
 
-**How to write it.** The skill folder ships with `xlsx-generator.js` (sibling of this SKILL.md). It reads a JSON payload from stdin and writes the workbook to the path given as `argv[2]`. Invoke it with `NODE_PATH` pointing at the wega2 backend's `node_modules` (where the `exceljs` dependency lives).
+**How to write it.** The skill folder ships with `xlsx-generator.js` (sibling of this SKILL.md). It reads a JSON payload from stdin and writes the workbook to the path given as `argv[2]`. Invoke it with `NODE_PATH` pointing at the quantnik backend's `node_modules` (where the `exceljs` dependency lives).
 
 ```bash
-# 1. Resolve the wega2 backend dir (where exceljs is installed)
-WEGA2_BE="${WEGA2_BACKEND:-/c/wega-claude/backend}"
-if [ ! -d "$WEGA2_BE/node_modules/exceljs" ]; then
-  for candidate in "$HOME/wega-claude/backend" "/c/wega-claude/backend" "$HOME/wega2/backend"; do
-    if [ -d "$candidate/node_modules/exceljs" ]; then WEGA2_BE="$candidate"; break; fi
+# 1. Resolve the quantnik backend dir (where exceljs is installed)
+QUANTNIK_BE="${QUANTNIK_BACKEND:-}"
+if [ ! -d "$QUANTNIK_BE/node_modules/exceljs" ]; then
+  for candidate in "$PWD/backend" "$PWD" "$(git rev-parse --show-toplevel 2>/dev/null)/backend"; do
+    if [ -d "$candidate/node_modules/exceljs" ]; then QUANTNIK_BE="$candidate"; break; fi
   done
 fi
-if [ ! -d "$WEGA2_BE/node_modules/exceljs" ]; then
+if [ ! -d "$QUANTNIK_BE/node_modules/exceljs" ]; then
   # Last-resort fallback: install into a tempdir once and reuse.
-  TMP="$HOME/.cache/wega-tokenomics-deps"
+  TMP="$HOME/.cache/quantnik-tokenomics-deps"
   if [ ! -d "$TMP/node_modules/exceljs" ]; then
     mkdir -p "$TMP" && (cd "$TMP" && npm install --silent --no-audit --no-fund exceljs)
   fi
-  WEGA2_BE="$TMP"
+  QUANTNIK_BE="$TMP"
 fi
 
-# 2. Build the output path (13-digit ms timestamp matches wega2 upload route)
+# 2. Build the output path (13-digit ms timestamp matches quantnik upload route)
 TS=$(node -e "console.log(Date.now())")
 DATE=$(date +%Y-%m-%d)
 mkdir -p "$PWD/uploads"
@@ -244,7 +244,7 @@ GEN="$HOME/.claude/skills/sdlc-tokenomics/xlsx-generator.js"
 [ -f "$GEN" ] || GEN="$(dirname "$0")/xlsx-generator.js"  # fallback if invoked differently
 
 # 4. Pipe the JSON data into the generator. The JSON shape is documented below.
-NODE_PATH="$WEGA2_BE/node_modules" node "$GEN" "$OUT" <<'JSON'
+NODE_PATH="$QUANTNIK_BE/node_modules" node "$GEN" "$OUT" <<'JSON'
 {
   "project": "<project name>",
   "document": "<source filename from uploads/>",
@@ -308,8 +308,8 @@ GEN_PDF="$HOME/.claude/skills/sdlc-tokenomics/pdf-generator.js"
 [ -f "$GEN_PDF" ] || GEN_PDF="$(dirname "$0")/pdf-generator.js"
 
 # Same payload, same NODE_PATH resolution. exceljs and pdfkit both live in
-# wega2 backend node_modules — the WEGA2_BE discovery from 7b applies here.
-NODE_PATH="$WEGA2_BE/node_modules" node "$GEN_PDF" "$OUT_PDF" <<'JSON'
+# quantnik backend node_modules — the QUANTNIK_BE discovery from 7b applies here.
+NODE_PATH="$QUANTNIK_BE/node_modules" node "$GEN_PDF" "$OUT_PDF" <<'JSON'
 { ...same payload as 7b, optionally with these extra fields for richer rendering... }
 JSON
 ```
@@ -320,19 +320,19 @@ The PDF generator accepts a few **optional** fields in the JSON payload beyond w
 |---|---|---|
 | `recommendation` | `string[]` — array of paragraphs | Page 2 body. Falls back to a generic recommendation derived from the top-3-cost phases. |
 | `cost_optimised_total` | `number` (USD) | Renders a "Cost-optimised alternative" callout box on page 2 with the savings delta. |
-| `caveats` | `string[]` | Page 2 caveat list (each rendered as a bullet inside an amber-bordered box). Defaults to the three standard caveats (±30% directional, system-prompt overhead, wega2-Claude-only). |
+| `caveats` | `string[]` | Page 2 caveat list (each rendered as a bullet inside an amber-bordered box). Defaults to the three standard caveats (±30% directional, system-prompt overhead, quantnik-Claude-only). |
 
 PDF structure:
 - **Page 1** — title bar + summary card (source doc, size, complexity, total cost prominent in accent green) + phase mapping table (6 cols: #, Phase, Model, Input tok, Output tok, Cost) with alternating row shading and a bolded TOTAL row + cost-concentration callout below.
 - **Page 2** — Recommendation paragraphs + optional Cost-optimised alternative box + Caveats list.
 - **Page 3** — Model catalog reference (Family, Model, $/M input, $/M output, Best for).
-- **Footer** on every page — "Generated by wega2 · sdlc-tokenomics · YYYY-MM-DD" and "Page N of 3".
+- **Footer** on every page — "Generated by quantnik · sdlc-tokenomics · YYYY-MM-DD" and "Page N of 3".
 
-### 7d — Confluence (only if `wega.json` declares a space)
+### 7d — Confluence (only if `quantnik.json` declares a space)
 
-If the project has a `.claude/wega.json` with `atlassian.confluenceSpaceKey`, publish the markdown table from Step 6 as a Confluence page titled `<project> — SDLC Tokenomics — <YYYY-MM-DD>`. Apply the project's `atlassian.labels` so the page lands in the right dashboard. Use the body-size-aware publish path (stdio MCP for ≤ 30 KB, curl + REST for larger) — this report is small enough that the stdio path always wins.
+If the project has a `.claude/quantnik.json` with `atlassian.confluenceSpaceKey`, publish the markdown table from Step 6 as a Confluence page titled `<project> — SDLC Tokenomics — <YYYY-MM-DD>`. Apply the project's `atlassian.labels` so the page lands in the right dashboard. Use the body-size-aware publish path (stdio MCP for ≤ 30 KB, curl + REST for larger) — this report is small enough that the stdio path always wins.
 
-If `wega.json` is absent, skip silently — 7a (markdown) and 7b (xlsx) are enough.
+If `quantnik.json` is absent, skip silently — 7a (markdown) and 7b (xlsx) are enough.
 
 ---
 
@@ -351,6 +351,6 @@ After all four persistence paths complete, end the chat reply with:
 
 - **Estimates are directional.** ±30% is typical. Real spend will diverge based on: retry loops mid-phase, prompt-engineering overhead, the agent reading tool results back as context, mid-phase iteration. Surface this caveat in the output paragraph — never claim a specific cost is exact.
 - **Prices last refreshed January 2026.** If asked "is this still current?", advise verifying against vendor pricing pages before committing budget.
-- **wega2's agent runtime is Claude-only today.** Non-Claude picks (GPT, Gemini, Llama, etc.) can be **costed** but cannot yet be **executed** by the wega2 agent runtime (which uses the Claude Agent SDK). Surface this in the recommendation so non-Anthropic picks read as future-state options, not immediate actions.
+- **quantnik's agent runtime is Claude-only today.** Non-Claude picks (GPT, Gemini, Llama, etc.) can be **costed** but cannot yet be **executed** by the quantnik agent runtime (which uses the Claude Agent SDK). Surface this in the recommendation so non-Anthropic picks read as future-state options, not immediate actions.
 - **Don't over-engineer.** The output is a one-screen table + one paragraph. Don't pad with sub-sections, methodology essays, or futurology. Two artifacts: the table, the recommendation. Stop.
 - **Idempotent.** Re-invoking on the same document produces the same table. If the user uploads a different document, the new one wins (Step 0's most-recently-uploaded rule).

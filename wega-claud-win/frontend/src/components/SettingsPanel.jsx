@@ -9,7 +9,7 @@ const fmtCost = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 const fmtDate = (epoch) => epoch ? new Date(epoch * 1000).toISOString().slice(0, 10) : '—';
 const fmtDateTime = (epoch) => epoch ? new Date(epoch * 1000).toLocaleString() : '—';
 
-const ADMIN_COLLAPSED_KEY = 'wega.admin.collapsed';
+const ADMIN_COLLAPSED_KEY = 'quantnik.admin.collapsed';
 
 function AdminOverview() {
   const [data, setData] = useState(null);
@@ -593,7 +593,7 @@ const MODELS = [
 ];
 
 // LLM providers — must match the backend PROVIDERS catalog in routes/llm.js.
-// `wired: true` means the wega2 agent runtime can actually use this provider
+// `wired: true` means the quantnik agent runtime can actually use this provider
 // today (Claude Agent SDK supports Anthropic + Bedrock + Vertex + Foundry).
 // `wired: false` providers store config but the runtime can't execute against
 // them yet — switching to one of these will surface a clear error on the next
@@ -662,7 +662,7 @@ const LLM_PROVIDERS = [
     id: 'openai',
     label: 'OpenAI',
     wired: false,
-    note: 'Stored only — wega2 uses the Claude Agent SDK which is Claude-only. Config persists so it can be wired into a separate OpenAI agent runtime later.',
+    note: 'Stored only — quantnik uses the Claude Agent SDK which is Claude-only. Config persists so it can be wired into a separate OpenAI agent runtime later.',
     fields: [
       { name: 'openaiApiKey',  label: 'OpenAI API key',                    placeholder: 'sk-...', secret: true },
       { name: 'openaiBaseUrl', label: 'Base URL (optional, for proxies)',  placeholder: 'https://api.openai.com/v1' },
@@ -676,7 +676,7 @@ const LLM_PROVIDERS = [
     id: 'gemini',
     label: 'Google Gemini',
     wired: false,
-    note: 'Stored only — same caveat as OpenAI. wega2 agent runtime is Claude-specific.',
+    note: 'Stored only — same caveat as OpenAI. quantnik agent runtime is Claude-specific.',
     fields: [
       { name: 'geminiApiKey', label: 'Gemini API key',          placeholder: 'AIza...', secret: true },
       { name: 'geminiBaseUrl', label: 'Base URL (optional)',    placeholder: 'https://generativelanguage.googleapis.com/v1beta' },
@@ -705,7 +705,8 @@ function highlightJson(src) {
 }
 
 export function SettingsPanel({ project, onChanged }) {
-  const [permMode, setPermMode] = useState(project.permission_mode || 'acceptEdits');
+  const hasProject = !!project?.id;
+  const [permMode, setPermMode] = useState(project?.permission_mode || 'acceptEdits');
   const [settingsJson, setSettingsJson] = useState('');
   const [hooksJson, setHooksJson] = useState('');
   const [error, setError] = useState('');
@@ -722,6 +723,11 @@ export function SettingsPanel({ project, onChanged }) {
   }, []);
 
   const loadAll = () => {
+    if (!hasProject) {
+      setSettingsJson('');
+      setHooksJson('{}');
+      return;
+    }
     api.getSettings(project.id).then((s) => {
       setSettingsJson(JSON.stringify(s, null, 2));
       setHooksJson(JSON.stringify(s.hooks || {}, null, 2));
@@ -734,12 +740,13 @@ export function SettingsPanel({ project, onChanged }) {
   };
 
   useEffect(() => {
-    setPermMode(project.permission_mode || 'acceptEdits');
+    setPermMode(project?.permission_mode || 'acceptEdits');
     setError('');
     loadAll();
-  }, [project.id]);
+  }, [project?.id]);
 
   const saveAll = async () => {
+    if (!hasProject) return;
     setError(''); setSavedFlash('');
     try {
       await api.updateProject(project.id, { permission_mode: permMode });
@@ -759,10 +766,27 @@ export function SettingsPanel({ project, onChanged }) {
   };
 
   const reset = () => {
-    setPermMode(project.permission_mode || 'acceptEdits');
+    setPermMode(project?.permission_mode || 'acceptEdits');
     loadAll();
     setError('');
   };
+
+  if (!hasProject) {
+    return (
+      <ScreenFrame
+        breadcrumb={<><S c="var(--w-phosphor)">~/workbench</S> ─ settings</>}
+        title="Admin settings"
+        subtitle="Global service controls and audit logs are available without a project. Project-specific settings appear after you create or select a project."
+      >
+        {isAdmin && <AdminOverview />}
+        {!isAdmin && (
+          <div style={{ border: '1px dashed var(--w-line)', background: 'var(--w-bg-1)', borderRadius: 3, padding: '16px 20px', color: 'var(--w-text-2)', font: '12px/1.5 var(--w-mono)' }}>
+            Sign in as an admin to view global service controls. Create or select a project to edit model, permission, and hook settings.
+          </div>
+        )}
+      </ScreenFrame>
+    );
+  }
 
   const currentProvider = LLM_PROVIDERS.find((p) => p.id === llmProvider) || LLM_PROVIDERS[0];
 

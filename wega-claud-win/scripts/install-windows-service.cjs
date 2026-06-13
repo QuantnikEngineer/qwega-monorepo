@@ -1,4 +1,4 @@
-// Install the WEGA Claude backend as a Windows service using node-windows.
+// Install the Quantnik backend as a Windows service using node-windows.
 // Run as Administrator from the repo root:  node scripts\install-windows-service.cjs
 //
 // The service inherits the environment of the installing shell, so set
@@ -41,8 +41,8 @@ const env = passthrough
 env.push({ name: 'NODE_ENV', value: 'production' });
 
 const svc = new Service({
-  name: 'WegaClaude',
-  description: 'WEGA Claude — Node backend (Express + WebSocket + Claude Agent SDK).',
+  name: 'Quantnik',
+  description: 'Quantnik — Node backend (Express + WebSocket + Claude Agent SDK).',
   script: entryScript,
   workingDirectory: backendDir,
   nodeOptions: [],
@@ -57,7 +57,7 @@ svc.on('alreadyinstalled', () => {
   console.log('Service is already installed. Run uninstall-windows-service.cjs first to re-install.');
 });
 svc.on('start', () => {
-  console.log('Service WegaClaude started.');
+  console.log('Service Quantnik started.');
   console.log('Backend should now be reachable at http://127.0.0.1:' + (process.env.PORT || 6060));
 });
 svc.on('error', (err) => {

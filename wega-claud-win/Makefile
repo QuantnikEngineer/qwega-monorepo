@@ -4,7 +4,7 @@ SHELL := /bin/bash
 #   make deploy HOST=ec2-1-2-3-4.compute.amazonaws.com
 HOST       ?=
 SSH_USER   ?= ec2-user
-REMOTE_DIR ?= /opt/wega2
+REMOTE_DIR ?= /opt/quantnik
 
 SSH := ssh $(SSH_USER)@$(HOST)
 
@@ -14,7 +14,7 @@ PLATFORM ?= linux/amd64
 .PHONY: help build sync deploy restart stop logs ps ssh check-host
 
 help:
-	@echo "Usage: make <target> HOST=<your-host> [SSH_USER=ec2-user] [REMOTE_DIR=/opt/wega2]"
+	@echo "Usage: make <target> HOST=<your-host> [SSH_USER=ec2-user] [REMOTE_DIR=/opt/quantnik]"
 	@echo
 	@echo "Targets:"
 	@echo "  build    Sanity-build the docker image locally ($(PLATFORM))"
@@ -33,7 +33,7 @@ check-host:
 	fi
 
 build:
-	docker build --platform $(PLATFORM) -t wega2:latest .
+	docker build --platform $(PLATFORM) -t quantnik:latest .
 
 sync: check-host
 	rsync -avz --delete \
@@ -56,7 +56,7 @@ stop: check-host
 	$(SSH) "cd $(REMOTE_DIR) && docker compose down"
 
 logs: check-host
-	$(SSH) "cd $(REMOTE_DIR) && docker compose logs -f --tail=200 wega2"
+	$(SSH) "cd $(REMOTE_DIR) && docker compose logs -f --tail=200 quantnik"
 
 ps: check-host
 	$(SSH) "cd $(REMOTE_DIR) && docker compose ps"

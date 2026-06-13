@@ -74,6 +74,14 @@ mcp.get('/:projectId', (req, res) => {
   });
 });
 
+mcp.get('/', (_req, res) => {
+  res.json({
+    local: {},
+    env: maskedEnvServers(),
+    runtime: [],
+  });
+});
+
 mcp.post('/:projectId', (req, res) => {
   const project = projectForWrite(req.params.projectId, req, res);
   if (!project) return;

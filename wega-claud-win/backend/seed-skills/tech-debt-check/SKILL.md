@@ -6,7 +6,7 @@ description: Statically analyses the project codebase for technical debt — dup
 When invoked, run the audit end-to-end. **Do not ask the user clarifying questions** mid-run unless a step truly cannot proceed (e.g. no project cwd). Take the reasonable default at every fork and report what you decided.
 
 This skill supports the same two Atlassian MCP shapes as `vulnerability-check`:
-- **Shape A — wega2 stdio:** `mcp__Confluence__conf_get/post/...`. Site URL is `https://<ATLASSIAN_SITE_NAME>.atlassian.net`.
+- **Shape A — quantnik stdio:** `mcp__Confluence__conf_get/post/...`. Site URL is `https://<ATLASSIAN_SITE_NAME>.atlassian.net`.
 - **Shape B — claude.ai-managed:** `mcp__claude_ai_Atlassian__createConfluencePage`, `getConfluenceSpaces`, etc.
 
 If neither shape is loaded, fall back to writing `<project>/docs/tech-debt-<timestamp>.md` and print that local path as the final output line.
@@ -257,7 +257,7 @@ Re-run the cheap regex/text scans for each fixable category (skip the dep audit 
 
 ## Phase 5 — Publish the report to Confluence
 
-**Target space is fixed by `wega.json` when present.** `Read` `.claude/wega.json` at the project cwd. If it has `atlassian.confluenceSpaceKey` or `confluenceSpaceId`, that is the **only** allowed target. Do **not** fall back to "first personal space" / `getConfluenceSpaces` when the sidecar has a value.
+**Target space is fixed by `quantnik.json` when present.** `Read` `.claude/quantnik.json` at the project cwd. If it has `atlassian.confluenceSpaceKey` or `confluenceSpaceId`, that is the **only** allowed target. Do **not** fall back to "first personal space" / `getConfluenceSpaces` when the sidecar has a value.
 
 Title: `<Project> — Tech-Debt Report — <YYYY-MM-DD HH:mm>`.
 
@@ -275,7 +275,7 @@ Body (storage HTML for Shape A, markdown for Shape B with `contentFormat: "markd
    - Status: `✅ auto-fixed` | `🟡 needs-refactor` | `🔴 still-debt` | `⚪ skipped-dirty`.
 6. **Cross-link to security** — if any pattern from Phase 1 also smelled like a security issue (e.g. `eval(`, hardcoded URL with auth, deep nesting around auth), list them with the note "Run `/vulnerability-check` to confirm and remediate."
 7. **Recommendations** — quarterly re-run; CI integration (`eslint --max-warnings 0`, `coverage --fail-under 70`, `dependabot`); when the team should pick a debt-day; suggested first 3 refactors to schedule.
-8. **Run metadata** — project name, scan date, file count, finding count, who ran (`AI tech-debt-check skill`), `git=yes|no`, the wega2/Claude session id if available.
+8. **Run metadata** — project name, scan date, file count, finding count, who ran (`AI tech-debt-check skill`), `git=yes|no`, the quantnik/Claude session id if available.
 
 Discover the target Confluence space the same way `sdlc-planning` does — first personal space by default (Shape A: `mcp__Confluence__conf_get` on `/wiki/api/v2/spaces?type=personal`; Shape B: `getConfluenceSpaces`).
 

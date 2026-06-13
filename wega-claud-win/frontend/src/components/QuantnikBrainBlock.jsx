@@ -12,8 +12,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
 import { Btn, Pill, S } from './ui.jsx';
 
-const LS_COLLAPSED_PREFIX = 'wega.brain.collapsed';
-const LS_HISTORY_PREFIX   = 'wega.brain.history.';
+const LS_COLLAPSED_PREFIX = 'quantnik.brain.collapsed';
+const LS_HISTORY_PREFIX   = 'quantnik.brain.history.';
 
 // Cap stored history so the per-project key doesn't grow unbounded. The
 // backend already trims to last 12 turns on read; this is the client-side

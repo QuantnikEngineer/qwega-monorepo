@@ -4,7 +4,7 @@
 // tenant. The Context Fabric UI exposes the form so users can register their
 // intent; ingest is intentionally rejected until the Graph plumbing is wired.
 //
-// To implement: take cfg.siteUrl + cfg.driveId + OAuth tokens (from a wega2-
+// To implement: take cfg.siteUrl + cfg.driveId + OAuth tokens (from a quantnik-
 // level Microsoft Graph app), enumerate drive items, download text/PDF
 // content, emit one document per file.
 

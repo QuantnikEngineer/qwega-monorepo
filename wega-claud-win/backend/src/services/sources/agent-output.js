@@ -32,7 +32,7 @@ export async function fetchDocuments(source, project) {
     if (!bucket.length) return;
     turns.push({
       title:       `Turn ${bucketStart} — ${bucket.length} fragments`,
-      uri:         `wega2://project/${project.id}/messages/${bucketStart}`,
+      uri:         `quantnik://project/${project.id}/messages/${bucketStart}`,
       external_id: `msg-${bucketStart}`,
       content:     bucket.join('\n\n'),
     });

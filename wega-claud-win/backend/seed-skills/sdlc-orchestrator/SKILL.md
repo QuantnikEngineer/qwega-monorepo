@@ -1,22 +1,22 @@
 ---
 name: sdlc-orchestrator
-description: End-to-end autonomous SDLC pipeline. Phase 0 starts with a hard-gate config-check (verifies git remotes, Atlassian Jira + Confluence MCPs, and the wega2 service itself) — if config-check returns FAIL, the orchestrator aborts before Phase 1 and prints the failure checklist instead of burning minutes against a broken integration. After that gate passes, it executes ELEVEN phases in sequence — BRD generation (sdlc-planning) → INVEST user stories in Jira (user-stories) → full-stack code scaffold (feature-dev) → vulnerability scan + auto-fix + Confluence report (vulnerability-check) → tech-debt scan + auto-fix + Confluence report (tech-debt-check) → Jira/Xray test cases (test-case-generator) → Playwright test scripts committed to git (test-script-generator) → boot (npm install both folders + start frontend & backend dev servers) → execute Playwright suite against the running app, log Jira bugs for failures, ask user which to auto-fix, publish execution report to Confluence (test-script-executor) → publish a production build under https://claude.wegaplatform.com/<project-slug> (deploy-to-platform) → run a deploy-time sanity check (reachability + API probes + Jira story coverage + performance) and publish the report to Confluence (sanity-check). The eighth phase deliberately runs AFTER the patches from phases 4–5 so the install picks up bumped dep versions; the ninth tests the already-patched + already-running app; the tenth ships the same patched code as a production build; the eleventh runs LAST against the production URL so the published verdict reflects what stakeholders will actually see. Every question the pipeline could need is asked upfront in one consolidated questionnaire (Phase 0); after the user confirms the run config, the orchestrator runs autonomously except for ONE deliberate prompt mid-Phase-9 (which failures to auto-fix).
+description: End-to-end autonomous SDLC pipeline. Phase 0 starts with a hard-gate config-check (verifies git remotes, Atlassian Jira + Confluence MCPs, and the Quantnik service itself) — if config-check returns FAIL, the orchestrator aborts before Phase 1 and prints the failure checklist instead of burning minutes against a broken integration. After that gate passes, it executes ELEVEN phases in sequence — BRD generation (sdlc-planning) → INVEST user stories in Jira (user-stories) → full-stack code scaffold (feature-dev) → vulnerability scan + auto-fix + Confluence report (vulnerability-check) → tech-debt scan + auto-fix + Confluence report (tech-debt-check) → Jira/Xray test cases (test-case-generator) → Playwright test scripts committed to git (test-script-generator) → boot (npm install both folders + start frontend & backend dev servers) → execute Playwright suite against the running app, log Jira bugs for failures, ask user which to auto-fix, publish execution report to Confluence (test-script-executor) → publish a production build under `<PUBLIC_BASE_URL>/<project-slug>` (deploy-to-platform) → run a deploy-time sanity check (reachability + API probes + Jira story coverage + performance) and publish the report to Confluence (sanity-check). The eighth phase deliberately runs AFTER the patches from phases 4–5 so the install picks up bumped dep versions; the ninth tests the already-patched + already-running app; the tenth ships the same patched code as a production build; the eleventh runs LAST against the production URL so the published verdict reflects what stakeholders will actually see. Every question the pipeline could need is asked upfront in one consolidated questionnaire (Phase 0); after the user confirms the run config, the orchestrator runs autonomously except for ONE deliberate prompt mid-Phase-9 (which failures to auto-fix).
 ---
 
 > **Hard rule for every Atlassian write in this pipeline (Phases 1, 2, 4, 5, 6, 7):**
-> Before ANY write, `Read` `.claude/wega.json` at the project cwd. If it exists, use its values as the **only** allowed targets:
+> Before ANY write, `Read` `.claude/quantnik.json` at the project cwd. If it exists, use its values as the **only** allowed targets:
 > - Every Confluence page **must** be created in `atlassian.confluenceSpaceKey` (or `confluenceSpaceId`). Never the user's personal space, never the first space returned by `getConfluenceSpaces`.
 > - Every Jira issue **must** be created in `atlassian.jiraProjectKey`. Never an inferred key from `getVisibleJiraProjects`, MEMORY.md, or recent chat.
-> - If a phase tries to resolve a target some other way and disagrees with wega.json, **halt that phase with a clear error** rather than writing to the wrong place.
+> - If a phase tries to resolve a target some other way and disagrees with quantnik.json, **halt that phase with a clear error** rather than writing to the wrong place.
 >
 > Cache the resolved space + Jira key into the run-context (`run-context.confluenceSpaceKey`, `run-context.confluenceSpaceId`, `run-context.jiraProjectKey`) at the start of Phase 0 and reuse for every subsequent Atlassian call.
 
 When this skill is invoked, the entire pipeline runs in two acts:
 
 1. **Phase 0 — Intake.** Collect *every* input the eleven downstream phases need, in one consolidated questionnaire. Confirm the resolved run config once. This is the **only** time the orchestrator stops for user input under happy-path execution **except** for the deliberate Phase 9 auto-fix-selection prompt (see below).
-2. **Phases 1–11 — Autonomous execution.** Run BRD → User Stories → Feature Dev (scaffold only, no install) → Vulnerability Check → Tech Debt Check → Test Cases → Test Scripts → Boot (install + start servers) → Test Execution (run Playwright suite, log Jira bugs for failures, prompt once for auto-fix selection, publish report) → Deployment (build production bundle, register with wega2's deploy route, surface a public URL like `https://claude.wegaplatform.com/<slug>`) → Sanity Check (probe the live public URL end-to-end, map probes to Jira stories, publish Confluence report). Print a STATUS block after each phase but **do not wait for confirmation between phases**. The user only sees a prompt again if (a) an external system fails irrecoverably, (b) the Phase 9 auto-fix-selection prompt fires (a deliberately deferred choice — pre-authorized in Phase 0 by virtue of opting into the orchestrator), or (c) the run is complete.
+2. **Phases 1–11 — Autonomous execution.** Run BRD → User Stories → Feature Dev (scaffold only, no install) → Vulnerability Check → Tech Debt Check → Test Cases → Test Scripts → Boot (install + start servers) → Test Execution (run Playwright suite, log Jira bugs for failures, prompt once for auto-fix selection, publish report) → Deployment (build production bundle, register with Quantnik's deploy route, surface a public URL like `<PUBLIC_BASE_URL>/<slug>`) → Sanity Check (probe the live public URL end-to-end, map probes to Jira stories, publish Confluence report). Print a STATUS block after each phase but **do not wait for confirmation between phases**. The user only sees a prompt again if (a) an external system fails irrecoverably, (b) the Phase 9 auto-fix-selection prompt fires (a deliberately deferred choice — pre-authorized in Phase 0 by virtue of opting into the orchestrator), or (c) the run is complete.
 
-**Status tracking is server-authoritative (mandatory).** The wega2 chat panel reads phase state from `GET /api/phases/<projectId>` — NOT from chat text. Every phase transition must be **POSTed** to the server so the panel stays accurate even when text emissions are missed or malformed. The skill must call:
+**Status tracking is server-authoritative (mandatory).** The quantnik chat panel reads phase state from `GET /api/phases/<projectId>` — NOT from chat text. Every phase transition must be **POSTed** to the server so the panel stays accurate even when text emissions are missed or malformed. The skill must call:
 
 ```bash
 # At the START of every phase (right before any phase-specific work):
@@ -34,7 +34,7 @@ curl -s -X DELETE http://localhost:6060/api/phases/<projectId>
 # wipes any prior run's state so the panel starts clean
 ```
 
-`<projectId>` comes from `wega.json`'s `project.id`. Treat each curl call as fire-and-forget: if it fails the chat panel will degrade but the orchestrator still runs.
+`<projectId>` comes from `quantnik.json`'s `project.id`. Treat each curl call as fire-and-forget: if it fails the chat panel will degrade but the orchestrator still runs.
 
 **Live status emission (still required for chat readability).** In *addition* to the POST, print a bare line in chat so users following along see the transition without inspecting the panel:
 
@@ -69,11 +69,11 @@ Maintain a shared run-context object across all phases and print it as a status 
 
 ### 0.0 — Pre-flight: run `config-check` FIRST (hard gate)
 
-**Before anything else** — before discovery, before the questionnaire, before reading the BRD — run the `config-check` skill inline. The orchestrator is heavily dependent on the Atlassian MCPs (Phases 1, 2, 4, 5, 6, 9, 11 write to Confluence + Jira), a working git remote (Phases 3 + 7 push branches), and the wega2 backend itself (Phase 10 deployment registers via the local API). Starting the pipeline against a broken integration just burns minutes and ends with a half-published BRD and an angry user.
+**Before anything else** — before discovery, before the questionnaire, before reading the BRD — run the `config-check` skill inline. The orchestrator is heavily dependent on the Atlassian MCPs (Phases 1, 2, 4, 5, 6, 9, 11 write to Confluence + Jira), a working git remote (Phases 3 + 7 push branches), and the quantnik backend itself (Phase 10 deployment registers via the local API). Starting the pipeline against a broken integration just burns minutes and ends with a half-published BRD and an angry user.
 
 Procedure:
 
-1. Read `~/.claude/skills/config-check/SKILL.md` and run its full 5-step flow inline (steps 0–5 — wega.json read, git ls-remote per repo, Jira `/myself` + project metadata, Confluence space + page-list, wega2 self-check). All checks are read-only.
+1. Read `~/.claude/skills/config-check/SKILL.md` and run its full 5-step flow inline (steps 0–5 — quantnik.json read, git ls-remote per repo, Jira `/myself` + project metadata, Confluence space + page-list, quantnik self-check). All checks are read-only.
 2. Emit the standard `config-check` final report block (`CONFIG CHECK COMPLETE — <verdict>`) to chat so the user sees exactly what was tested.
 3. Branch on the verdict:
    - **`PASS`** — proceed to 0.1 immediately. No prompt, no confirmation.
@@ -90,16 +90,16 @@ Record `config_check_verdict` and `config_check_failures` (the numbered checklis
 
 ### 0.0a — Discover what's already in the project (before asking anything)
 
-Before showing the questionnaire, **silently scan the wega2 project state** so the questionnaire can pre-fill defaults and the user doesn't have to repeat themselves:
+Before showing the questionnaire, **silently scan the quantnik project state** so the questionnaire can pre-fill defaults and the user doesn't have to repeat themselves:
 
-1. **Project sidecar config** — **`Read` `.claude/wega.json` at the project cwd FIRST.** This file is written by wega2 every time the user updates the project's Atlassian or LLM scope in the dashboard / settings. It is the **authoritative source** for:
+1. **Project sidecar config** — **`Read` `.claude/quantnik.json` at the project cwd FIRST.** This file is written by quantnik every time the user updates the project's Atlassian or LLM scope in the dashboard / settings. It is the **authoritative source** for:
    - `atlassian.jiraProjectKey` → default for questionnaire item **C1**.
    - `atlassian.confluenceSpaceKey` / `atlassian.confluenceSpaceId` → default for item **B2**.
    - `atlassian.labels` → use as default labels on every created issue.
    - `atlassian.siteName` / `atlassian.siteUrl` → use when building browse URLs in summaries.
    - `llm.provider` / `llm.model` → already applied by the SDK at session start; surface in the resolved config block.
 
-   **Never override these defaults with values inferred from `getVisibleJiraProjects`, MEMORY.md, or recent chat history.** If `wega.json` says `WC`, use `WC` — don't pick `WSKB` just because a recent run mentioned it. If the file is absent, fall back to MEMORY.md / chat-history defaults as before.
+   **Never override these defaults with values inferred from `getVisibleJiraProjects`, MEMORY.md, or recent chat history.** If `quantnik.json` says `WC`, use `WC` — don't pick `WSKB` just because a recent run mentioned it. If the file is absent, fall back to MEMORY.md / chat-history defaults as before.
 
 2. **Uploaded files** — `Glob` the project's `uploads/` directory (it's a sibling of the cwd; from the agent's cwd, run `Glob` with pattern `uploads/*` and also `../uploads/*` in case of layout variation). Record every match as a candidate BRD input file. **Treat every file in `uploads/` as Phase 1 input by default** — the user already uploaded them via the Files tab; they should not have to repeat the paths.
 
@@ -158,7 +158,7 @@ Before showing the questionnaire, **silently scan the wega2 project state** so t
 
    Record the inferred domain in the run-context as `inferred_domain` (default to `saas-b2b` if nothing matches). It feeds the **brand-style** default in the questionnaire (see Brand-style catalog at the end of this skill).
 
-Do **not** ask the user about anything from items 1–4 directly. Just pre-fill the defaults — and when `wega.json` exists, treat the values inside it as **non-overrideable from inferred sources** (the user can still override them by explicitly typing a different value in the questionnaire).
+Do **not** ask the user about anything from items 1–4 directly. Just pre-fill the defaults — and when `quantnik.json` exists, treat the values inside it as **non-overrideable from inferred sources** (the user can still override them by explicitly typing a different value in the questionnaire).
 
 ### 0.1 — Ask everything in one consolidated questionnaire
 
@@ -167,7 +167,7 @@ Present this exact block, pre-filled with the discoveries from 0.0a. Each item b
 ```
 SDLC PIPELINE — RUN CONFIG
 The pipeline runs end-to-end without further questions after this. Defaults are filled in from
-the wega2 project state — confirm or override. Reply ALL-DEFAULTS to accept everything as-is.
+the quantnik project state — confirm or override. Reply ALL-DEFAULTS to accept everything as-is.
 
 A. PROJECT INPUT (for BRD)
    Discovered uploaded files in uploads/:  <list — auto-ingested as input>
@@ -213,8 +213,9 @@ D. FEATURE-DEV (full-stack code)
        5173/3001 every time. Use `Bash` once before showing the questionnaire:
          `node -e "console.log(JSON.stringify([Math.floor(4000+Math.random()*1999), Math.floor(4000+Math.random()*1999)]))"`
        then verify each is free with
-         `netstat -ano | findstr :<port>`
-       (Windows) — re-roll on hit. Surface the two confirmed-free numbers
+         POSIX: `ss -ltn | grep ':<port> ' || lsof -iTCP:<port> -sTCP:LISTEN`
+         Windows: `netstat -ano | findstr :<port>`
+       — re-roll on hit. Surface the two confirmed-free numbers
        inline so the user sees them as the proposed defaults; they can still
        override with explicit values. Randomizing avoids collisions when
        multiple orchestrator runs or older `npm run dev` processes are still
@@ -234,9 +235,9 @@ D. FEATURE-DEV (full-stack code)
 
    D6. Auto-run install + start both servers after generation? (default: yes).
 
-   D7. Auto-deploy to claude.wegaplatform.com/<slug> after tests? (default: yes).
-       Builds a production bundle with base='/<slug>/', writes it into wega2's
-       deployments root, spawns the backend on a wega2-allocated port, and
+   D7. Auto-deploy to `<PUBLIC_BASE_URL>/<slug>` after tests? (default: yes).
+       Builds a production bundle with base='/<slug>/', writes it into quantnik's
+       deployments root, spawns the backend on a quantnik-allocated port, and
        prints the public URL. Slug = sanitised project name. Skip with NO if
        this run shouldn't be exposed publicly.
 
@@ -339,12 +340,12 @@ Phase 9 — Test Execution (runs Playwright suite)  (auto-run, pre-authorized)
                     Reply with `all` / `none` / `1` / `1-5` / `1,3,7` / `skip`
   Report:           Confluence — same space as BRD
   Skip if D6=no:    yes (cannot test what was not started)
-Phase 10 — Deployment (publish to claude.wegaplatform.com)  (auto-run, pre-authorized)
+Phase 10 — Deployment (publish to PUBLIC_BASE_URL)  (auto-run, pre-authorized)
   Slug:             <sanitised project name — e.g. "you-bank">
-  Public URL:       https://claude.wegaplatform.com/<slug>
+  Public URL:       <PUBLIC_BASE_URL>/<slug>
   Frontend build:   vite/next/etc. with base='/<slug>/' and API client patched
                     to use import.meta.env.BASE_URL
-  Backend:          spawned by wega2 on auto-allocated port (7000-7999),
+  Backend:          spawned by quantnik on auto-allocated port (7000-7999),
                     reverse-proxied at /<slug>/api/*
   Registers via:    POST http://localhost:6060/api/deployments/<projectId>
   Skip if D7=no:    yes
@@ -413,8 +414,8 @@ Produce the BRD in this exact section order:
 ```
 
 If the user opted into Confluence save (item B1 = yes):
-- **Target space is `run-context.confluenceSpaceKey` / `confluenceSpaceId` from `wega.json`.** Do **not** call `getConfluenceSpaces` to pick a different one. If the sidecar only has a key, resolve its ID with `mcp__Confluence__conf_get` `/wiki/api/v2/spaces?keys=<KEY>` and cache the result. If the sidecar is silent, only then fall back to the user's personal space.
-- For wega2 stdio: `mcp__Confluence__conf_post` to `/wiki/api/v2/pages` with the resolved `spaceId` + storage-HTML body.
+- **Target space is `run-context.confluenceSpaceKey` / `confluenceSpaceId` from `quantnik.json`.** Do **not** call `getConfluenceSpaces` to pick a different one. If the sidecar only has a key, resolve its ID with `mcp__Confluence__conf_get` `/wiki/api/v2/spaces?keys=<KEY>` and cache the result. If the sidecar is silent, only then fall back to the user's personal space.
+- For quantnik stdio: `mcp__Confluence__conf_post` to `/wiki/api/v2/pages` with the resolved `spaceId` + storage-HTML body.
 - For claude.ai-managed: `createConfluencePage` with `contentFormat: "markdown"`. Record the page ID and URL into the run-context.
 
 Store the BRD markdown in the run-context as `brd_markdown` for Phase 2. Print Phase 1 STATUS (`done`). **Do not** ask for confirmation — move directly into Phase 2.
@@ -787,9 +788,9 @@ In the Playwright output folder:
 2. `git add .`
 3. If `git config user.email` is empty, configure it for this repo only with the user's email from `MEMORY.md` (`abhinav.krishna@wipro.com`) — never globally.
 4. `git commit -m "test: initial Playwright scaffold from <PROJECT-KEY> test cases"` with a HEREDOC body listing source story keys and Test issue keys covered.
-5. **Resolve the remote.** Use whatever F4 was set to in Phase 0. Reminder: the default for F4 is the first configured repo's `origin` remote pulled by Phase 0.0a from the wega2 **Repos** tab. The agent should **not** ask the user to type the remote URL — it's already discovered. Only fall back to "local commit only" when zero repos were configured for this project AND the user didn't explicitly paste a URL.
+5. **Resolve the remote.** Use whatever F4 was set to in Phase 0. Reminder: the default for F4 is the first configured repo's `origin` remote pulled by Phase 0.0a from the quantnik **Repos** tab. The agent should **not** ask the user to type the remote URL — it's already discovered. Only fall back to "local commit only" when zero repos were configured for this project AND the user didn't explicitly paste a URL.
 6. If a remote is resolved: `git remote add origin <url>` then `git push -u origin <branch>`. Never `git push --force`. If the push fails (auth, missing repo, conflict), log the error and continue — the local commit is still safe.
-7. If no remote was resolvable, finish at the local commit and print the suggestion to configure a repo in the wega2 Repos tab, or to add a remote later with `git remote add origin <url>`.
+7. If no remote was resolvable, finish at the local commit and print the suggestion to configure a repo in the quantnik Repos tab, or to add a remote later with `git remote add origin <url>`.
 
 If the folder already exists and is already a git repo, do **not** reinitialise it. Detect any existing spec files for the same story and add them as new commits rather than overwriting blindly. If pre-existing untracked files are present in the target folder, list them in the final report — but do not abort.
 
@@ -1010,7 +1011,7 @@ Print Phase 9 STATUS with one of: `done`, `failed (preflight: …)`, `failed (in
 
 ## Phase 10 — Deployment (deploy-to-platform)
 
-**Final phase.** Ships the production build behind the same wega2 domain so the stakeholder can browse the app at a stable URL without setting up separate hosting. Runs **after** Phase 9 so any auto-fix patches applied during test execution are part of what gets deployed.
+**Final phase.** Ships the production build behind the same quantnik domain so the stakeholder can browse the app at a stable URL without setting up separate hosting. Runs **after** Phase 9 so any auto-fix patches applied during test execution are part of what gets deployed.
 
 Skip this phase entirely if **any** of the following is true (record the reason in the run-context and print `Phase 10 — Deployment: skipped (<reason>)`):
 - D7 = no (user opted out of deployment)
@@ -1021,7 +1022,7 @@ Phase 9 failures do **not** block Phase 10 — a failing test suite is a signal,
 
 ### 10.1 — Resolve project context
 
-Read `.claude/wega.json` at the project cwd to capture `project.id` (required) and `project.name` (default slug source). Halt with a clear error if either is missing — the deploy API can't be called without a `projectId`.
+Read `.claude/quantnik.json` at the project cwd to capture `project.id` (required) and `project.name` (default slug source). Halt with a clear error if either is missing — the deploy API can't be called without a `projectId`.
 
 Derive the slug: lowercase the project name, replace non-`[a-z0-9-]` with `-`, collapse repeats, max 48 chars, default `app` if empty. Reject any slug in the reserved set (`api`, `ws`, `auth`, `assets`, `health`, `static`, `public`, `admin`, `login`, `logout`, `callback`, `favicon.ico`, `index.html`, `d`) by appending `-app`.
 
@@ -1029,7 +1030,7 @@ Record `slug` into the run-context.
 
 ### 10.2 — Patch the frontend for subpath serving
 
-The deployed frontend lives at `https://claude.wegaplatform.com/<slug>/`, so all asset URLs and API calls must be prefixed with `/<slug>/`. Apply two edits to the frontend (use the resolved `frontendRoot` from Phase 3):
+The deployed frontend lives at `<PUBLIC_BASE_URL>/<slug>/`, so all asset URLs and API calls must be prefixed with `/<slug>/`. Apply two edits to the frontend (use the resolved `frontendRoot` from Phase 3):
 
 1. **Vite / Next / Angular base.** For Vite:
    - `Edit` `vite.config.js`: add `base: '/<slug>/'` to the `defineConfig({...})` block.
@@ -1069,7 +1070,7 @@ Verify the dist directory exists and contains `index.html` before proceeding.
 }
 ```
 
-Use `Bash` with `curl` and write the body to a temp file (`$env:TEMP\wega-deploy-<slug>.json` on Windows) before sending.
+Use `Bash` with `curl` and write the body to a temp file (`$env:TEMP\quantnik-deploy-<slug>.json` on Windows) before sending.
 
 On 2xx, parse the response `{ url, backendPort, deployment, message }`. Record `deploy_url`, `deploy_backend_port`, `deploy_id` into the run-context. On 4xx/5xx, surface the `error` field and print Phase 10 STATUS as `failed (register: …)`.
 
@@ -1082,7 +1083,7 @@ Restore the original `vite.config.js` (or stack-equivalent) by removing the `bas
 Two `curl` probes:
 
 1. `curl -sI http://localhost:6060/<slug>/` — must return 200 + `content-type: text/html`. Confirms the loopback dispatcher serves the bundle.
-2. `curl -sI <deploy_url>/` (the public URL from 10.4) — must return 200 + ~ the same bytes as probe 1. Confirms the public proxy is forwarding `/<slug>/*`. If it returns ~389 bytes with `<title>WEGA</title>`, the IIS rule isn't proxying — surface a warning but don't fail (the loopback URL still works).
+2. `curl -sI <deploy_url>/` (the public URL from 10.4) — must return 200 + roughly the same bytes as probe 1. Confirms the public proxy is forwarding `/<slug>/*`. If it returns the Quantnik SPA instead of the deployed app, the public reverse proxy is not forwarding `/<slug>/*` to the Quantnik backend; surface a warning but don't fail if the loopback URL still works.
 
 If a backend was deployed, also `curl -sI http://localhost:6060/<slug>/api/health` (or whichever health endpoint the backend exposes, falling back to `/`). 2xx or 401 = backend alive. 502 = backend didn't start — read the deployment's `log_path` and surface the last 20 lines as a diagnostic.
 
@@ -1111,7 +1112,7 @@ Phase 10 `failed (verify: …)` is **not** a blocker — that means the proxy wa
 
 Read the sanity-check SKILL.md (it's already installed at `~/.claude/skills/sanity-check/`). Run its full flow inline, **reusing values from the run-context** instead of re-discovering:
 
-- `wega.json` was already read in Phase 0.0a — reuse `run-context.jiraProjectKey`, `run-context.confluenceSpaceKey`, `run-context.projectId`.
+- `quantnik.json` was already read in Phase 0.0a — reuse `run-context.jiraProjectKey`, `run-context.confluenceSpaceKey`, `run-context.projectId`.
 - The deployment record was just created in Phase 10 — reuse `run-context.deploy_id`, `run-context.deploy_url`, `run-context.deploy_backend_port`. No second `GET /api/deployments` is needed.
 - The Jira stories from Phase 2 (`run-context.story_keys`) can seed the feature-coverage step — no second JQL search is needed.
 
@@ -1229,7 +1230,7 @@ After Phase 10, print:
 ✅ Orchestrator complete. Pipeline is fully done — no further input required. Send a new message any time if you want to refine a phase, redeploy, re-run sanity, or start another project.
 ```
 
-That line tells the user the agent is *idle*, not *pending*. The "your turn" banner the wega2 chat UI shows is calibrated against assistant messages that contain a literal question mark or explicit "reply with…" phrasing — keeping the closing message statement-shaped avoids triggering it.
+That line tells the user the agent is *idle*, not *pending*. The "your turn" banner the quantnik chat UI shows is calibrated against assistant messages that contain a literal question mark or explicit "reply with…" phrasing — keeping the closing message statement-shaped avoids triggering it.
 
 ---
 

@@ -1,5 +1,5 @@
 // One-shot migration: set every project's LLM to Bedrock + Sonnet 4.6.
-// Wega2's house default is now Bedrock + Sonnet 4.6 (per the change in
+// Quantnik's house default is now Bedrock + Sonnet 4.6 (per the change in
 // commit e9f63dd), but pre-existing projects keep whatever was in their
 // llm_provider/llm_model columns at create time — which for older rows
 // is 'anthropic' + 'claude-opus-4-7'. This script normalises them so the
@@ -14,8 +14,8 @@
 
 import Database from 'better-sqlite3';
 
-const TARGET_MODEL = process.env.WEGA_CHAT_BEDROCK_MODEL || 'us.anthropic.claude-sonnet-4-6';
-const db = new Database('data/wega2.db');
+const TARGET_MODEL = process.env.QUANTNIK_CHAT_BEDROCK_MODEL || 'us.anthropic.claude-sonnet-4-6';
+const db = new Database('data/quantnik.db');
 
 const before = db.prepare('SELECT id, name, llm_provider, llm_model, model FROM projects ORDER BY id').all();
 console.log('BEFORE:');

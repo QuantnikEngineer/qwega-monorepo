@@ -1,8 +1,8 @@
 // One-shot Confluence publish of the eShopLegacy modernization docs that
 // landed on disk during the code-modernizer run. Recreates the same tree
 // structure (Plan + Slices + Phase-1 Understanding + ADRs + Safety net +
-// per-slice docs + Capstone) inside Confluence space `wegaclaude`,
-// applying label `wega-project-modernization` to every page so the wega2
+// per-slice docs + Capstone) inside Confluence space `quantnik`,
+// applying label `quantnik-project-modernization` to every page so the quantnik
 // dashboard's Atlassian-artifacts panel picks them up.
 //
 // Run with:
@@ -27,10 +27,10 @@ if (!SITE || !EMAIL || !TOKEN) {
 const HOST  = `${SITE}.atlassian.net`;
 const AUTH  = 'Basic ' + Buffer.from(`${EMAIL}:${TOKEN}`).toString('base64');
 
-const SPACE_ID   = '127270916';        // wegaclaude (from /api/atlassian/15/artifacts)
-const SPACE_KEY  = 'wegaclaude';
-const LABEL      = 'wega-project-modernization';
-const REPO_ROOT  = 'C:/wega-claude/backend/data/projects/modernization/repos/legacy-app/modernization';
+const SPACE_ID   = '127270916';        // quantnik (from /api/atlassian/15/artifacts)
+const SPACE_KEY  = 'quantnik';
+const LABEL      = 'quantnik-project-modernization';
+const REPO_ROOT  = 'C:/quantnik/backend/data/projects/modernization/repos/legacy-app/modernization';
 
 // ---- helpers --------------------------------------------------------------
 
@@ -124,7 +124,7 @@ async function ensureLabel(pageId) {
 // uses the inline `body` instead.
 const TREE = {
   title: 'eShopLegacy — Modernization',
-  body: `<p>End-to-end modernization run of the eShopLegacy fixture from .NET Framework 4.7.2 MVC to .NET 8. This space holds every artifact the modernization produced: the plan, the slice backlog, per-phase docs, per-slice diff reports + tech/business docs, ADRs, and the capstone architecture. All pages carry label <strong>${LABEL}</strong> so the wega2 dashboard for project 15 surfaces them automatically.</p><p>Sections below — start with <strong>Plan</strong> and <strong>Capstone architecture</strong> for the executive picture.</p>`,
+  body: `<p>End-to-end modernization run of the eShopLegacy fixture from .NET Framework 4.7.2 MVC to .NET 8. This space holds every artifact the modernization produced: the plan, the slice backlog, per-phase docs, per-slice diff reports + tech/business docs, ADRs, and the capstone architecture. All pages carry label <strong>${LABEL}</strong> so the quantnik dashboard for project 15 surfaces them automatically.</p><p>Sections below — start with <strong>Plan</strong> and <strong>Capstone architecture</strong> for the executive picture.</p>`,
   children: [
     { title: 'Plan',                  file: 'plan.md' },
     { title: 'Slice backlog',         file: 'SLICES.md' },

@@ -186,16 +186,16 @@ Define all domain-specific terms, acronyms, and abbreviations used in the docume
 
 ### Upload to Confluence
 
-**Target space is non-negotiable when `wega.json` is present.** Before discovering anything, `Read` `.claude/wega.json` at the project cwd. If it exists and has `atlassian.confluenceSpaceKey` or `atlassian.confluenceSpaceId`, use **exactly that** as the target space — do **not** call `getConfluenceSpaces` and pick "first personal space" or anything else. The wega2 project's owner has explicitly chosen this scope; overriding it writes the BRD to the wrong place. If the sidecar is missing or silent on the space, fall back to the user-named space (questionnaire answer) and finally to the personal space.
+**Target space is non-negotiable when `quantnik.json` is present.** Before discovering anything, `Read` `.claude/quantnik.json` at the project cwd. If it exists and has `atlassian.confluenceSpaceKey` or `atlassian.confluenceSpaceId`, use **exactly that** as the target space — do **not** call `getConfluenceSpaces` and pick "first personal space" or anything else. The quantnik project's owner has explicitly chosen this scope; overriding it writes the BRD to the wrong place. If the sidecar is missing or silent on the space, fall back to the user-named space (questionnaire answer) and finally to the personal space.
 
 After the BRD markdown is finalized, upload it to Confluence. **Always print the page URL** when the upload succeeds — that line is mandatory output, not optional. There are two MCP shapes the agent might encounter; use whichever is available in this session:
 
-**Shape A — generic REST passthrough (wega2 stdio servers, current setup):**
+**Shape A — generic REST passthrough (quantnik stdio servers, current setup):**
 
 Available tools: `mcp__Confluence__conf_get`, `mcp__Confluence__conf_post`. The site URL is `https://<ATLASSIAN_SITE_NAME>.atlassian.net` (look at env var or ask the user once if unclear).
 
 1. Discover the target space:
-   - **wega.json wins.** Use `atlassian.confluenceSpaceKey` from the sidecar; resolve its `id` via `mcp__Confluence__conf_get` with path `/wiki/api/v2/spaces?keys=<KEY>`.
+   - **quantnik.json wins.** Use `atlassian.confluenceSpaceKey` from the sidecar; resolve its `id` via `mcp__Confluence__conf_get` with path `/wiki/api/v2/spaces?keys=<KEY>`.
    - Fallback only if the sidecar is silent.
 2. Convert the BRD markdown to Confluence storage HTML (basic mapping: `#`/`##`/`###` → `<h1>`/`<h2>`/`<h3>`, `**bold**` → `<strong>`, tables → `<table>...`, paragraphs → `<p>`, fenced code → `<pre><code>`). Wrap each blockquote callout (the "AI Generated — Needs Review" panels) in `<div data-type="panel-warning"><p>...</p></div>`.
 3. **Body-size-aware publish.** Measure the storage-HTML length. The stdio MCPs (`mcp__Confluence__conf_post`) reliably wedge on payloads above ~30 KB because the spawned subprocess buffers the whole JSON request in its own pipe and the host's 180s watchdog (300s if you bumped `MCP_TOOL_TIMEOUT_MS` in `.env`) trips before Atlassian responds. Branch:
@@ -210,7 +210,7 @@ Available tools: `mcp__Confluence__conf_get`, `mcp__Confluence__conf_post`. The 
        -H "Accept: application/json" \
        --data-binary @<temp-body.json>
      ```
-     `MCP_ATLASSIAN_EMAIL` + `MCP_ATLASSIAN_TOKEN` are already in the wega2 `.env`. The curl path doesn't traverse the stdio subprocess so it isn't subject to the same buffering wedge.
+     `MCP_ATLASSIAN_EMAIL` + `MCP_ATLASSIAN_TOKEN` are already in the quantnik `.env`. The curl path doesn't traverse the stdio subprocess so it isn't subject to the same buffering wedge.
 
    Body for both paths:
    ```json
@@ -224,7 +224,7 @@ Available tools: `mcp__Confluence__conf_get`, `mcp__Confluence__conf_post`. The 
 
 4. Build the page URL: `https://<ATLASSIAN_SITE_NAME>.atlassian.net/wiki` + the response's `_links.webui`. If `_links.webui` isn't in the response, fall back to `https://<ATLASSIAN_SITE_NAME>.atlassian.net/wiki/pages/viewpage.action?pageId=<response.id>`.
 
-5. **Apply the project's labels** (mandatory for the dashboard's per-project filtering). Read `atlassian.labels` from `wega.json`; for every label, POST to `/wiki/rest/api/content/<pageId>/label` with body `[{"prefix":"global","name":"<label>"}]`. Use the same MCP/curl branch by body size — labels are small, the MCP works fine.
+5. **Apply the project's labels** (mandatory for the dashboard's per-project filtering). Read `atlassian.labels` from `quantnik.json`; for every label, POST to `/wiki/rest/api/content/<pageId>/label` with body `[{"prefix":"global","name":"<label>"}]`. Use the same MCP/curl branch by body size — labels are small, the MCP works fine.
 
 **Shape B — claude.ai-managed Atlassian connector (Claude Code with claude.ai OAuth):**
 

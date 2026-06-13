@@ -1,6 +1,6 @@
 // Auth token store — read on every request, set by login/register, cleared
 // by logout. localStorage so it survives a tab reload.
-const TOKEN_KEY = 'wega.auth.token';
+const TOKEN_KEY = 'quantnik.auth.token';
 export const authToken = {
   get: () => localStorage.getItem(TOKEN_KEY),
   set: (t) => localStorage.setItem(TOKEN_KEY, t),
@@ -16,7 +16,7 @@ async function req(path, opts = {}) {
     // Session expired or token revoked — clear local state and let the
     // app shell push the user back to the login screen.
     authToken.clear();
-    window.dispatchEvent(new CustomEvent('wega:auth-expired'));
+    window.dispatchEvent(new CustomEvent('quantnik:auth-expired'));
   }
   if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
   return res.json();
@@ -74,7 +74,7 @@ export const api = {
     const r = await fetch(`/api/uploads/${projectId}`, { method: 'POST', body: fd, headers });
     if (r.status === 401) {
       authToken.clear();
-      window.dispatchEvent(new CustomEvent('wega:auth-expired'));
+      window.dispatchEvent(new CustomEvent('quantnik:auth-expired'));
     }
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.statusText);
     return r.json();
@@ -93,7 +93,7 @@ export const api = {
     const r = await fetch(`/api/uploads/${projectId}/${encodeURIComponent(storedName)}/raw`, { headers });
     if (r.status === 401) {
       authToken.clear();
-      window.dispatchEvent(new CustomEvent('wega:auth-expired'));
+      window.dispatchEvent(new CustomEvent('quantnik:auth-expired'));
     }
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.statusText);
     const blob = await r.blob();
@@ -157,6 +157,7 @@ export const api = {
     req(`/mcp/${projectId}/${name}`, { method: 'PUT', body: JSON.stringify(config) }),
   deleteMcp: (projectId, name) =>
     req(`/mcp/${projectId}/${name}`, { method: 'DELETE' }),
+  globalMcp: () => req('/mcp'),
 
   getAtlassianConfig: (projectId) => req(`/atlassian/${projectId}/config`),
   saveAtlassianConfig: (projectId, data) =>

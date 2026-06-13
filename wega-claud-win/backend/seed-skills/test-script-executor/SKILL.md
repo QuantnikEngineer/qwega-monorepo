@@ -6,7 +6,7 @@ description: Executes a Playwright test project against a running application, c
 When invoked, run the executor end-to-end. The skill is **mostly autonomous** with **one mandatory interactive pause** — after Jira bug tickets are logged for every failure, it asks the user to pick which to auto-fix and applies only those fixes. No other prompts under happy-path execution.
 
 This skill supports the same two Atlassian MCP shapes used by the other SDLC skills:
-- **Shape A — wega2 stdio:** `mcp__Confluence__conf_get/post/...`, `mcp__Jira__jira_get/post/...`. Site URL is `https://<ATLASSIAN_SITE_NAME>.atlassian.net`.
+- **Shape A — quantnik stdio:** `mcp__Confluence__conf_get/post/...`, `mcp__Jira__jira_get/post/...`. Site URL is `https://<ATLASSIAN_SITE_NAME>.atlassian.net`.
 - **Shape B — claude.ai-managed:** `mcp__claude_ai_Atlassian__createConfluencePage`, `getJiraIssue`, `createJiraIssue`, `addCommentToJiraIssue`, etc.
 
 **Jira logging is mandatory.** If neither shape is loaded, halt with:
@@ -25,7 +25,7 @@ In order:
 
 1. If the user named a path in the invocation message, use it.
 2. Else look at the orchestrator's run-context (if running inside sdlc-orchestrator); use its `playwright_output_folder`.
-3. Else check the wega2 project's configured repos (`additionalDirectories`): scan each for a `playwright.config.{js,ts,mjs,cjs}` at the root.
+3. Else check the quantnik project's configured repos (`additionalDirectories`): scan each for a `playwright.config.{js,ts,mjs,cjs}` at the root.
 4. Else check siblings of the project cwd matching `*-playwright-tests` or `playwright-tests`.
 5. Else search `~/projects/*-playwright-tests/` for a `playwright.config.*`.
 
@@ -55,11 +55,11 @@ If `baseURL` is missing, fall back to whatever the user passed in the invocation
 
 `curl -sf -m 5 <baseUrl>/` once. If it returns 2xx-3xx, the app is up.
 
-If it's not up, look for the matching wega2 frontend / backend in `additionalDirectories` (or the orchestrator's `output_folder`). If found AND a `package.json` exists there:
+If it's not up, look for the matching quantnik frontend / backend in `additionalDirectories` (or the orchestrator's `output_folder`). If found AND a `package.json` exists there:
 
 - Start the backend (`node server.js` or `npm run start`) and the frontend (`npm run dev`) as **background** tasks via the `Bash` tool with `run_in_background: true`. Capture task ids.
 - Re-poll `<baseUrl>/` once per second for up to 30 seconds. First 2xx-3xx wins.
-- Record `boot_by_executor: true` so the final summary can flag that the servers were started by this skill (and remind the user to stop them later via the wega2 chat or `taskkill /F /PID`).
+- Record `boot_by_executor: true` so the final summary can flag that the servers were started by this skill (and remind the user to stop them later via the quantnik chat or `taskkill /F /PID`).
 
 If the app still isn't reachable after the boot attempt (or there's nothing to start), halt with a clear error:
 
@@ -193,12 +193,12 @@ Per-spec sub-summaries too — the report will use both.
 
 ---
 
-**Scope rule before Phase 4 + Phase 6.** `Read` `.claude/wega.json` at the project cwd. If present:
+**Scope rule before Phase 4 + Phase 6.** `Read` `.claude/quantnik.json` at the project cwd. If present:
 - `atlassian.jiraProjectKey` → the **only** allowed Jira project for bug logging (Phase 4). Do not infer from traceability or `getVisibleJiraProjects`.
 - `atlassian.confluenceSpaceKey` / `confluenceSpaceId` → the **only** allowed Confluence space for the execution report (Phase 6). Never the personal space when this is set.
 - `atlassian.labels` → propagate to every created bug.
 
-If the sidecar is silent on either, fall back to the existing discovery chain (traceability → wega2 project → halt).
+If the sidecar is silent on either, fall back to the existing discovery chain (traceability → quantnik project → halt).
 
 ## Phase 4 — Log a Jira ticket for every failure (mandatory)
 
@@ -209,8 +209,8 @@ This phase is **non-negotiable**. Every failed or timed-out test produces a Jira
 In order:
 
 1. If `run-context.traceability` exists, take the project key from the first Test issue listed (e.g. `WC-123` → `WC`).
-2. Else use the wega2 project's configured `jira_project_key` (read from `/api/llm/<projectId>` or from the project row).
-3. Else halt with: "No Jira project resolvable for ticket logging. Configure `jira_project_key` on the wega2 project or run `/test-script-generator` first so the traceability table exists."
+2. Else use the quantnik project's configured `jira_project_key` (read from `/api/llm/<projectId>` or from the project row).
+3. Else halt with: "No Jira project resolvable for ticket logging. Configure `jira_project_key` on the quantnik project or run `/test-script-generator` first so the traceability table exists."
 
 Probe the project for issuetypes:
 - **Shape A:** `mcp__Jira__jira_get` with `/rest/api/3/project/<KEY>?expand=issueTypes`.
@@ -445,7 +445,7 @@ Remaining failures (not selected or fix unverified): <n>
 
 Page title: `<Project> — Playwright Execution Report — <YYYY-MM-DD HH:mm>`.
 
-Discover the Confluence space the same way `vulnerability-check` does — wega2 project's configured `confluence_space_key`/`confluence_space_id` first; else first personal space. Use the same dual-shape support.
+Discover the Confluence space the same way `vulnerability-check` does — quantnik project's configured `confluence_space_key`/`confluence_space_id` first; else first personal space. Use the same dual-shape support.
 
 Body sections:
 

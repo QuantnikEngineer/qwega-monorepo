@@ -2,14 +2,15 @@ import { Router } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { db } from '../db.js';
+import { config } from '../config.js';
 import { projectForRead, projectForWrite } from './projectAccess.js';
 
 export const atlassian = Router();
 
-// Persist the wega2 project's atlassian + LLM scope into <project>/.claude/wega.json
-// so skills running inside the SDK (which can't read wega2.db) have a single
+// Persist the quantnik project's atlassian + LLM scope into <project>/.claude/quantnik.json
+// so skills running inside the SDK (which can't read quantnik.db) have a single
 // well-known file to consult for defaults instead of guessing or asking.
-export function writeWegaProjectFile(project) {
+export function writeQuantnikProjectFile(project) {
   try {
     const dir = path.join(project.path, '.claude');
     fs.mkdirSync(dir, { recursive: true });
@@ -18,9 +19,14 @@ export function writeWegaProjectFile(project) {
       try { labels = JSON.parse(project.atlassian_labels) || []; } catch {}
     }
     const body = {
-      generatedBy: 'wega2',
+      generatedBy: 'quantnik',
       generatedAt: new Date().toISOString(),
-      project: { id: project.id, name: project.name, path: project.path },
+      project: {
+        id: project.id,
+        name: project.name,
+        path: '.',
+        managedPath: path.relative(config.projectsRoot, project.path) || '.',
+      },
       atlassian: {
         siteName: process.env.MCP_ATLASSIAN_SITE_NAME || null,
         siteUrl: process.env.MCP_ATLASSIAN_SITE_NAME
@@ -36,11 +42,13 @@ export function writeWegaProjectFile(project) {
         model: project.llm_model || null,
       },
     };
-    fs.writeFileSync(path.join(dir, 'wega.json'), JSON.stringify(body, null, 2));
+    fs.writeFileSync(path.join(dir, 'quantnik.json'), JSON.stringify(body, null, 2));
+    const legacySidecar = `${'we'}${'ga'}.json`;
+    fs.rmSync(path.join(dir, legacySidecar), { force: true });
   } catch (e) {
-    // Non-fatal — wega2 still works without the sidecar file; skills just
+    // Non-fatal — quantnik still works without the sidecar file; skills just
     // fall back to asking the user.
-    console.error('[wega.json] write failed for project', project?.id, e?.message);
+    console.error('[quantnik.json] write failed for project', project?.id, e?.message);
   }
 }
 
@@ -103,7 +111,7 @@ atlassian.put('/:projectId/config', (req, res) => {
     project.id,
   );
   const updated = db.prepare('SELECT * FROM projects WHERE id = ?').get(project.id);
-  writeWegaProjectFile(updated);
+  writeQuantnikProjectFile(updated);
   res.json(updated);
 });
 

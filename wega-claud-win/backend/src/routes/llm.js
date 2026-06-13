@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { db } from '../db.js';
-import { writeWegaProjectFile } from './atlassian.js';
+import { writeQuantnikProjectFile } from './atlassian.js';
 import { projectForRead, projectForWrite } from './projectAccess.js';
 
 export const llm = Router();
 
-// Provider catalog — describes what each one stores, whether the wega2
+// Provider catalog — describes what each one stores, whether the quantnik
 // agent runtime can actually use it today, and what models are typical.
 // Keep this in sync with PROVIDERS in frontend/src/components/SettingsPanel.jsx.
 export const PROVIDERS = {
@@ -18,7 +18,7 @@ export const PROVIDERS = {
   bedrock: {
     label: 'AWS Bedrock (Claude) · house default',
     wired: true,
-    note: 'Claude Sonnet 4.6 via AWS Bedrock — the house default for new projects. Sets CLAUDE_CODE_USE_BEDROCK + AWS creds on the SDK process. Reads AWS_BEARER_TOKEN_BEDROCK + AWS_REGION + WEGA_CHAT_BEDROCK_MODEL from the service .env.',
+    note: 'Claude Sonnet 4.6 via AWS Bedrock — the house default for new projects. Sets CLAUDE_CODE_USE_BEDROCK + AWS creds on the SDK process. Reads AWS_BEARER_TOKEN_BEDROCK + AWS_REGION + QUANTNIK_CHAT_BEDROCK_MODEL from the service .env.',
     defaultModel: 'us.anthropic.claude-sonnet-4-6-20251001-v1:0',
   },
   vertex: {
@@ -36,7 +36,7 @@ export const PROVIDERS = {
   openai: {
     label: 'OpenAI',
     wired: false,
-    note: 'Stored only — the wega2 agent runtime is built on the Claude Agent SDK which is Claude-only. Switching to OpenAI requires a different agent runtime. Config persists so it can be wired later.',
+    note: 'Stored only — the quantnik agent runtime is built on the Claude Agent SDK which is Claude-only. Switching to OpenAI requires a different agent runtime. Config persists so it can be wired later.',
     defaultModel: 'gpt-4o',
   },
   gemini: {
@@ -107,7 +107,7 @@ llm.put('/:projectId', (req, res) => {
     project.id,
   );
   const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(project.id);
-  writeWegaProjectFile(row);
+  writeQuantnikProjectFile(row);
   let cfgOut = {};
   if (row.llm_config) { try { cfgOut = JSON.parse(row.llm_config); } catch {} }
   res.json({
@@ -188,7 +188,7 @@ export function applyProviderEnv(project, targetEnv) {
       return {
         wired: true,
         model: project.llm_model
-            || process.env.WEGA_CHAT_BEDROCK_MODEL
+            || process.env.QUANTNIK_CHAT_BEDROCK_MODEL
             || PROVIDERS.bedrock.defaultModel,
       };
     case 'vertex':
@@ -206,7 +206,7 @@ export function applyProviderEnv(project, targetEnv) {
     case 'gemini':
       return {
         wired: false,
-        error: `Provider "${provider}" is not yet wired into the wega2 agent runtime (which uses the Claude Agent SDK, Claude-only). Switch the project's LLM provider back to Anthropic, Bedrock, Vertex, or Foundry to run chat turns.`,
+        error: `Provider "${provider}" is not yet wired into the quantnik agent runtime (which uses the Claude Agent SDK, Claude-only). Switch the project's LLM provider back to Anthropic, Bedrock, Vertex, or Foundry to run chat turns.`,
       };
     default:
       return { wired: false, error: `Unknown provider: ${provider}` };
@@ -245,8 +245,8 @@ export function applyBedrockFallbackEnv(targetEnv) {
   // known-good fallback. Haiku 4.5 has been verified live on the test
   // account's Bedrock; safer than older Sonnet ids that are now retired.
   const model =
-    targetEnv.WEGA_CHAT_BEDROCK_MODEL  ||
-    targetEnv.WEGA_BRAIN_BEDROCK_MODEL ||
+    targetEnv.QUANTNIK_CHAT_BEDROCK_MODEL  ||
+    targetEnv.QUANTNIK_BRAIN_BEDROCK_MODEL ||
     'us.anthropic.claude-haiku-4-5-20251001-v1:0';
 
   return {

@@ -1,10 +1,10 @@
-# Windows deployment orchestrator for WEGA Claude.
+# Windows deployment orchestrator for Quantnik.
 # Run as Administrator from the repo root:  .\scripts\deploy-windows.ps1
 #
 # What it does:
 #   1. Installs backend + frontend deps.
 #   2. Builds the frontend (vite copies frontend/public/web.config into dist).
-#   3. Installs node-windows and registers the WegaClaude service.
+#   3. Installs node-windows and registers the Quantnik service.
 #   4. Prints the manual IIS steps you still need to perform.
 
 $ErrorActionPreference = 'Stop'
@@ -37,7 +37,7 @@ Push-Location $BackendDir
 npm install node-windows --no-save
 Pop-Location
 
-Section "Registering Windows service: WegaClaude"
+Section "Registering Windows service: Quantnik"
 node (Join-Path $RepoRoot 'scripts\install-windows-service.cjs')
 
 Section "Done"
@@ -54,13 +54,13 @@ Manual IIS configuration still required:
   5. Set system environment variables (System Properties → Environment Variables):
        CLAUDE_CODE_OAUTH_TOKEN   (run 'claude setup-token' on this server)
        MCP_*_TOKEN               (any MCP integrations you want available)
-       PROJECTS_ROOT=C:\wega-data\projects   (or wherever you want persisted data)
-       DB_PATH=C:\wega-data\wega2.db
-     Then restart the WegaClaude service:
-       Restart-Service WegaClaude
-  6. Visit http://<server-hostname>/ — WEGA UI should load.
+       PROJECTS_ROOT=C:\quantnik-data\projects   (or wherever you want persisted data)
+       DB_PATH=C:\quantnik-data\quantnik.db
+     Then restart the Quantnik service:
+       Restart-Service Quantnik
+  6. Visit http://<server-hostname>/ — Quantnik UI should load.
 
 Logs:
-  C:\Windows\System32\config\systemprofile\AppData\Roaming\node-windows\WegaClaude\daemon\
+  C:\Windows\System32\config\systemprofile\AppData\Roaming\node-windows\Quantnik\daemon\
   (node-windows writes service stdout/stderr to .log/.err in this directory)
 "@

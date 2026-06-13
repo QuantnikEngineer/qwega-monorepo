@@ -5,10 +5,10 @@
 // Excel workbook to the path given as the first CLI argument.
 //
 // Usage (from inside the skill):
-//   echo "$JSON" | NODE_PATH=/path/to/wega2/backend/node_modules \
+//   echo "$JSON" | NODE_PATH=/path/to/quantnik/backend/node_modules \
 //                  node xlsx-generator.js /absolute/output/path.xlsx
 //
-// The exceljs dependency is satisfied via NODE_PATH — on a wega2 host this
+// The exceljs dependency is satisfied via NODE_PATH — on a quantnik host this
 // points at backend/node_modules/exceljs (added as a permanent dep so the
 // install is once-only and cached across runs).
 
@@ -25,7 +25,7 @@ const raw = fs.readFileSync(0, 'utf8'); // stdin
 const data = JSON.parse(raw);
 
 const wb = new ExcelJS.Workbook();
-wb.creator = 'wega2 / sdlc-tokenomics';
+wb.creator = 'quantnik / sdlc-tokenomics';
 wb.created = new Date();
 
 // --- Sheet 1: Summary ------------------------------------------------------
@@ -45,7 +45,7 @@ const tot = s1.addRow(['Total estimated cost (USD)', data.total_cost || 0]);
 tot.font = { bold: true };
 tot.getCell(2).numFmt = '"$"#,##0.00';
 s1.addRow([]);
-const caveat = s1.addRow(['Caveat', 'Estimates are directional (±30%). Prices last refreshed Jan 2026. wega2 today executes only Claude — non-Claude picks are cost references, not immediate execution targets.']);
+const caveat = s1.addRow(['Caveat', 'Estimates are directional (±30%). Prices last refreshed Jan 2026. quantnik today executes only Claude — non-Claude picks are cost references, not immediate execution targets.']);
 caveat.getCell(2).alignment = { wrapText: true, vertical: 'top' };
 s1.getRow(caveat.number).height = 64;
 

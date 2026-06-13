@@ -1,23 +1,23 @@
 ---
 name: deploy-to-platform
-description: Deploys a generated full-stack application onto the same wega2 server it was generated on, served under a project-specific subpath like `https://claude.wegaplatform.com/<project-name>`. Builds the frontend (`npm run build` or the stack-equivalent), copies the resulting dist into wega2's deployments root, and — if a Node-style backend exists — spawns it on an auto-allocated port with reverse-proxy at `/<slug>/api/*`. The deployment is registered in the wega2 DB so it survives service restarts. The public host is configured on the wega2 backend via the `PUBLIC_BASE_URL` env var (typically `https://claude.wegaplatform.com`); the skill never has to ask the user which domain to publish under. Use this skill when the user wants to ship the freshly built app for review without setting up separate hosting. The natural counterpart to the orchestrator's Phase 8 (Boot) — that boots dev servers for local testing; this serves the production build behind the same wega2 domain.
+description: Deploys a generated full-stack application onto the same Quantnik server it was generated on, served under a project-specific subpath like `<PUBLIC_BASE_URL>/<project-name>`. Builds the frontend (`npm run build` or the stack-equivalent), copies the resulting dist into Quantnik's deployments root, and — if a Node-style backend exists — spawns it on an auto-allocated port with reverse-proxy at `/<slug>/api/*`. The deployment is registered in the Quantnik DB so it survives service restarts. The public host is configured on the Quantnik backend via the `PUBLIC_BASE_URL` env var; the skill never has to ask the user which domain to publish under. Use this skill when the user wants to ship the freshly built app for review without setting up separate hosting. The natural counterpart to the orchestrator's Phase 8 (Boot) — that boots dev servers for local testing; this serves the production build behind the same Quantnik domain.
 ---
 
 When this skill is invoked, follow the steps below in strict order. Do not skip a step or move to the next until the current one is complete.
 
-This skill **calls back to the wega2 backend API on the same host** (`http://localhost:6060/api/deployments/<projectId>`). The skill itself does not serve traffic — it asks the wega2 process to register the deployment, which then handles routing.
+This skill **calls back to the quantnik backend API on the same host** (`http://localhost:6060/api/deployments/<projectId>`). The skill itself does not serve traffic — it asks the quantnik process to register the deployment, which then handles routing.
 
 ---
 
-## Step 0 — Read project context from `wega.json`
+## Step 0 — Read project context from `quantnik.json`
 
-`Read` `.claude/wega.json` at the project cwd. Extract:
+`Read` `.claude/quantnik.json` at the project cwd. Extract:
 
-- `project.id` → the wega2 project id. **Required** — without it the deployment can't be registered.
+- `project.id` → the quantnik project id. **Required** — without it the deployment can't be registered.
 - `project.name` → default slug (sanitised: lowercase, hyphen-separated, alphanumeric only, max 48 chars).
 - `project.path` → useful as a baseline when locating the generated app folder.
 
-If `wega.json` is missing or has no `project.id`, halt with: "Cannot deploy — no wega.json with project.id at this cwd. Open the project in wega2 first."
+If `quantnik.json` is missing or has no `project.id`, halt with: "Cannot deploy — no quantnik.json with project.id at this cwd. Open the project in quantnik first."
 
 ---
 
@@ -53,7 +53,7 @@ Record:
 
 ## Step 2 — Build the frontend (stack-aware)
 
-The wega2 server can only serve **static** frontend bundles, so the source has to be built into a self-contained folder of files. Pick the build command and resulting dist directory based on `frontendStack`:
+The quantnik server can only serve **static** frontend bundles, so the source has to be built into a self-contained folder of files. Pick the build command and resulting dist directory based on `frontendStack`:
 
 | Stack | Build command | Dist directory |
 |-------|--------------|----------------|
@@ -65,9 +65,9 @@ For Vite-family projects, **set `base: '/<slug>/'` in `vite.config.js` before bu
 
 The skill must also ensure **three** other things are correct before building, or the deployed app will white-screen. Each has caught a real deploy:
 
-**(a) API client honours BASE_URL.** Otherwise the deployed SPA calls `/api/*` on the wega2 origin instead of `/<slug>/api/*` on its own backend. Standard pattern: change any hard-coded `const BASE = '/api'` to ``const BASE = `${import.meta.env.BASE_URL}api`.replace(/\/{2,}/g, '/')`` so it evaluates to `/api` in dev (base=`/`) and `/<slug>/api` in deployed builds. Patch every `/api/...` literal in `src/services/**` the same way before building.
+**(a) API client honours BASE_URL.** Otherwise the deployed SPA calls `/api/*` on the quantnik origin instead of `/<slug>/api/*` on its own backend. Standard pattern: change any hard-coded `const BASE = '/api'` to ``const BASE = `${import.meta.env.BASE_URL}api`.replace(/\/{2,}/g, '/')`` so it evaluates to `/api` in dev (base=`/`) and `/<slug>/api` in deployed builds. Patch every `/api/...` literal in `src/services/**` the same way before building.
 
-**(b) React Router (or equivalent) has a `basename`.** Otherwise the FIRST internal `<Link>` click navigates the browser out of the slug to `/<route>`, which falls through to wega2's SPA fallback and renders a white screen. Patch `main.jsx`:
+**(b) React Router (or equivalent) has a `basename`.** Otherwise the FIRST internal `<Link>` click navigates the browser out of the slug to `/<route>`, which falls through to quantnik's SPA fallback and renders a white screen. Patch `main.jsx`:
 
 ```jsx
 <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
@@ -75,7 +75,7 @@ The skill must also ensure **three** other things are correct before building, o
 
 For Vue Router: `createRouter({ history: createWebHistory(import.meta.env.BASE_URL) })`. For TanStack Router: `basepath: import.meta.env.BASE_URL.replace(/\/$/, '')`. Apply the framework-equivalent before building.
 
-**(c) Backend mounts under `/api`.** The wega2 dispatcher proxies `/<slug>/api/*` → backend `/api/*` without stripping. If the backend mounts routes at `/` (e.g. `app.use(routes)` where the router has `/v1/members`), then production calls 404 even though dev (which uses Vite's `proxy.rewrite: path => path.replace(/^\/api/, '')`) works. Fix the backend to mount at `/api`:
+**(c) Backend mounts under `/api`.** The quantnik dispatcher proxies `/<slug>/api/*` → backend `/api/*` without stripping. If the backend mounts routes at `/` (e.g. `app.use(routes)` where the router has `/v1/members`), then production calls 404 even though dev (which uses Vite's `proxy.rewrite: path => path.replace(/^\/api/, '')`) works. Fix the backend to mount at `/api`:
 
 ```js
 // before: app.use(routes);
@@ -107,7 +107,7 @@ Verify the dist directory exists and contains `index.html` before proceeding.
 
 If `backendRoot` is `null`, skip this step.
 
-Otherwise, install dependencies and determine the **start command** the wega2 server should use to spawn the backend process. The wega2 server passes `PORT` as an env var; the backend MUST honour `process.env.PORT` (Node) or its stack equivalent.
+Otherwise, install dependencies and determine the **start command** the quantnik server should use to spawn the backend process. The quantnik server passes `PORT` as an env var; the backend MUST honour `process.env.PORT` (Node) or its stack equivalent.
 
 | `backendStack` | Install | Start command (the value of `backendStartCmd` + `backendStartArgs`) |
 |-----------------|---------|----------------------------------------------------------------------|
@@ -118,9 +118,9 @@ Otherwise, install dependencies and determine the **start command** the wega2 se
 | `dotnet` | `dotnet publish -c Release -o publish` | `cmd: "dotnet"`, `args: ["publish/<assembly>.dll"]` |
 | `go` | `go build -o bin/app ./...` | `cmd: "bin/app"`, `args: []` |
 
-The wega2 server only honours `$PORT` as a literal env var (not shell substitution), so for stacks that need the port inline (uvicorn, django), write the args as a placeholder string `"$PORT"` — the deployment route detects the `$PORT` token and substitutes the allocated port number at spawn time.
+The quantnik server only honours `$PORT` as a literal env var (not shell substitution), so for stacks that need the port inline (uvicorn, django), write the args as a placeholder string `"$PORT"` — the deployment route detects the `$PORT` token and substitutes the allocated port number at spawn time.
 
-Actually, simpler: omit the port from args entirely. Configure the backend to read `process.env.PORT` (Node) or `os.getenv("PORT")` (Python) at startup. The wega2 dispatcher always sets `PORT` on the child env. If the user's backend doesn't read PORT, halt with a clear instruction to add that one line.
+Actually, simpler: omit the port from args entirely. Configure the backend to read `process.env.PORT` (Node) or `os.getenv("PORT")` (Python) at startup. The quantnik dispatcher always sets `PORT` on the child env. If the user's backend doesn't read PORT, halt with a clear instruction to add that one line.
 
 ---
 
@@ -149,9 +149,9 @@ curl -s -X POST http://localhost:6060/api/deployments/<projectId> \
 
 Write the JSON body to a temp file first (the body is too long for inline `-d`).
 
-Always target `http://localhost:6060` even when the public host is `https://claude.wegaplatform.com` — IIS / the reverse proxy fronts the same wega2 process at both endpoints, and the loopback hop is cheaper. The route reads `PUBLIC_BASE_URL` from the backend's env and stamps the public URL onto the deployment row (no need to send `publicHost` in the body).
+Always target `http://localhost:6060` even when the public host is `PUBLIC_BASE_URL` — IIS / the reverse proxy fronts the same Quantnik process at both endpoints, and the loopback hop is cheaper. The route reads `PUBLIC_BASE_URL` from the backend's env and stamps the public URL onto the deployment row (no need to send `publicHost` in the body).
 
-Parse the response — on success it returns `{ url, backendPort, deployment, message }`. The `url` field is the publicly browseable URL (e.g. `https://claude.wegaplatform.com/<slug>`). On failure (4xx/5xx) it returns `{ error }` — surface the error verbatim and halt.
+Parse the response — on success it returns `{ url, backendPort, deployment, message }`. The `url` field is the publicly browseable URL (for example, `<PUBLIC_BASE_URL>/<slug>`). On failure (4xx/5xx) it returns `{ error }` — surface the error verbatim and halt.
 
 ---
 
@@ -160,7 +160,7 @@ Parse the response — on success it returns `{ url, backendPort, deployment, me
 Run two `curl` probes:
 
 1. `curl -sI http://localhost:6060/<slug>/` — must return 200 with `content-type: text/html`. Confirms the loopback dispatcher is wired.
-2. `curl -sI <url>/` against the public URL returned in step 4 (e.g. `https://claude.wegaplatform.com/<slug>/`) — must also return 200. Confirms IIS / the public proxy is forwarding `/<slug>/*` to the same process. If step 1 passes but step 2 returns the wega2 SPA (`<title>WEGA</title>`, ~389 bytes), the reverse proxy is eating the slug — flag it and skip step 3 until the proxy is fixed.
+2. `curl -sI <url>/` against the public URL returned in step 4 (for example, `<PUBLIC_BASE_URL>/<slug>/`) — must also return 200. Confirms IIS / the public proxy is forwarding `/<slug>/*` to the same process. If step 1 passes but step 2 returns the Quantnik SPA, the reverse proxy is eating the slug — flag it and skip step 3 until the proxy is fixed.
 3. If a backend was deployed: `curl -sI http://localhost:6060/<slug>/api/health` (or whichever health endpoint the backend exposes — fall back to `/`). Must return 2xx. If it returns 502, the backend process didn't start cleanly — read the backend log at the path printed in the deployment response and surface the first 50 lines as a diagnostic.
 
 If either probe fails, the deployment is registered but not fully live. Print the failure clearly and offer to read the backend log.
@@ -181,20 +181,20 @@ Frontend dist: <copied to: ...>
 Backend:       <port> (PID <pid>)   |   (frontend-only — no backend)
 Logs:          <log path>
 
-Manage from the wega2 host:
+Manage from the quantnik host:
   • List all deployments: curl http://localhost:6060/api/deployments
   • Restart this one:     curl -X POST http://localhost:6060/api/deployments/<id>/restart
   • Undeploy:             curl -X DELETE http://localhost:6060/api/deployments/<id>
 ```
 
-If `publicHost` was overridden (Step 4 takes an optional `publicHost` field — surface it as a question if the project's wega.json has a `deployment.publicHost` field), substitute the host accordingly in the printed URL.
+If `publicHost` was overridden (Step 4 takes an optional `publicHost` field — surface it as a question if the project's quantnik.json has a `deployment.publicHost` field), substitute the host accordingly in the printed URL.
 
 ---
 
 ## Guardrails
 
-- **Reserved slugs.** The wega2 dispatcher refuses these slugs because they collide with API routes or static assets: `api`, `ws`, `auth`, `assets`, `health`, `static`, `public`, `admin`, `login`, `logout`, `callback`, `favicon.ico`, `index.html`, `d`. If the project name sanitises to one of these, append `-app` and retry (e.g. `api` → `api-app`).
-- **Never modify the wega2 frontend bundle.** Deployed apps are isolated — they share nothing with wega2's own UI beyond the Express host.
+- **Reserved slugs.** The quantnik dispatcher refuses these slugs because they collide with API routes or static assets: `api`, `ws`, `auth`, `assets`, `health`, `static`, `public`, `admin`, `login`, `logout`, `callback`, `favicon.ico`, `index.html`, `d`. If the project name sanitises to one of these, append `-app` and retry (e.g. `api` → `api-app`).
+- **Never modify the quantnik frontend bundle.** Deployed apps are isolated — they share nothing with quantnik's own UI beyond the Express host.
 - **No port range outside 7000–7999.** That range is what the dispatcher allocates from. Don't hard-code a port.
 - **Single Phase 9 prompt rule.** This skill is non-interactive — it never pauses for confirmation between steps. The user invoked the skill once; that's the consent. The only exception is when Step 1 can't locate the source folder.
 - **No deployment if the source folder is git-dirty in a way the user didn't sign off on.** Run `git status --porcelain` once and surface any modified files in the build log — but do NOT block the deploy unless the user explicitly said to.

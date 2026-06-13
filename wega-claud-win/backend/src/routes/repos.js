@@ -73,11 +73,11 @@ repos.post('/:projectId', async (req, res) => {
   remoteUrl = (remoteUrl || '').trim();
 
   if (!name) return res.status(400).json({ error: 'name required' });
-  if (!remoteUrl) return res.status(400).json({ error: 'remote URL is required — wega2 stores repos by remote and clones a local working copy automatically' });
+  if (!remoteUrl) return res.status(400).json({ error: 'remote URL is required — quantnik stores repos by remote and clones a local working copy automatically' });
 
-  // Local path is auto-derived under wega2's repos root. Users no longer
+  // Local path is auto-derived under quantnik's repos root. Users no longer
   // type it — the repo's identity is the remote URL; the local path is
-  // wega2's clone target.
+  // quantnik's clone target.
   const rPath = defaultLocalPath(project.name, remoteUrl, name);
 
   // Clone immediately so the orchestrator (and every other skill that

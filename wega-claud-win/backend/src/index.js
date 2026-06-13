@@ -22,7 +22,7 @@ import { auth, attachAuth, requireAuth, requireAdmin, requireAuthOrLocal } from 
 import { admin } from './routes/admin.js';
 import { context } from './routes/context.js';
 import { deployments, deploymentDispatcher, restartLiveDeployments } from './routes/deployments.js';
-import { writeWegaProjectFile } from './routes/atlassian.js';
+import { writeQuantnikProjectFile } from './routes/atlassian.js';
 import { auditLog, auditRequest, db, installAuditConsole } from './db.js';
 import { seedSkills } from './seed-skills.js';
 import { attachWebSocket } from './ws.js';
@@ -43,7 +43,7 @@ app.use('/api/auth', auth);
 // ───────────────────────────────────────────────────────────────────────────
 // /api/* auth policy
 // ───────────────────────────────────────────────────────────────────────────
-// The wega2 agent process runs ON the same host as this backend (spawned by
+// The quantnik agent process runs ON the same host as this backend (spawned by
 // the Claude Agent SDK as a child of this server). Skills inside that agent
 // regularly shell out to `curl http://localhost:6060/api/<route>` for state
 // reads, phase tracking, deployment registration, etc. Those curl calls
@@ -91,7 +91,7 @@ app.use('/api/admin',        requireAuth, requireAdmin, admin);
 
 // Dynamic per-deployment dispatcher — matches /<slug>/* against the
 // deployments table. Must precede the SPA catch-all so deployed apps win
-// over the wega2 SPA fallback. Reserved slugs (api, ws, …) fall through.
+// over the quantnik SPA fallback. Reserved slugs (api, ws, …) fall through.
 app.use(deploymentDispatcher);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -141,14 +141,14 @@ const server = http.createServer(app);
 attachWebSocket(server);
 
 server.listen(config.port, () => {
-  console.log(`wega2 backend on http://localhost:${config.port}`);
+  console.log(`quantnik backend on http://localhost:${config.port}`);
   console.log(`projects root: ${config.projectsRoot}`);
   // Install bundled skills into ~/.claude/skills/ so the SDK can load them.
   // No-op on this developer box if SKIP_SKILL_SEED=1 in .env.
   try { seedSkills(); } catch (e) {
     console.error('startup skill-seed failed:', e?.message);
   }
-  // Refresh every project's <cwd>/.claude/wega.json sidecar so skills running
+  // Refresh every project's <cwd>/.claude/quantnik.json sidecar so skills running
   // inside the SDK always see current Atlassian + LLM scope, even after a
   // server upgrade or a project DB restore. No-ops if a project's cwd is
   // missing on this host. Single source of truth: the projects table.
@@ -156,9 +156,9 @@ server.listen(config.port, () => {
     const rows = db.prepare('SELECT * FROM projects').all();
     let written = 0;
     for (const p of rows) {
-      try { writeWegaProjectFile(p); written++; } catch {}
+      try { writeQuantnikProjectFile(p); written++; } catch {}
     }
-    console.log(`wega.json sidecar refreshed for ${written}/${rows.length} project(s)`);
+    console.log(`quantnik.json sidecar refreshed for ${written}/${rows.length} project(s)`);
   } catch (e) {
     console.error('startup sidecar refresh failed:', e?.message);
   }
