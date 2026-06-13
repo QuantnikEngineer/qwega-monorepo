@@ -286,6 +286,77 @@ try {
   console.warn('[db] managed-project-path repair:', e?.message);
 }
 
+// Server bootstrap migration: when code is pulled onto a server that already
+// has a persistent SQLite DB, the checked-in project directories can exist
+// without matching rows in that live DB. Reconcile versioned project sidecars
+// into the projects table so locally-created/committed projects appear after
+// deploy without replacing the server's whole database.
+try {
+  const admin = db.prepare("SELECT id FROM users WHERE LOWER(email) = 'abhinavkaiser@gmail.com'").get();
+  const existingByName = db.prepare('SELECT id FROM projects WHERE name = ?');
+  const idTaken = db.prepare('SELECT id FROM projects WHERE id = ?');
+  const insertWithId = db.prepare(`
+    INSERT INTO projects
+      (id, name, path, permission_mode, jira_project_key, confluence_space_id, confluence_space_key,
+       atlassian_labels, owner_user_id, llm_provider, llm_model, model)
+    VALUES (?, ?, ?, 'acceptEdits', ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const insertWithoutId = db.prepare(`
+    INSERT INTO projects
+      (name, path, permission_mode, jira_project_key, confluence_space_id, confluence_space_key,
+       atlassian_labels, owner_user_id, llm_provider, llm_model, model)
+    VALUES (?, ?, 'acceptEdits', ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const rootEntries = fs.existsSync(config.projectsRoot)
+    ? fs.readdirSync(config.projectsRoot, { withFileTypes: true })
+    : [];
+  let imported = 0;
+  for (const entry of rootEntries) {
+    if (!entry.isDirectory()) continue;
+    const sidecarPath = path.join(config.projectsRoot, entry.name, '.claude', 'quantnik.json');
+    if (!fs.existsSync(sidecarPath)) continue;
+    let sidecar = null;
+    try { sidecar = JSON.parse(fs.readFileSync(sidecarPath, 'utf8')); }
+    catch (e) {
+      console.warn('[db] project sidecar skipped:', sidecarPath, e?.message);
+      continue;
+    }
+    const name = String(sidecar?.project?.name || entry.name || '').trim();
+    if (!name || existingByName.get(name)) continue;
+    const projectPath = path.join(config.projectsRoot, entry.name);
+    const labels = Array.isArray(sidecar?.atlassian?.labels) ? JSON.stringify(sidecar.atlassian.labels) : null;
+    const llmProvider = sidecar?.llm?.provider || 'anthropic';
+    const llmModel = sidecar?.llm?.model || null;
+    const wantedId = Number(sidecar?.project?.id);
+    const common = [
+      name,
+      projectPath,
+      sidecar?.atlassian?.jiraProjectKey || null,
+      sidecar?.atlassian?.confluenceSpaceId || null,
+      sidecar?.atlassian?.confluenceSpaceKey || null,
+      labels,
+      admin?.id ?? null,
+      llmProvider,
+      llmModel,
+      llmModel,
+    ];
+    if (Number.isInteger(wantedId) && wantedId > 0 && !idTaken.get(wantedId)) {
+      insertWithId.run(wantedId, ...common);
+    } else {
+      insertWithoutId.run(...common);
+    }
+    imported++;
+  }
+  if (imported) {
+    auditLog('info', `imported ${imported} versioned project(s) into runtime DB`, {
+      source: 'db-project-bootstrap',
+      projectsRoot: config.projectsRoot,
+    });
+  }
+} catch (e) {
+  console.warn('[db] versioned-project bootstrap:', e?.message);
+}
+
 // Per-turn usage capture. One row per agent turn — the SDK emits a `result`
 // event at the end of each turn with the total cost and final usage block.
 // The streaming usage_update / stream_event ticks are not persisted (would

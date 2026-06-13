@@ -13,8 +13,6 @@ const THEMES = [
 export function Sidebar({
   projects, activeId, onSelect, onChanged, theme, onChangeTheme,
   user = null,
-  projectScope = 'own',
-  onChangeProjectScope = () => {},
 }) {
   const isAdmin = !!user?.isAdmin;
   const navigate = useNavigate();
@@ -90,10 +88,8 @@ export function Sidebar({
         <span style={{ color: '#8a94a3', background: '#f1f3f7', borderRadius: 6, padding: '1px 7px' }}>{projects.length}</span>
       </div>
 
-      {/* Admin-only scope toggle. The default is 'mine'; admins can flip
-          to 'all' to see every project across the workbench. Hidden for
-          non-admins — the backend gates the actual access; this toggle is
-          purely a UI convenience. */}
+      {/* Admin visibility is enforced by the backend: admins always receive
+          every project across the workbench. */}
       {isAdmin && (
         <div style={{
           padding: '0 18px 10px',
@@ -102,19 +98,8 @@ export function Sidebar({
           letterSpacing: '0.1em', textTransform: 'uppercase',
           color: '#9aa4b2',
         }}>
-          <span style={{ color: '#f59e0b' }}>Admin scope:</span>
-          <button
-            type="button"
-            onClick={() => onChangeProjectScope('own')}
-            title="show only projects you own or that are shared (default)"
-            style={scopePillStyle(projectScope === 'own')}
-          >mine</button>
-          <button
-            type="button"
-            onClick={() => onChangeProjectScope('all')}
-            title="show every project across all users in the workbench (admin only)"
-            style={scopePillStyle(projectScope === 'all')}
-          >all</button>
+          <span style={{ color: '#f59e0b' }}>Admin:</span>
+          <span style={scopePillStyle(true)}>all projects</span>
         </div>
       )}
 

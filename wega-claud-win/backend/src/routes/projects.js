@@ -26,18 +26,15 @@ projects.get('/', (req, res) => {
   if (!req.user) {
     return res.json(db.prepare(`SELECT * FROM projects ORDER BY id DESC`).all());
   }
-  // Admins can opt into seeing every project across the workbench by
-  // passing `?scope=all`. The flag is silently ignored for non-admins —
-  // the rule is "admins choose what they want to see", not "anyone can
-  // ask and find out who has accounts". A scope=all from a non-admin
-  // falls through to the default scoping so the response shape stays
-  // consistent and we don't leak existence of any out-of-scope rows.
+  // Admins see every project across the workbench by default. The UI still
+  // has a scope toggle, but the backend contract is simpler and safer:
+  // admin means complete visibility, non-admin means own + public only.
   //
   // NB: req.user uses snake_case `is_admin` here — auth.js's middleware
   // sets that on the request object. The camelCase `isAdmin` only appears
   // on the masked `/auth/me` response. Match what requireAdmin() does in
   // auth.js (`req.user?.is_admin`) so we stay consistent.
-  if (req.query.scope === 'all' && req.user.is_admin) {
+  if (req.user.is_admin) {
     return res.json(db.prepare(`SELECT * FROM projects ORDER BY id DESC`).all());
   }
   // Default scoping: caller's own projects + every project flagged
