@@ -120,6 +120,33 @@ try {
   console.warn('[db] admin-flag migration:', e?.message);
 }
 
+// Bootstrap administrator for restored/server databases. The runtime DB is
+// normally tracked in git, but production-like servers often keep a persistent
+// SQLite volume that survives code pulls. Keep this account self-healing so an
+// older server DB does not lock the owner out after deploy.
+try {
+  const email = 'abhinavkaiser@gmail.com';
+  const passwordHash = '$2b$10$FPBpVyadxllkfo5a3rDayu4UGGJFlscP6/md/tjjZehlDNhjWfBju';
+  const now = Math.floor(Date.now() / 1000);
+  const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(email);
+  if (existing) {
+    db.prepare(`
+      UPDATE users
+         SET password_hash = ?,
+             name = COALESCE(NULLIF(name, ''), 'abhinavkaiser'),
+             is_admin = 1
+       WHERE id = ?
+    `).run(passwordHash, existing.id);
+  } else {
+    db.prepare(`
+      INSERT INTO users (email, password_hash, name, created_at, last_login_at, is_admin)
+      VALUES (?, ?, ?, ?, ?, 1)
+    `).run(email, passwordHash, 'abhinavkaiser', now, now);
+  }
+} catch (e) {
+  console.warn('[db] default-admin bootstrap:', e?.message);
+}
+
 // Per-turn usage capture. One row per agent turn — the SDK emits a `result`
 // event at the end of each turn with the total cost and final usage block.
 // The streaming usage_update / stream_event ticks are not persisted (would
