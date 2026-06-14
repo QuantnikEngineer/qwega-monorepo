@@ -3,11 +3,6 @@
 __pycache__/
 *.py[cod]
 
-.env
-.env.*
-!.env.example
-!.env.*.example
-
 vertexai.json
 *service-account*.json
 
