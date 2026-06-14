@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     planning_orchestrator_url: Optional[str] = Field(default=None)
     test_orchestrator_url: Optional[str] = Field(default=None)
 
+    # Atlassian — Jira + Confluence direct REST API
+    atlassian_email: Optional[str] = Field(default=None, alias="MCP_ATLASSIAN_EMAIL")
+    atlassian_token: Optional[str] = Field(default=None, alias="MCP_ATLASSIAN_TOKEN")
+    atlassian_url: str = Field(default="https://engquant.atlassian.net", alias="MCP_ATLASSIAN_URL")
+
     # GitHub integration
     github_token: Optional[str] = Field(default=None)
     github_org: str = Field(default="QuantnikEngineer")
