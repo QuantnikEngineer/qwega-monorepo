@@ -63,7 +63,7 @@ Print the resolved config and ask for confirmation:
   Jira project:        <value>
   GitHub repo:         <value>
   Skip steps:          <value or "none">
-  Build service URL:   http://localhost:8083
+  Build service URL:   ${BUILD_SOFTWARE_URL:-${BUILD_SOFTWARE_URL:-http://localhost:8083}}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Proceed? (yes / no / edit)
 ```
@@ -86,7 +86,7 @@ curl -s -X POST http://localhost:6060/api/phases/<projectId> \
 Start the build-software pipeline in async mode:
 
 ```bash
-curl -s -X POST http://localhost:8083/v1/build/async \
+curl -s -X POST ${BUILD_SOFTWARE_URL:-http://localhost:8083}/v1/build/async \
   -H "Content-Type: application/json" \
   -d '{
     "project_name": "<project_name>",
@@ -111,7 +111,7 @@ Monitoring progress...
 
 ## Phase 2 — Monitor and relay progress
 
-Poll `GET http://localhost:8083/v1/build/<runId>` every 15 seconds until `status` is `completed` or `failed`.
+Poll `GET ${BUILD_SOFTWARE_URL:-http://localhost:8083}/v1/build/<runId>` every 15 seconds until `status` is `completed` or `failed`.
 
 For each poll, read the `artifacts` field. For each new artifact key that appears since the last poll, print it immediately and update the phases panel:
 
@@ -204,9 +204,9 @@ curl -s -X POST http://localhost:6060/api/phases/<projectId> \
 
 ## Error handling
 
-- If `http://localhost:8083/health` returns non-200 at any point, print: `❌ Build-software service is not running. Start it with: cd quantnik-build-software && python3 run.py` and abort.
+- If `${BUILD_SOFTWARE_URL:-http://localhost:8083}/health` returns non-200 at any point, print: `❌ Build-software service is not running. Start it with: cd quantnik-build-software && python3 run.py` and abort.
 - If a phase fails, print the error clearly, mark remaining phases as `skipped` in the panel, and suggest re-running with `skip_steps` to resume from the failed step.
-- If polling times out after 30 minutes with no `completed` / `failed` status, print the last known status and tell the user to check `GET http://localhost:8083/v1/build/<runId>` manually.
+- If polling times out after 30 minutes with no `completed` / `failed` status, print the last known status and tell the user to check `GET ${BUILD_SOFTWARE_URL:-http://localhost:8083}/v1/build/<runId>` manually.
 
 ---
 
@@ -215,7 +215,7 @@ curl -s -X POST http://localhost:6060/api/phases/<projectId> \
 Before Phase 0.2, verify the build-software service is reachable:
 
 ```bash
-curl -s http://localhost:8083/health
+curl -s ${BUILD_SOFTWARE_URL:-http://localhost:8083}/health
 ```
 
 If it returns non-200 or times out, print:

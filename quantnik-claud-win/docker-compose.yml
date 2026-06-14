@@ -1,9 +1,31 @@
 services:
+  # ── Build-Software pipeline service ──────────────────────────────────────
+  # Provides the /v1/build API called by the /build-software skill.
+  # Runs on the same Docker network so the quantnik container can reach it
+  # at http://build-software:8083.
+  build-software:
+    build: ../quantnik-build-software
+    image: quantnik-build-software:latest
+    container_name: build-software
+    restart: unless-stopped
+    environment:
+      PORT: 8083
+      APP_ENV: production
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      MCP_ATLASSIAN_EMAIL: ${MCP_ATLASSIAN_EMAIL}
+      MCP_ATLASSIAN_TOKEN: ${MCP_ATLASSIAN_TOKEN}
+      MCP_ATLASSIAN_URL: ${MCP_ATLASSIAN_URL}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_ORG: QuantnikEngineer
+
+  # ── Main Quantnik workbench ───────────────────────────────────────────────
   quantnik:
     build: .
     image: quantnik:latest
     container_name: quantnik
     restart: unless-stopped
+    depends_on:
+      - build-software
     # Bind to localhost only; expose publicly via nginx/ALB with TLS.
     ports:
       - "127.0.0.1:6060:6060"
@@ -14,6 +36,10 @@ services:
       MCP_ATLASSIAN_EMAIL: ${MCP_ATLASSIAN_EMAIL}
       MCP_ATLASSIAN_TOKEN: ${MCP_ATLASSIAN_TOKEN}
       MCP_ATLASSIAN_URL: ${MCP_ATLASSIAN_URL}
+      # Tells the /build-software skill where to reach the pipeline service.
+      # Inside Docker this resolves via the compose network; locally it's unset
+      # and the skill falls back to http://localhost:8083.
+      BUILD_SOFTWARE_URL: http://build-software:8083
       # HOME is set in the image to /home/quantnik; the mounts below put your
       # Claude credentials + config exactly where the SDK expects them.
     volumes:
